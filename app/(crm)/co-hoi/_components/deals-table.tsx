@@ -13,9 +13,11 @@ import { formatDate, relativeTime } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { Briefcase } from "lucide-react";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export function DealsTable() {
   const list = useListPage();
+  const router = useRouter();
   const { getById: getCustomer } = useCustomers();
 
   const { rows, removeMany } = useDeals({
@@ -109,7 +111,7 @@ export function DealsTable() {
       sticky: "right",
       cell: (r) => (
         <RowActions
-          onView={() => list.setViewId(r.id)}
+          onView={() => router.push(`/co-hoi/${r.id}`)}
           onEdit={() => list.setEditId(r.id)}
           onDelete={() => list.setDeleteId(r.id)}
         />
@@ -142,7 +144,7 @@ export function DealsTable() {
         selectedIds={list.selectedIds}
         onToggleSelect={list.toggleSelect}
         onToggleSelectAll={() => list.toggleSelectAll(pageRows.map((r) => r.id))}
-        onRowClick={(r) => list.setViewId(r.id)}
+        onRowClick={(r) => router.push(`/co-hoi/${r.id}`)}
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}

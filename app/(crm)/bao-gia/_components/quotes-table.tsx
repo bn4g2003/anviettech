@@ -13,10 +13,12 @@ import { formatVnd } from "@/features/shared/utils/money";
 import { formatDate } from "@/features/shared/utils/date";
 import { FileText } from "lucide-react";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { QuoteStatusBadge } from "./quote-status";
 
 export function QuotesTable() {
   const list = useListPage();
+  const router = useRouter();
   const { rows, removeMany } = useQuotes({
     query: list.query,
     status: list.filters.status,
@@ -104,7 +106,7 @@ export function QuotesTable() {
       sticky: "right",
       cell: (r) => (
         <RowActions
-          onView={() => list.setViewId(r.id)}
+          onView={() => router.push(`/bao-gia/${r.id}`)}
           onEdit={() => list.setEditId(r.id)}
           onDelete={() => list.setDeleteId(r.id)}
         />
@@ -137,7 +139,7 @@ export function QuotesTable() {
         selectedIds={list.selectedIds}
         onToggleSelect={list.toggleSelect}
         onToggleSelectAll={() => list.toggleSelectAll(pageRows.map((r) => r.id))}
-        onRowClick={(r) => list.setViewId(r.id)}
+        onRowClick={(r) => router.push(`/bao-gia/${r.id}`)}
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}

@@ -13,10 +13,12 @@ import { formatVnd } from "@/features/shared/utils/money";
 import { formatDate } from "@/features/shared/utils/date";
 import { Handshake } from "lucide-react";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { ContractStatusBadge } from "./contract-status";
 
 export function ContractsTable() {
   const list = useListPage();
+  const router = useRouter();
   const { rows, removeMany } = useContracts({
     query: list.query,
     status: list.filters.status,
@@ -110,7 +112,7 @@ export function ContractsTable() {
       sticky: "right",
       cell: (r) => (
         <RowActions
-          onView={() => list.setViewId(r.id)}
+          onView={() => router.push(`/hop-dong/${r.id}`)}
           onEdit={() => list.setEditId(r.id)}
           onDelete={() => list.setDeleteId(r.id)}
         />
@@ -143,7 +145,7 @@ export function ContractsTable() {
         selectedIds={list.selectedIds}
         onToggleSelect={list.toggleSelect}
         onToggleSelectAll={() => list.toggleSelectAll(pageRows.map((r) => r.id))}
-        onRowClick={(r) => list.setViewId(r.id)}
+        onRowClick={(r) => router.push(`/hop-dong/${r.id}`)}
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
