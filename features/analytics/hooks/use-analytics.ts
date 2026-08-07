@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { DEAL_STAGE_META, type DealStage } from "@/features/deals/types";
+import type { MatrixRow } from "@/app/(crm)/phan-tich/_components/financial-matrix-table";
+import type { MonthlyOverviewItem, CategoryBreakdownItem } from "@/app/(crm)/phan-tich/_components/financial-charts-overview";
 
 type ApiAnalytics = {
   pipelineByStage: { stage: string; count: number; value: number }[];
@@ -12,23 +14,32 @@ type ApiAnalytics = {
   topCustomers: { id: string; name: string; revenue: number }[];
   topProducts: { id: string; name: string; qty: number; revenue: number }[];
   lowStock: { productId: string; name: string; sku: string; qty: number; minStock: number }[];
+  matrix?: {
+    year: number;
+    availableYears: number[];
+    rows: MatrixRow[];
+    monthlyOverview: MonthlyOverviewItem[];
+    revenueBreakdown: CategoryBreakdownItem[];
+    expenseBreakdown: CategoryBreakdownItem[];
+  };
 };
 
 export function useAnalytics() {
+  const [year, setYear] = useState<number>(2025);
   const [raw, setRaw] = useState<ApiAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await apiFetch<ApiAnalytics>("/api/v1/analytics");
+      const result = await apiFetch<ApiAnalytics>(`/api/v1/analytics?year=${year}`);
       setRaw(result.data);
     } catch {
       setRaw(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [year]);
 
   useEffect(() => {
     void reload();
@@ -81,6 +92,8 @@ export function useAnalytics() {
   ];
 
   return {
+    year,
+    setYear,
     loading,
     reload,
     revenueThisMonth: raw?.revenuePaid ?? 0,
@@ -95,5 +108,11 @@ export function useAnalytics() {
     revenueForecast,
     categoryRevenue,
     replenishmentForecast,
+    // Matrix Analytics Data
+    matrixRows: raw?.matrix?.rows ?? [],
+    monthlyOverview: raw?.matrix?.monthlyOverview ?? [],
+    revenueBreakdown: raw?.matrix?.revenueBreakdown ?? [],
+    expenseBreakdown: raw?.matrix?.expenseBreakdown ?? [],
+    availableYears: raw?.matrix?.availableYears ?? [2025, 2026],
   };
 }

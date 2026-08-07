@@ -794,3 +794,210 @@ export async function getAnalyticsDashboard() {
     lowStock: lowStock.rows.map((r) => ({ productId: r.productId, name: r.name, sku: r.sku, qty: Number(r.qty), minStock: Number(r.minStock) })),
   };
 }
+
+export async function getFinancialMatrixAnalytics(selectedYear?: number) {
+  const year = selectedYear || 2025;
+
+  const revRes = await query<{ m: number; business_type: string; total: string }>(
+    `SELECT EXTRACT(MONTH FROM created_at)::int as m, COALESCE(business_type, 'new_construction') as business_type, COALESCE(sum(total),0)::text as total 
+     FROM orders 
+     WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM created_at) = $1 
+     GROUP BY m, business_type`,
+    [year]
+  );
+
+  const cogsRes = await query<{ m: number; btype: string; cogs: string }>(
+    `SELECT EXTRACT(MONTH FROM o.created_at)::int as m, 
+            COALESCE(ol.business_type, o.business_type, 'new_construction') as btype, 
+            COALESCE(sum(ol.qty * ol.cost_price), sum(o.total * 0.65))::text as cogs 
+     FROM orders o 
+     LEFT JOIN order_lines ol ON ol.order_id=o.id 
+     WHERE o.deleted_at IS NULL AND EXTRACT(YEAR FROM o.created_at) = $1 
+     GROUP BY m, btype`,
+    [year]
+  );
+
+  const expRes = await query<{ m: number; cat: string; amount: string }>(
+    `SELECT EXTRACT(MONTH FROM COALESCE(period_date, expense_date))::int as m, 
+            COALESCE(category, expense_category, 'other') as cat, 
+            COALESCE(sum(amount),0)::text as amount 
+     FROM operating_expenses 
+     WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM COALESCE(period_date, expense_date)) = $1 
+     GROUP BY m, cat`,
+    [year]
+  );
+
+  const revMap: Record<string, number[]> = {
+    new_construction: Array(12).fill(0),
+    repair: Array(12).fill(0),
+    warranty: Array(12).fill(0),
+    retail: Array(12).fill(0),
+  };
+
+  const cogsMap: Record<string, number[]> = {
+    new_construction: Array(12).fill(0),
+    repair: Array(12).fill(0),
+    warranty: Array(12).fill(0),
+    retail: Array(12).fill(0),
+  };
+
+  const expMap: Record<string, number[]> = {
+    salary: Array(12).fill(0),
+    insurance: Array(12).fill(0),
+    office_rent: Array(12).fill(0),
+    tax: Array(12).fill(0),
+    management: Array(12).fill(0),
+    admin: Array(12).fill(0),
+    tech_dept: Array(12).fill(0),
+    other: Array(12).fill(0),
+  };
+
+  for (const r of revRes.rows) {
+    const mIdx = r.m - 1;
+    if (mIdx >= 0 && mIdx < 12) {
+      const btype = r.business_type || "retail";
+      if (revMap[btype]) revMap[btype][mIdx] += Number(r.total);
+      else revMap["retail"][mIdx] += Number(r.total);
+    }
+  }
+
+  for (const r of cogsRes.rows) {
+    const mIdx = r.m - 1;
+    if (mIdx >= 0 && mIdx < 12) {
+      const btype = r.btype || "retail";
+      if (cogsMap[btype]) cogsMap[btype][mIdx] += Number(r.cogs);
+      else cogsMap["retail"][mIdx] += Number(r.cogs);
+    }
+  }
+
+  for (const r of expRes.rows) {
+    const mIdx = r.m - 1;
+    if (mIdx >= 0 && mIdx < 12) {
+      const cat = r.cat || "other";
+      const key = cat === "admin" || cat === "management" ? "management" : cat;
+      if (expMap[key]) expMap[key][mIdx] += Number(r.amount);
+      else expMap["other"][mIdx] += Number(r.amount);
+    }
+  }
+
+  const calcRow = (
+    id: string,
+    codeStr: string,
+    name: string,
+    months: number[],
+    options: { isHeader?: boolean; isSummary?: boolean; indent?: boolean } = {}
+  ) => {
+    const quarters = [
+      months[0] + months[1] + months[2],
+      months[3] + months[4] + months[5],
+      months[6] + months[7] + months[8],
+      months[9] + months[10] + months[11],
+    ];
+    const ytd = quarters.reduce((a, b) => a + b, 0);
+    return { id, code: codeStr, name, months, quarters, ytd, ...options };
+  };
+
+  const rev1_1 = calcRow("r1_1", "1.1", "- Thi công công trình mới", revMap.new_construction, { indent: true });
+  const rev1_2 = calcRow("r1_2", "1.2", "- Sửa chữa", revMap.repair, { indent: true });
+  const rev1_3 = calcRow("r1_3", "1.3", "- Bảo hành", revMap.warranty, { indent: true });
+  const rev1_4 = calcRow("r1_4", "1.4", "- Bán buôn, bán lẻ", revMap.retail, { indent: true });
+
+  const totalRevMonths = Array(12)
+    .fill(0)
+    .map((_, i) => revMap.new_construction[i] + revMap.repair[i] + revMap.warranty[i] + revMap.retail[i]);
+  const sec1 = calcRow("r1", "1", "1.Doanh thu hoạt động (TT)", totalRevMonths, { isHeader: true });
+
+  const cogs2_1 = calcRow("r2_1", "2.1", "- Thi công công trình mới", cogsMap.new_construction, { indent: true });
+  const cogs2_2 = calcRow("r2_2", "2.2", "- Sửa chữa", cogsMap.repair, { indent: true });
+  const cogs2_3 = calcRow("r2_3", "2.3", "- Bảo hành", cogsMap.warranty, { indent: true });
+  const cogs2_4 = calcRow("r2_4", "2.4", "- Bán tại cửa hàng, bán lẻ", cogsMap.retail, { indent: true });
+
+  const totalCogsMonths = Array(12)
+    .fill(0)
+    .map((_, i) => cogsMap.new_construction[i] + cogsMap.repair[i] + cogsMap.warranty[i] + cogsMap.retail[i]);
+  const sec2 = calcRow("r2", "2", "2. Giá vốn hàng bán", totalCogsMonths, { isHeader: true });
+
+  const gp3_1 = calcRow("r3_1", "3.1", "- Thi công công trình mới", Array(12).fill(0).map((_, i) => revMap.new_construction[i] - cogsMap.new_construction[i]), { indent: true });
+  const gp3_2 = calcRow("r3_2", "3.2", "- Sửa chữa", Array(12).fill(0).map((_, i) => revMap.repair[i] - cogsMap.repair[i]), { indent: true });
+  const gp3_3 = calcRow("r3_3", "3.3", "- Bảo hành", Array(12).fill(0).map((_, i) => revMap.warranty[i] - cogsMap.warranty[i]), { indent: true });
+  const gp3_4 = calcRow("r3_4", "3.4", "- Bán tại cửa hàng, bán lẻ", Array(12).fill(0).map((_, i) => revMap.retail[i] - cogsMap.retail[i]), { indent: true });
+
+  const totalGpMonths = Array(12)
+    .fill(0)
+    .map((_, i) => totalRevMonths[i] - totalCogsMonths[i]);
+  const sec3 = calcRow("r3", "3", "3. Lợi nhuận gộp (3)=(1)-(2)", totalGpMonths, { isHeader: true, isSummary: true });
+
+  const exp4_1 = calcRow("r4_1", "4.1", "- Chi phí tiền lương", expMap.salary, { indent: true });
+  const exp4_2 = calcRow("r4_2", "4.2", "- Chi trả bảo hiểm", expMap.insurance, { indent: true });
+  const exp4_3 = calcRow("r4_3", "4.3", "- Chi phí thuê văn phòng", expMap.office_rent, { indent: true });
+  const exp4_4 = calcRow("r4_4", "4.4", "- Chi phí thuế", expMap.tax, { indent: true });
+  const exp4_5 = calcRow("r4_5", "4.5", "- Chi phí quản lý DN", expMap.management, { indent: true });
+  const exp4_6 = calcRow("r4_6", "4.6", "- Chi phí dùng cho phòng KT", expMap.tech_dept, { indent: true });
+  const exp4_7 = calcRow("r4_7", "4.7", "- Chi phí Khác", expMap.other, { indent: true });
+
+  const totalExpMonths = Array(12)
+    .fill(0)
+    .map(
+      (_, i) =>
+        expMap.salary[i] +
+        expMap.insurance[i] +
+        expMap.office_rent[i] +
+        expMap.tax[i] +
+        expMap.management[i] +
+        expMap.tech_dept[i] +
+        expMap.other[i]
+    );
+  const sec4 = calcRow("r4", "4", "4. Chi Phí", totalExpMonths, { isHeader: true });
+
+  const totalProfitMonths = Array(12)
+    .fill(0)
+    .map((_, i) => totalGpMonths[i] - totalExpMonths[i]);
+  const sec5 = calcRow("r5", "5", "5. Lãi (5)= (3)-(4)", totalProfitMonths, { isHeader: true, isSummary: true });
+
+  const rows = [
+    sec1, rev1_1, rev1_2, rev1_3, rev1_4,
+    sec2, cogs2_1, cogs2_2, cogs2_3, cogs2_4,
+    sec3, gp3_1, gp3_2, gp3_3, gp3_4,
+    sec4, exp4_1, exp4_2, exp4_3, exp4_4, exp4_5, exp4_6, exp4_7,
+    sec5,
+  ];
+
+  const monthlyOverview = Array(12)
+    .fill(0)
+    .map((_, i) => ({
+      month: i + 1,
+      monthName: `Tháng ${i + 1}`,
+      revenue: totalRevMonths[i],
+      cogs: totalCogsMonths[i],
+      grossProfit: totalGpMonths[i],
+      expenses: totalExpMonths[i],
+      netProfit: totalProfitMonths[i],
+    }));
+
+  const revenueBreakdown = [
+    { name: "Thi công công trình mới", value: rev1_1.ytd, color: "#2563eb" },
+    { name: "Sửa chữa", value: rev1_2.ytd, color: "#16a34a" },
+    { name: "Bảo hành", value: rev1_3.ytd, color: "#ca8a04" },
+    { name: "Bán buôn, bán lẻ", value: rev1_4.ytd, color: "#0891b2" },
+  ];
+
+  const expenseBreakdown = [
+    { name: "Chi phí tiền lương", value: exp4_1.ytd, color: "#2563eb" },
+    { name: "Chi trả bảo hiểm", value: exp4_2.ytd, color: "#16a34a" },
+    { name: "Chi phí thuê văn phòng", value: exp4_3.ytd, color: "#ca8a04" },
+    { name: "Chi phí thuế", value: exp4_4.ytd, color: "#dc2626" },
+    { name: "Chi phí quản lý DN", value: exp4_5.ytd, color: "#7c3aed" },
+    { name: "Chi phí phòng KT", value: exp4_6.ytd, color: "#0891b2" },
+    { name: "Chi phí Khác", value: exp4_7.ytd, color: "#64748b" },
+  ];
+
+  return {
+    year,
+    availableYears: [2025, 2026],
+    rows,
+    monthlyOverview,
+    revenueBreakdown,
+    expenseBreakdown,
+  };
+}
+
