@@ -84,32 +84,30 @@ export function FinancialMatrixTable({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-md border border-border bg-white shadow-2xs">
       {/* Header controls bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-            <Layers className="h-5 w-5" />
-          </div>
+          <Layers className="h-4 w-4 text-muted" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-sm font-semibold text-foreground">
               Bảng Báo Cáo Phân Tích HĐKD (Năm {year})
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Số liệu tổng hợp theo Tháng, Quý và Lũy kế cả năm
+            <p className="text-xs text-muted">
+              Số liệu tổng hợp theo Tháng, Quý và Lũy kế cả năm theo định mẫu quản trị
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {onYearChange && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-1.5 text-xs text-muted">
               <label htmlFor={selectId} className="font-medium">Năm báo cáo:</label>
               <select
                 id={selectId}
                 value={year}
                 onChange={(e) => onYearChange(Number(e.target.value))}
-                className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="rounded-md border border-border bg-white px-2 py-1 text-xs font-semibold text-foreground shadow-2xs focus:border-primary focus:outline-none"
               >
                 {availableYears.map((y) => (
                   <option key={y} value={y}>
@@ -122,102 +120,100 @@ export function FinancialMatrixTable({
 
           <button
             onClick={exportToCsv}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1 text-xs font-medium text-foreground hover:bg-neutral-100 transition-colors"
             title="Xuất file CSV"
           >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <FileSpreadsheet className="h-3.5 w-3.5 text-muted" />
             <span>Xuất CSV</span>
           </button>
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1 text-xs font-medium text-foreground hover:bg-neutral-100 transition-colors"
             title="In báo cáo"
           >
-            <Printer className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <Printer className="h-3.5 w-3.5 text-muted" />
             <span>In Báo Cáo</span>
           </button>
         </div>
       </div>
 
-      {/* Responsive Matrix Table Container */}
+      {/* Responsive Matrix Table */}
       <div className="relative overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
-          {/* Table Header */}
           <thead>
             {/* Top Row: Quarter Groupings */}
-            <tr className="border-b border-slate-200 bg-slate-100/80 font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300">
-              <th scope="col" rowSpan={2} className="sticky left-0 z-20 min-w-[240px] bg-slate-100 px-4 py-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:bg-slate-800">
+            <tr className="border-b border-border bg-neutral-100 text-foreground font-semibold">
+              <th scope="col" rowSpan={2} className="sticky left-0 z-20 min-w-[240px] bg-neutral-100 px-4 py-2.5 shadow-[1px_0_3px_rgba(0,0,0,0.08)]">
                 Khoản mục
               </th>
-              <th scope="col" colSpan={3} className="border-l border-slate-200 px-2 py-1.5 text-center bg-blue-50/50 text-blue-900 dark:border-slate-700 dark:bg-blue-950/30 dark:text-blue-200">
+              <th scope="col" colSpan={3} className="border-l border-border px-2 py-1 text-center bg-neutral-50 text-foreground font-semibold">
                 Quý I
               </th>
-              <th scope="col" colSpan={3} className="border-l border-slate-200 px-2 py-1.5 text-center bg-emerald-50/50 text-emerald-900 dark:border-slate-700 dark:bg-emerald-950/30 dark:text-emerald-200">
+              <th scope="col" colSpan={3} className="border-l border-border px-2 py-1 text-center bg-neutral-50 text-foreground font-semibold">
                 Quý II
               </th>
-              <th scope="col" colSpan={3} className="border-l border-slate-200 px-2 py-1.5 text-center bg-amber-50/50 text-amber-900 dark:border-slate-700 dark:bg-amber-950/30 dark:text-amber-200">
+              <th scope="col" colSpan={3} className="border-l border-border px-2 py-1 text-center bg-neutral-50 text-foreground font-semibold">
                 Quý III
               </th>
-              <th scope="col" colSpan={3} className="border-l border-slate-200 px-2 py-1.5 text-center bg-purple-50/50 text-purple-900 dark:border-slate-700 dark:bg-purple-950/30 dark:text-purple-200">
+              <th scope="col" colSpan={3} className="border-l border-border px-2 py-1 text-center bg-neutral-50 text-foreground font-semibold">
                 Quý IV
               </th>
-              <th scope="col" rowSpan={2} className="border-l-2 border-slate-300 px-4 py-3 text-right font-bold text-slate-900 bg-slate-200/80 dark:border-slate-700 dark:bg-slate-700 dark:text-white min-w-[140px]">
+              <th scope="col" rowSpan={2} className="border-l-2 border-border px-3 py-2.5 text-right font-bold text-foreground bg-neutral-200/80 min-w-[140px]">
                 Lũy kế cuối quý
               </th>
             </tr>
 
             {/* Second Row: Monthly Header */}
-            <tr className="border-b border-slate-200 bg-slate-50 font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400 text-center">
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 1</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 2</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800 font-semibold bg-blue-50/30 dark:bg-blue-950/20">Tháng 3</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 4</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 5</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800 font-semibold bg-emerald-50/30 dark:bg-emerald-950/20">Tháng 6</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 7</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 8</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800 font-semibold bg-amber-50/30 dark:bg-amber-950/20">Tháng 9</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 10</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800">Tháng 11</th>
-              <th scope="col" className="border-l border-slate-200 px-2 py-2 min-w-[100px] dark:border-slate-800 font-semibold bg-purple-50/30 dark:bg-purple-950/20">Tháng 12</th>
+            <tr className="border-b border-border bg-neutral-50 font-medium text-muted text-center">
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 1</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 2</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px] font-semibold text-foreground bg-neutral-100/60">Tháng 3</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 4</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 5</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px] font-semibold text-foreground bg-neutral-100/60">Tháng 6</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 7</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 8</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px] font-semibold text-foreground bg-neutral-100/60">Tháng 9</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 10</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px]">Tháng 11</th>
+              <th scope="col" className="border-l border-border px-2 py-1.5 min-w-[95px] font-semibold text-foreground bg-neutral-100/60">Tháng 12</th>
             </tr>
           </thead>
 
-          {/* Table Body */}
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-border">
             {rows.map((row) => {
               const parentCode = row.code.split(".")[0];
               const isCollapsed = collapsedSections[parentCode] && !row.isHeader;
 
               if (isCollapsed) return null;
 
-              let rowClass = "hover:bg-slate-50/80 transition-colors dark:hover:bg-slate-800/40";
-              let stickyClass = "bg-white dark:bg-slate-900";
+              let rowClass = "hover:bg-neutral-50 transition-colors";
+              let stickyClass = "bg-white";
 
               if (row.isHeader && !row.isSummary) {
-                rowClass = "bg-slate-50/90 font-bold text-slate-900 dark:bg-slate-800/80 dark:text-white";
-                stickyClass = "bg-slate-50 dark:bg-slate-800";
+                rowClass = "bg-neutral-100/70 font-semibold text-foreground";
+                stickyClass = "bg-neutral-100/90";
               } else if (row.isHeader && row.isSummary) {
                 if (row.code === "3") {
-                  rowClass = "bg-emerald-50/90 font-bold text-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-100";
-                  stickyClass = "bg-emerald-50 dark:bg-emerald-950/50";
+                  rowClass = "bg-emerald-50/60 font-bold text-foreground";
+                  stickyClass = "bg-emerald-50/80";
                 } else if (row.code === "5") {
-                  rowClass = "bg-blue-100/80 font-extrabold text-blue-950 dark:bg-blue-950/70 dark:text-blue-100 text-sm";
-                  stickyClass = "bg-blue-100 dark:bg-blue-950";
+                  rowClass = "bg-neutral-200/60 font-bold text-foreground text-xs";
+                  stickyClass = "bg-neutral-200/90";
                 }
               }
 
               return (
                 <tr key={row.id} className={rowClass}>
                   {/* Sticky Column 1: Khoản mục */}
-                  <td className={`sticky left-0 z-10 px-4 py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${stickyClass}`}>
-                    <div className="flex items-center gap-1.5">
+                  <td className={`sticky left-0 z-10 px-4 py-2 shadow-[1px_0_3px_rgba(0,0,0,0.05)] ${stickyClass}`}>
+                    <div className="flex items-center gap-1">
                       {row.isHeader && (
                         <button
                           type="button"
                           onClick={() => toggleSection(row.code)}
-                          className="rounded p-0.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          className="rounded p-0.5 text-muted hover:bg-neutral-200"
                         >
                           {collapsedSections[row.code] ? (
                             <ChevronUp className="h-3.5 w-3.5" />
@@ -226,7 +222,7 @@ export function FinancialMatrixTable({
                           )}
                         </button>
                       )}
-                      <span className={row.indent ? "pl-5 font-normal text-slate-700 dark:text-slate-300" : "font-semibold"}>
+                      <span className={row.indent ? "pl-4 text-foreground font-normal" : "font-semibold text-foreground"}>
                         {row.name}
                       </span>
                     </div>
@@ -235,13 +231,13 @@ export function FinancialMatrixTable({
                   {/* 12 Months Columns */}
                   {row.months.map((val, idx) => {
                     const isQuarterEnd = idx === 2 || idx === 5 || idx === 8 || idx === 11;
-                    const valColor = val < 0 ? "text-red-600 dark:text-red-400" : "text-slate-800 dark:text-slate-200";
+                    const valColor = val < 0 ? "text-danger" : "text-foreground";
 
                     return (
                       <td
                         key={idx}
-                        className={`border-l border-slate-200 px-2 py-2 text-right dark:border-slate-800/80 ${valColor} ${
-                          isQuarterEnd ? "font-medium bg-slate-50/50 dark:bg-slate-800/30" : ""
+                        className={`border-l border-border px-2 py-2 text-right ${valColor} ${
+                          isQuarterEnd ? "font-medium bg-neutral-50/50" : ""
                         }`}
                       >
                         {formatVnd(val)}
@@ -250,7 +246,7 @@ export function FinancialMatrixTable({
                   })}
 
                   {/* YTD Total Column */}
-                  <td className="border-l-2 border-slate-300 px-4 py-2.5 text-right font-bold text-slate-900 bg-slate-100/50 dark:border-slate-700 dark:bg-slate-800/60 dark:text-white">
+                  <td className="border-l-2 border-border px-3 py-2 text-right font-bold text-foreground bg-neutral-100/50">
                     {formatVnd(row.ytd)}
                   </td>
                 </tr>
@@ -261,13 +257,13 @@ export function FinancialMatrixTable({
       </div>
 
       {/* Footer sign-off matching phan-tich.md signature format */}
-      <div className="flex flex-wrap items-center justify-between border-t border-slate-200 px-6 py-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+      <div className="flex flex-wrap items-center justify-between border-t border-border px-4 py-3 text-xs text-muted bg-white">
         <div>
-          <span>CRM An Việt Tech &bull; Báo cáo Tổng hợp Quản trị HĐKD</span>
+          <span>CRM An Việt Tech &bull; Báo cáo Phân tích HĐKD</span>
         </div>
         <div className="text-right">
           <p className="italic">Ngày 5 tháng 10 năm 2025</p>
-          <p className="font-semibold text-slate-700 dark:text-slate-300 mt-0.5">Người lập biểu: Nguyễn Phương Mai</p>
+          <p className="font-semibold text-foreground mt-0.5">Người lập biểu: Nguyễn Phương Mai</p>
         </div>
       </div>
     </div>
