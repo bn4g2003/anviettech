@@ -11,7 +11,6 @@ import { QuoteDeleteDialog } from "./_components/quote-delete-dialog";
 import { OrdersFilterBar } from "./_components/orders-filter-bar";
 import { OrdersTable } from "./_components/orders-table";
 import { OrderDetailDrawer } from "./_components/order-detail-drawer";
-import { OrderDeleteDialog } from "./_components/order-delete-dialog";
 
 const QUOTE_COLUMNS = [
   "code",
@@ -45,7 +44,6 @@ export default function BaoGiaPage() {
           <OrdersFilterBar />
           <OrdersTable />
           <OrderDetailDrawer />
-          <OrderDeleteDialog />
         </div>
       </ListPageProvider>
     );

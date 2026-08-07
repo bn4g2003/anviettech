@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import { useCrmStore } from "@/features/shared/store/crm-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { dealsService } from "@/features/deals/services/deals-service";
-import type { DealInput, DealStage } from "@/features/deals/types";
+import type { Deal, DealInput, DealStage } from "@/features/deals/types";
 
 export function useDeals(filters?: {
   query?: string;
@@ -11,26 +10,60 @@ export function useDeals(filters?: {
   ownerId?: string;
   customerId?: string;
 }) {
-  const deals = useCrmStore((s) => s.deals);
+  const [rows, setRows] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const rows = useMemo(() => {
-    return dealsService.search(filters?.query ?? "", {
-      stage: filters?.stage,
-      ownerId: filters?.ownerId || undefined,
-      customerId: filters?.customerId || undefined,
-    });
-  }, [deals, filters?.query, filters?.stage, filters?.ownerId, filters?.customerId]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(
+        await dealsService.list({
+          search: filters?.query,
+          status: filters?.stage,
+          ownerId: filters?.ownerId,
+          customerId: filters?.customerId,
+        }),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [filters?.query, filters?.stage, filters?.ownerId, filters?.customerId]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return {
     rows,
-    all: deals,
-    getById: (id: string) => dealsService.getById(id),
-    create: (input: DealInput, opts?: { createFollowup?: boolean }) =>
-      dealsService.create(input, opts),
-    update: (id: string, patch: Partial<DealInput>) => dealsService.update(id, patch),
-    setStage: (id: string, stage: DealStage) => dealsService.setStage(id, stage),
-    remove: (id: string) => dealsService.remove(id),
-    removeMany: (ids: string[]) => dealsService.removeMany(ids),
-    byCustomer: (customerId: string) => dealsService.byCustomer(customerId),
+    all: rows,
+    loading,
+    reload,
+    getById: (id: string) => byId.get(id),
+    create: async (input: DealInput) => {
+      const row = await dealsService.create(input);
+      await reload();
+      return row;
+    },
+    update: async (id: string, patch: Partial<DealInput>) => {
+      const row = await dealsService.update(id, patch);
+      await reload();
+      return row;
+    },
+    setStage: async (id: string, stage: DealStage, reason?: string) => {
+      const row = await dealsService.setStage(id, stage, reason);
+      await reload();
+      return row;
+    },
+    remove: async (id: string) => {
+      await dealsService.remove(id);
+      await reload();
+    },
+    removeMany: async (ids: string[]) => {
+      await dealsService.removeMany(ids);
+      await reload();
+    },
+    byCustomer: (customerId: string) => rows.filter((d) => d.customerId === customerId),
   };
 }

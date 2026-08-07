@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: anviet-crm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-anviet_crm}
+      POSTGRES_USER: ${POSTGRES_USER:-anviet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-anviet_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - anviet_crm_postgres:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    image: postgres:17-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-anviet_crm}
+      POSTGRES_USER: ${POSTGRES_USER:-anviet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-anviet_dev_password}
+    volumes:
+      - ./database/migrations:/migrations:ro
+    command:
+      - sh
+      - -ec
+      - |
+        for file in /migrations/*.sql; do
+          [ -f "$$file" ] || continue
+          psql -v ON_ERROR_STOP=1 -h postgres -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -f "$$file"
+        done
+    restart: "no"
+
+volumes:
+  anviet_crm_postgres:

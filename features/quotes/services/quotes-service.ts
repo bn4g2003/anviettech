@@ -1,119 +1,109 @@
-import type { Quote, QuoteInput, QuoteLine } from "@/features/quotes/types";
-import { productsService } from "@/features/products/services/products-service";
-import { crmRepository } from "@/features/shared/repository/crm-repository";
-import { createId } from "@/features/shared/utils/id";
-import { nowIso } from "@/features/shared/utils/date";
-import { calcLineTotal, sumAmounts } from "@/features/shared/utils/money";
+import { apiFetch, toQuery } from "@/lib/api-client";
+import type { Quote, QuoteInput, QuoteStatus } from "@/features/quotes/types";
+import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
-function nextCode(rows: Quote[]): string {
-  const max = rows.reduce((acc, r) => {
-    const n = Number(r.code.replace(/\D/g, ""));
-    return Number.isFinite(n) ? Math.max(acc, n) : acc;
-  }, 0);
-  return `BG-${String(max + 1).padStart(4, "0")}`;
-}
+type ApiQuote = {
+  id: string; code: string; customerId: string; dealId?: string | null; status: QuoteStatus;
+  validUntil?: string | null; ownerId?: string | null; terms?: string | null;
+  subtotal: number | string; total: number | string; createdAt?: string; updatedAt?: string;
+  lines?: { id: string; productId: string; productName: string; qty: number | string; unitPrice: number | string; discountPercent: number | string; vatPercent: number | string; lineTotal: number | string }[];
+};
 
-function buildLines(
-  lines: QuoteInput["lines"],
-): { lines: QuoteLine[]; subtotal: number; total: number } {
-  const built: QuoteLine[] = lines.map((l) => {
-    const product = productsService.getById(l.productId);
-    const productName = product?.name ?? "Sản phẩm";
-    const unitPrice = l.unitPrice ?? product?.unitPrice ?? 0;
-    const vatPercent = l.vatPercent ?? product?.vatPercent ?? 0;
-    return {
-      id: createId("ql"),
+async function mapQuote(row: ApiQuote): Promise<Quote> {
+  const owners = await loadOwners();
+  let lines = row.lines;
+  if (!lines) {
+    const full = await apiFetch<ApiQuote>(`/api/v1/quotes/${row.id}`);
+    lines = full.data.lines ?? [];
+  }
+  return {
+    id: row.id,
+    code: row.code,
+    customerId: row.customerId,
+    dealId: row.dealId ?? undefined,
+    status: row.status,
+    validUntil: row.validUntil ?? "",
+    owner: ownerByIdSync(row.ownerId ?? "", owners),
+    terms: row.terms ?? undefined,
+    subtotal: Number(row.subtotal),
+    total: Number(row.total),
+    lines: (lines ?? []).map((l) => ({
+      id: l.id,
       productId: l.productId,
-      productName,
-      qty: l.qty,
-      unitPrice,
-      discountPercent: l.discountPercent ?? 0,
-      vatPercent,
-      lineTotal: calcLineTotal(l.qty, unitPrice, l.discountPercent ?? 0, vatPercent),
-    };
-  });
-  const subtotal = sumAmounts(built.map((l) => l.qty * l.unitPrice));
-  const total = sumAmounts(built.map((l) => l.lineTotal));
-  return { lines: built, subtotal, total };
+      productName: l.productName,
+      qty: Number(l.qty),
+      unitPrice: Number(l.unitPrice),
+      discountPercent: Number(l.discountPercent),
+      vatPercent: Number(l.vatPercent),
+      lineTotal: Number(l.lineTotal),
+    })),
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 export const quotesService = {
-  list(): Quote[] {
-    return crmRepository.listQuotes();
+  async list(params?: { search?: string; status?: string; customerId?: string }) {
+    const result = await apiFetch<ApiQuote[]>(`/api/v1/quotes${toQuery({ ...params, pageSize: 100 })}`);
+    return Promise.all((result.data ?? []).map(mapQuote));
   },
-
-  getById(id: string): Quote | undefined {
-    return crmRepository.listQuotes().find((q) => q.id === id);
+  async getById(id: string) {
+    const result = await apiFetch<ApiQuote>(`/api/v1/quotes/${id}`);
+    return mapQuote(result.data);
   },
-
-  byCustomer(customerId: string): Quote[] {
-    return crmRepository.listQuotes().filter((q) => q.customerId === customerId);
-  },
-
-  search(query: string, filters?: { status?: string; customerId?: string }) {
-    const q = query.trim().toLowerCase();
-    return crmRepository.listQuotes().filter((row) => {
-      if (filters?.status && row.status !== filters.status) return false;
-      if (filters?.customerId && row.customerId !== filters.customerId) return false;
-      if (!q) return true;
-      return row.code.toLowerCase().includes(q);
+  async create(input: QuoteInput) {
+    const result = await apiFetch<ApiQuote>("/api/v1/quotes", {
+      method: "POST",
+      body: JSON.stringify({
+        customerId: input.customerId,
+        dealId: input.dealId,
+        validUntil: input.validUntil || undefined,
+        ownerId: input.owner?.id,
+        terms: input.terms,
+        lines: input.lines.map((l) => ({
+          productId: l.productId,
+          qty: l.qty,
+          unitPrice: l.unitPrice,
+          discountPercent: l.discountPercent,
+          vatPercent: l.vatPercent,
+        })),
+      }),
     });
+    if (input.status === "sent") await apiFetch(`/api/v1/quotes/${result.data.id}/send`, { method: "POST" });
+    return this.getById(result.data.id);
   },
-
-  create(input: QuoteInput): Quote {
-    const rows = crmRepository.listQuotes();
-    const now = nowIso();
-    const { lines, subtotal, total } = buildLines(input.lines);
-    const row: Quote = {
-      customerId: input.customerId,
-      dealId: input.dealId,
-      status: input.status,
-      validUntil: input.validUntil,
-      owner: input.owner,
-      terms: input.terms,
-      id: createId("quote"),
-      code: input.code ?? nextCode(rows),
-      lines,
-      subtotal,
-      total,
-      createdAt: now,
-      updatedAt: now,
-    };
-    crmRepository.saveQuotes([row, ...rows]);
-    return row;
+  async update(id: string, patch: Partial<QuoteInput>) {
+    if (patch.lines || patch.terms !== undefined || patch.validUntil !== undefined || patch.dealId !== undefined) {
+      await apiFetch(`/api/v1/quotes/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          validUntil: patch.validUntil,
+          terms: patch.terms,
+          dealId: patch.dealId,
+          lines: patch.lines?.map((l) => ({
+            productId: l.productId,
+            qty: l.qty,
+            unitPrice: l.unitPrice,
+            discountPercent: l.discountPercent,
+            vatPercent: l.vatPercent,
+          })),
+        }),
+      });
+    }
+    if (patch.status === "sent") await apiFetch(`/api/v1/quotes/${id}/send`, { method: "POST" });
+    if (patch.status === "rejected") await apiFetch(`/api/v1/quotes/${id}/reject`, { method: "POST" });
+    return this.getById(id);
   },
-
-  update(id: string, patch: Partial<QuoteInput>): Quote {
-    const rows = crmRepository.listQuotes();
-    const idx = rows.findIndex((q) => q.id === id);
-    if (idx < 0) throw new Error("Không tìm thấy báo giá");
-    const current = rows[idx];
-    const built = patch.lines ? buildLines(patch.lines) : null;
-    const next: Quote = {
-      ...current,
-      customerId: patch.customerId ?? current.customerId,
-      dealId: patch.dealId ?? current.dealId,
-      status: patch.status ?? current.status,
-      validUntil: patch.validUntil ?? current.validUntil,
-      owner: patch.owner ?? current.owner,
-      terms: patch.terms ?? current.terms,
-      lines: built?.lines ?? current.lines,
-      subtotal: built?.subtotal ?? current.subtotal,
-      total: built?.total ?? current.total,
-      updatedAt: nowIso(),
-    };
-    const copy = [...rows];
-    copy[idx] = next;
-    crmRepository.saveQuotes(copy);
-    return next;
+  async remove(id: string) {
+    await apiFetch(`/api/v1/quotes/${id}`, { method: "DELETE" });
   },
-
-  remove(id: string): void {
-    crmRepository.saveQuotes(crmRepository.listQuotes().filter((q) => q.id !== id));
+  async removeMany(ids: string[]) {
+    await Promise.all(ids.map((id) => this.remove(id)));
   },
-
-  removeMany(ids: string[]): void {
-    const set = new Set(ids);
-    crmRepository.saveQuotes(crmRepository.listQuotes().filter((q) => !set.has(q.id)));
+  async approve(id: string) {
+    return apiFetch<{ contractId: string; orderId: string }>(`/api/v1/quotes/${id}/approve`, { method: "POST" });
+  },
+  async send(id: string) {
+    return apiFetch(`/api/v1/quotes/${id}/send`, { method: "POST" });
   },
 };

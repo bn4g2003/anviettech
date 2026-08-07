@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useOrders } from "@/features/orders/hooks/use-orders";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useQuotes } from "@/features/quotes/hooks/use-quotes";
+import { inventoryService } from "@/features/inventory/services/inventory-service";
 import type { Order } from "@/features/orders/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
@@ -18,7 +19,7 @@ import { OrderStatusBadge } from "./order-status";
 
 export function OrdersTable() {
   const list = useListPage();
-  const { rows, removeMany, confirm } = useOrders({
+  const { rows, confirm } = useOrders({
     query: list.query,
     status: list.filters.status,
   });
@@ -49,13 +50,16 @@ export function OrdersTable() {
 
   const pageRows = list.paginate(sorted);
 
-  function handleConfirm(id: string) {
+  async function handleConfirm(id: string) {
     try {
-      const result = confirm(id);
-      toast(
-        `Đã xác nhận ${result.order.code} — phiếu xuất & hóa đơn đã tạo`,
-        "success",
-      );
+      const warehouses = await inventoryService.listWarehouses();
+      const warehouseId = warehouses.find((w) => w.isDefault)?.id ?? warehouses[0]?.id;
+      if (!warehouseId) {
+        toast("Chưa có kho mặc định", "error");
+        return;
+      }
+      await confirm(id, warehouseId);
+      toast("Đã xác nhận đơn — phiếu xuất & hóa đơn đã tạo", "success");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Lỗi xác nhận đơn", "error");
     }
@@ -115,7 +119,6 @@ export function OrdersTable() {
       cell: (r) => (
         <RowActions
           onView={() => list.setViewId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
           extra={
             r.status === "draft" ? (
               <Button
@@ -140,27 +143,9 @@ export function OrdersTable() {
 
   return (
     <>
-      {list.selectedIds.length > 0 ? (
-        <div className="flex h-9 items-center gap-2 border-b border-border bg-amber-50 px-3 text-xs">
-          <span>Đã chọn {list.selectedIds.length}</span>
-          <button
-            type="button"
-            className="font-medium text-danger underline"
-            onClick={() => {
-              removeMany(list.selectedIds);
-              list.clearSelection();
-            }}
-          >
-            Xóa đã chọn
-          </button>
-        </div>
-      ) : null}
       <DataGrid
         columns={columns}
         rows={pageRows}
-        selectedIds={list.selectedIds}
-        onToggleSelect={list.toggleSelect}
-        onToggleSelectAll={() => list.toggleSelectAll(pageRows.map((r) => r.id))}
         onRowClick={(r) => list.setViewId(r.id)}
         sortKey={list.sortKey}
         sortDir={list.sortDir}

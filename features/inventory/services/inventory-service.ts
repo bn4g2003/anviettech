@@ -1,91 +1,107 @@
+import { apiFetch, toQuery } from "@/lib/api-client";
 import type { StockLevel, StockMove, StockMoveInput } from "@/features/inventory/types";
-import { productsService } from "@/features/products/services/products-service";
-import { crmRepository } from "@/features/shared/repository/crm-repository";
-import { createId } from "@/features/shared/utils/id";
-import { nowIso } from "@/features/shared/utils/date";
+import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
-function nextCode(type: StockMove["type"], rows: StockMove[]): string {
-  const prefix = type === "in" ? "PN" : type === "out" ? "PX" : "DC";
-  const max = rows
-    .filter((r) => r.code.startsWith(prefix))
-    .reduce((acc, r) => {
-      const n = Number(r.code.replace(/\D/g, ""));
-      return Number.isFinite(n) ? Math.max(acc, n) : acc;
-    }, 0);
-  return `${prefix}-${String(max + 1).padStart(4, "0")}`;
+type ApiBalance = {
+  warehouseId: string; productId: string; sku: string; productName: string;
+  minStock: number | string; qty: number | string; belowMin: boolean;
+};
+
+type ApiMove = {
+  id: string; code: string; type: string; status: string; orderId?: string | null;
+  warehouseFromId?: string | null; warehouseToId?: string | null; ownerId?: string | null;
+  note?: string | null; postedAt?: string | null; createdAt?: string; updatedAt?: string;
+  lines?: { id: string; productId: string; productName: string; qty: number | string }[];
+};
+
+async function mapMove(row: ApiMove): Promise<StockMove> {
+  const owners = await loadOwners();
+  return {
+    id: row.id,
+    code: row.code,
+    type: row.type as StockMove["type"],
+    status: row.status as StockMove["status"],
+    orderId: row.orderId ?? undefined,
+    warehouseFrom: row.warehouseFromId ?? undefined,
+    warehouseTo: row.warehouseToId ?? undefined,
+    owner: ownerByIdSync(row.ownerId ?? "", owners),
+    note: row.note ?? undefined,
+    lines: (row.lines ?? []).map((l) => ({
+      id: l.id,
+      productId: l.productId,
+      productName: l.productName,
+      qty: Number(l.qty),
+    })),
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 export const inventoryService = {
-  listLevels(): StockLevel[] {
-    return crmRepository.listStockLevels();
-  },
-
-  getQty(productId: string): number {
-    return crmRepository.listStockLevels().find((s) => s.productId === productId)?.qty ?? 0;
-  },
-
-  listMoves(): StockMove[] {
-    return crmRepository.listStockMoves();
-  },
-
-  lowStock() {
-    return crmRepository.listStockLevels().filter((s) => {
-      const product = productsService.getById(s.productId);
-      if (!product || product.minStock <= 0) return false;
-      return s.qty < product.minStock;
-    });
-  },
-
-  createMove(input: StockMoveInput): StockMove {
-    const rows = crmRepository.listStockMoves();
-    const now = nowIso();
-    const lines = input.lines.map((l) => ({
-      id: createId("sml"),
-      productId: l.productId,
-      productName: productsService.getById(l.productId)?.name ?? "SP",
-      qty: l.qty,
-    }));
-    const row: StockMove = {
-      ...input,
-      id: createId("sm"),
-      code: input.code ?? nextCode(input.type, rows),
-      lines,
-      createdAt: now,
-      updatedAt: now,
-    };
-    crmRepository.saveStockMoves([row, ...rows]);
-    if (row.status === "posted") this.applyMove(row);
-    return row;
-  },
-
-  postMove(id: string): StockMove {
-    const rows = crmRepository.listStockMoves();
-    const idx = rows.findIndex((m) => m.id === id);
-    if (idx < 0) throw new Error("Không tìm thấy phiếu kho");
-    if (rows[idx].status === "posted") return rows[idx];
-    const next = { ...rows[idx], status: "posted" as const, updatedAt: nowIso() };
-    const copy = [...rows];
-    copy[idx] = next;
-    crmRepository.saveStockMoves(copy);
-    this.applyMove(next);
-    return next;
-  },
-
-  applyMove(move: StockMove): void {
-    const levels = [...crmRepository.listStockLevels()];
-    for (const line of move.lines) {
-      const idx = levels.findIndex((l) => l.productId === line.productId);
-      const current = idx >= 0 ? levels[idx].qty : 0;
-      let nextQty = current;
-      if (move.type === "in") nextQty = current + line.qty;
-      if (move.type === "out") nextQty = Math.max(0, current - line.qty);
-      if (idx >= 0) levels[idx] = { productId: line.productId, qty: nextQty };
-      else levels.push({ productId: line.productId, qty: nextQty });
+  async listLevels(): Promise<(StockLevel & { minStock?: number; belowMin?: boolean; productName?: string })[]> {
+    const result = await apiFetch<ApiBalance[]>("/api/v1/inventory/balances");
+    const byProduct = new Map<string, number>();
+    const meta = new Map<string, { minStock: number; belowMin: boolean; productName: string }>();
+    for (const row of result.data ?? []) {
+      byProduct.set(row.productId, (byProduct.get(row.productId) ?? 0) + Number(row.qty));
+      meta.set(row.productId, {
+        minStock: Number(row.minStock),
+        belowMin: Boolean(row.belowMin),
+        productName: row.productName,
+      });
     }
-    crmRepository.saveStockLevels(levels);
+    return [...byProduct.entries()].map(([productId, qty]) => ({
+      productId,
+      qty,
+      ...meta.get(productId),
+    }));
   },
-
-  removeMove(id: string): void {
-    crmRepository.saveStockMoves(crmRepository.listStockMoves().filter((m) => m.id !== id));
+  async listMoves() {
+    const result = await apiFetch<ApiMove[]>(`/api/v1/stock-moves${toQuery({ pageSize: 100 })}`);
+    return Promise.all(
+      (result.data ?? []).map(async (m) => {
+        const full = await apiFetch<ApiMove>(`/api/v1/stock-moves/${m.id}`);
+        return mapMove(full.data);
+      }),
+    );
+  },
+  async listWarehouses() {
+    const result = await apiFetch<{ id: string; code: string; name: string; isDefault: boolean }[]>(
+      `/api/v1/warehouses${toQuery({ pageSize: 50 })}`,
+    );
+    return result.data ?? [];
+  },
+  async createMove(input: StockMoveInput) {
+    const warehouses = await this.listWarehouses();
+    const defaultWh = warehouses.find((w) => w.isDefault) ?? warehouses[0];
+    const findWh = (nameOrId?: string) =>
+      warehouses.find((w) => w.id === nameOrId || w.name === nameOrId || w.code === nameOrId)?.id ?? defaultWh?.id;
+    const result = await apiFetch<ApiMove>("/api/v1/stock-moves", {
+      method: "POST",
+      body: JSON.stringify({
+        type: input.type,
+        warehouseFromId: input.type !== "in" ? findWh(input.warehouseFrom) : undefined,
+        warehouseToId: input.type !== "out" ? findWh(input.warehouseTo) : undefined,
+        note: input.note,
+        post: input.status === "posted",
+        lines: input.lines.map((l) => ({ productId: l.productId, qty: l.qty })),
+      }),
+    });
+    return mapMove(result.data);
+  },
+  async postMove(id: string) {
+    const result = await apiFetch<ApiMove>(`/api/v1/stock-moves/${id}/post`, { method: "POST" });
+    return mapMove(result.data);
+  },
+  async removeMove(id: string) {
+    await apiFetch(`/api/v1/stock-moves/${id}`, { method: "DELETE" });
+  },
+  async getQty(productId: string) {
+    const levels = await this.listLevels();
+    return levels.find((l) => l.productId === productId)?.qty ?? 0;
+  },
+  async lowStock() {
+    const levels = await this.listLevels();
+    return levels.filter((l) => l.belowMin);
   },
 };

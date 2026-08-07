@@ -1,7 +1,6 @@
 "use client";
 
 import { ListPageProvider } from "@/features/shared/hooks/use-list-page";
-import { CampaignDeleteDialog } from "./_components/campaign-delete-dialog";
 import { CampaignDetailDrawer } from "./_components/campaign-detail-drawer";
 import { CampaignFormDialog } from "./_components/campaign-form-dialog";
 import { CampaignsTable } from "./_components/campaigns-table";
@@ -31,7 +30,6 @@ export default function MarketingPage() {
         <CampaignsTable />
         <CampaignFormDialog />
         <CampaignDetailDrawer />
-        <CampaignDeleteDialog />
       </div>
     </ListPageProvider>
   );

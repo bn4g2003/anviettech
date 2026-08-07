@@ -1,35 +1,73 @@
 "use client";
 
-import { useMemo } from "react";
-import { useCrmStore } from "@/features/shared/store/crm-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { tasksService } from "@/features/tasks/services/tasks-service";
-import type { TaskInput } from "@/features/tasks/types";
+import type { Task, TaskInput } from "@/features/tasks/types";
+
+function viewToDue(view?: string) {
+  if (view === "today" || view === "overdue" || view === "upcoming") return view;
+  return undefined;
+}
 
 export function useTasks(filters?: {
   query?: string;
   status?: string;
-  type?: string;
   ownerId?: string;
+  customerId?: string;
+  type?: string;
   view?: string;
+  scope?: string;
 }) {
-  const tasks = useCrmStore((s) => s.tasks);
+  const [rows, setRows] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const rows = useMemo(() => {
-    return tasksService.search(filters?.query ?? "", {
-      status: filters?.status || undefined,
-      type: filters?.type || undefined,
-      ownerId: filters?.ownerId || undefined,
-      view: filters?.view || undefined,
-    });
-  }, [tasks, filters?.query, filters?.status, filters?.type, filters?.ownerId, filters?.view]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await tasksService.list({
+        search: filters?.query,
+        status: filters?.status,
+        ownerId: filters?.ownerId,
+        customerId: filters?.customerId,
+        type: filters?.type,
+        due: viewToDue(filters?.view),
+        scope: filters?.scope === "my" || filters?.view === "my" ? "my" : undefined,
+      });
+      setRows(list);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters?.query, filters?.status, filters?.ownerId, filters?.customerId, filters?.type, filters?.view, filters?.scope]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return {
     rows,
-    all: tasks,
-    create: (input: TaskInput) => tasksService.create(input),
-    update: (id: string, patch: Partial<TaskInput>) => tasksService.update(id, patch),
-    remove: (id: string) => tasksService.remove(id),
-    removeMany: (ids: string[]) => tasksService.removeMany(ids),
-    getById: (id: string) => tasksService.getById(id),
+    all: rows,
+    loading,
+    reload,
+    getById: (id: string) => byId.get(id),
+    create: async (input: TaskInput) => {
+      const row = await tasksService.create(input);
+      await reload();
+      return row;
+    },
+    update: async (id: string, patch: Partial<TaskInput>) => {
+      const row = await tasksService.update(id, patch);
+      await reload();
+      return row;
+    },
+    remove: async (id: string) => {
+      await tasksService.remove(id);
+      await reload();
+    },
+    removeMany: async (ids: string[]) => {
+      await tasksService.removeMany(ids);
+      await reload();
+    },
   };
 }

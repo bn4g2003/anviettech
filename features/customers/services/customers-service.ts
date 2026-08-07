@@ -1,72 +1,102 @@
+import { apiFetch, toQuery } from "@/lib/api-client";
 import type { Customer, CustomerInput } from "@/features/customers/types";
-import { crmRepository } from "@/features/shared/repository/crm-repository";
-import { createId } from "@/features/shared/utils/id";
-import { nowIso } from "@/features/shared/utils/date";
+import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
-function nextCode(rows: Customer[]): string {
-  const max = rows.reduce((acc, r) => {
-    const n = Number(r.code.replace(/\D/g, ""));
-    return Number.isFinite(n) ? Math.max(acc, n) : acc;
-  }, 0);
-  return `KH-${String(max + 1).padStart(4, "0")}`;
+type ApiCustomer = {
+  id: string;
+  code: string;
+  name: string;
+  type: "company" | "individual";
+  status: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  source?: string | null;
+  ownerId?: string | null;
+  campaignId?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+async function mapCustomer(row: ApiCustomer): Promise<Customer> {
+  const owners = await loadOwners();
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    type: row.type,
+    status: (row.status as Customer["status"]) || "active",
+    email: row.email ?? "",
+    phone: row.phone ?? "",
+    address: row.address ?? "",
+    source: row.source ?? "",
+    owner: ownerByIdSync(row.ownerId ?? "", owners),
+    campaignId: row.campaignId ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 export const customersService = {
-  list(): Customer[] {
-    return crmRepository.listCustomers();
+  async list(params?: { search?: string; status?: string; ownerId?: string; page?: number; pageSize?: number }) {
+    const result = await apiFetch<ApiCustomer[]>(`/api/v1/customers${toQuery({ ...params, page: params?.page ?? 1, pageSize: params?.pageSize ?? 100 })}`);
+    return Promise.all((result.data ?? []).map(mapCustomer));
   },
 
-  getById(id: string): Customer | undefined {
-    return crmRepository.listCustomers().find((c) => c.id === id);
+  async getById(id: string) {
+    const result = await apiFetch<ApiCustomer>(`/api/v1/customers/${id}`);
+    return mapCustomer(result.data);
   },
 
-  search(query: string, filters?: { status?: string; type?: string; ownerId?: string }) {
-    const q = query.trim().toLowerCase();
-    return crmRepository.listCustomers().filter((c) => {
-      if (filters?.status && c.status !== filters.status) return false;
-      if (filters?.type && c.type !== filters.type) return false;
-      if (filters?.ownerId && c.owner.id !== filters.ownerId) return false;
-      if (!q) return true;
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.code.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.phone.includes(q)
-      );
+  async create(input: CustomerInput) {
+    const result = await apiFetch<ApiCustomer>("/api/v1/customers", {
+      method: "POST",
+      body: JSON.stringify({
+        name: input.name,
+        type: input.type,
+        email: input.email,
+        phone: input.phone,
+        address: input.address,
+        source: input.source,
+        ownerId: input.owner?.id,
+        notes: input.notes,
+        campaignId: input.campaignId,
+      }),
     });
+    return mapCustomer(result.data);
   },
 
-  create(input: CustomerInput): Customer {
-    const rows = crmRepository.listCustomers();
-    const now = nowIso();
-    const row: Customer = {
-      ...input,
-      id: createId("cus"),
-      code: input.code ?? nextCode(rows),
-      createdAt: now,
-      updatedAt: now,
-    };
-    crmRepository.saveCustomers([row, ...rows]);
-    return row;
+  async update(id: string, patch: Partial<CustomerInput>) {
+    const result = await apiFetch<ApiCustomer>(`/api/v1/customers/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: patch.name,
+        type: patch.type,
+        email: patch.email,
+        phone: patch.phone,
+        address: patch.address,
+        source: patch.source,
+        ownerId: patch.owner?.id,
+        notes: patch.notes,
+        status: patch.status,
+        campaignId: patch.campaignId,
+      }),
+    });
+    return mapCustomer(result.data);
   },
 
-  update(id: string, patch: Partial<CustomerInput>): Customer {
-    const rows = crmRepository.listCustomers();
-    const idx = rows.findIndex((c) => c.id === id);
-    if (idx < 0) throw new Error("Không tìm thấy khách hàng");
-    const next = { ...rows[idx], ...patch, updatedAt: nowIso() };
-    const copy = [...rows];
-    copy[idx] = next;
-    crmRepository.saveCustomers(copy);
-    return next;
+  async remove(id: string) {
+    await apiFetch(`/api/v1/customers/${id}`, { method: "DELETE" });
   },
 
-  remove(id: string): void {
-    crmRepository.saveCustomers(crmRepository.listCustomers().filter((c) => c.id !== id));
+  async removeMany(ids: string[]) {
+    await Promise.all(ids.map((id) => this.remove(id)));
   },
 
-  removeMany(ids: string[]): void {
-    const set = new Set(ids);
-    crmRepository.saveCustomers(crmRepository.listCustomers().filter((c) => !set.has(c.id)));
+  async getWorkspace(id: string) {
+    const result = await apiFetch<Record<string, unknown>>(`/api/v1/customers/${id}/workspace`);
+    return result.data;
   },
 };

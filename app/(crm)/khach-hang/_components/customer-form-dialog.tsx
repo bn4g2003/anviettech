@@ -4,7 +4,8 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { OwnerLookup, ownerById } from "@/components/lookups/owner-lookup";
+import { OwnerLookup } from "@/components/lookups/owner-lookup";
+import { useOwners } from "@/features/shared/api/owners";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
@@ -17,7 +18,7 @@ const empty = {
   phone: "",
   email: "",
   address: "",
-  ownerId: "u1",
+  ownerId: "",
   source: "Cold call",
   status: "active" as CustomerStatus,
   contactName: "",
@@ -27,10 +28,12 @@ const empty = {
 export function CustomerFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useCustomers();
+  const owners = useOwners();
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
   const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (editing) {
@@ -47,41 +50,49 @@ export function CustomerFormDialog() {
         notes: editing.notes ?? "",
       });
     } else if (list.createOpen) {
-      setForm(empty);
+      setForm({ ...empty, ownerId: owners[0]?.id ?? "" });
     }
-  }, [editing, list.createOpen]);
+  }, [editing, list.createOpen, owners]);
 
   function close() {
     list.setCreateOpen(false);
     list.setEditId(null);
   }
 
-  function save() {
+  async function save() {
     if (!form.name.trim()) {
       toast("Vui lòng nhập tên", "error");
       return;
     }
+    const owner = owners.find((o) => o.id === form.ownerId) ?? { id: form.ownerId, name: "—" };
     const payload = {
       name: form.name,
       type: form.type,
       phone: form.phone,
       email: form.email,
       address: form.address,
-      owner: ownerById(form.ownerId),
+      owner,
       source: form.source,
-      status: form.status,
+      status: form.status === "lead" ? ("active" as CustomerStatus) : form.status,
       contactName: form.contactName,
       notes: form.notes,
       logoColor: editing?.logoColor ?? "#374151",
     };
-    if (editing) {
-      update(editing.id, payload);
-      toast("Đã cập nhật khách hàng", "success");
-    } else {
-      create(payload);
-      toast("Đã tạo khách hàng", "success");
+    setSaving(true);
+    try {
+      if (editing) {
+        await update(editing.id, payload);
+        toast("Đã cập nhật khách hàng", "success");
+      } else {
+        await create(payload);
+        toast("Đã tạo khách hàng", "success");
+      }
+      close();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Không thể lưu", "error");
+    } finally {
+      setSaving(false);
     }
-    close();
   }
 
   return (
@@ -95,8 +106,8 @@ export function CustomerFormDialog() {
           <Button variant="outline" onClick={close}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={save}>
-            Lưu
+          <Button variant="primary" onClick={() => void save()} disabled={saving}>
+            {saving ? "Đang lưu..." : "Lưu"}
           </Button>
         </>
       }

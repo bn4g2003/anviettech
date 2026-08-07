@@ -10,6 +10,8 @@ import {
   Megaphone,
   Package,
   Receipt,
+  Settings,
+  Target,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +29,7 @@ export type PublicView = {
 };
 
 export const MAIN_NAV: NavItem[] = [
+  { href: "/tiem-nang", label: "Tiềm năng", icon: Target },
   { href: "/khach-hang", label: "Khách hàng", icon: Users },
   { href: "/co-hoi", label: "Cơ hội", icon: Briefcase },
   { href: "/cong-viec", label: "Công việc", icon: CalendarDays },
@@ -37,6 +40,7 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/tai-chinh", label: "Tài chính", icon: Receipt },
   { href: "/marketing", label: "Marketing", icon: Megaphone },
   { href: "/phan-tich", label: "Phân tích HĐKD", icon: BarChart3 },
+  { href: "/cai-dat/nguoi-dung", label: "Cài đặt", icon: Settings },
 ];
 
 export const PUBLIC_VIEWS: PublicView[] = [

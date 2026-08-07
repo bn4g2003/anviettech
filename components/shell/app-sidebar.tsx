@@ -1,15 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
-import { resetDemoData } from "@/features/shared/workflows/reset-demo";
 import { cn } from "@/lib/cn";
 import {
   CheckCircle2,
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
-  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,7 +19,6 @@ type AppSidebarProps = {
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
-  const { toast } = useToast();
 
   return (
     <aside
@@ -108,19 +104,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       </nav>
 
       <div className="space-y-1 border-t border-border p-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn("w-full", collapsed ? "justify-center" : "justify-start")}
-          title="Khôi phục dữ liệu demo"
-          onClick={() => {
-            resetDemoData();
-            toast("Đã khôi phục dữ liệu demo", "success");
-          }}
-        >
-          <RotateCcw className="h-4 w-4" />
-          {!collapsed ? "Reset demo" : null}
-        </Button>
         <a
           href={HELP_ITEM.href}
           className={cn(

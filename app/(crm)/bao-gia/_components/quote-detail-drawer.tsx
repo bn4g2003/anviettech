@@ -51,18 +51,12 @@ export function QuoteDetailDrawer() {
             <Button
               variant="primary"
               onClick={() => {
-                try {
-                  const result = approve(quote.id);
-                  toast(
-                    `Đã duyệt — tạo HĐ ${result.contract.code}${
-                      result.order ? ` & ĐH ${result.order.code}` : ""
-                    }`,
-                    "success",
-                  );
-                  list.setViewId(null);
-                } catch (e) {
-                  toast(e instanceof Error ? e.message : "Lỗi duyệt báo giá", "error");
-                }
+                void Promise.resolve(approve(quote.id))
+                  .then(() => {
+                    toast("Đã duyệt — đã tạo hợp đồng & đơn nháp", "success");
+                    list.setViewId(null);
+                  })
+                  .catch((e) => toast(e instanceof Error ? e.message : "Lỗi duyệt báo giá", "error"));
               }}
             >
               Duyệt báo giá

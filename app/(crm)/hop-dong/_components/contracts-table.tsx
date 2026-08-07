@@ -19,7 +19,7 @@ import { ContractStatusBadge } from "./contract-status";
 export function ContractsTable() {
   const list = useListPage();
   const router = useRouter();
-  const { rows, removeMany } = useContracts({
+  const { rows } = useContracts({
     query: list.query,
     status: list.filters.status,
     customerId: list.filters.customerId,
@@ -111,11 +111,7 @@ export function ContractsTable() {
       header: "Thao tác",
       sticky: "right",
       cell: (r) => (
-        <RowActions
-          onView={() => router.push(`/hop-dong/${r.id}`)}
-          onEdit={() => list.setEditId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
-        />
+        <RowActions onView={() => router.push(`/hop-dong/${r.id}`)} />
       ),
     },
   ];
@@ -124,27 +120,9 @@ export function ContractsTable() {
 
   return (
     <>
-      {list.selectedIds.length > 0 ? (
-        <div className="flex h-9 items-center gap-2 border-b border-border bg-amber-50 px-3 text-xs">
-          <span>Đã chọn {list.selectedIds.length}</span>
-          <button
-            type="button"
-            className="font-medium text-danger underline"
-            onClick={() => {
-              removeMany(list.selectedIds);
-              list.clearSelection();
-            }}
-          >
-            Xóa đã chọn
-          </button>
-        </div>
-      ) : null}
       <DataGrid
         columns={columns}
         rows={pageRows}
-        selectedIds={list.selectedIds}
-        onToggleSelect={list.toggleSelect}
-        onToggleSelectAll={() => list.toggleSelectAll(pageRows.map((r) => r.id))}
         onRowClick={(r) => router.push(`/hop-dong/${r.id}`)}
         sortKey={list.sortKey}
         sortDir={list.sortDir}
@@ -153,7 +131,7 @@ export function ContractsTable() {
           <EmptyState
             icon={Handshake}
             title="Không có hợp đồng"
-            description="Thử đổi bộ lọc hoặc tạo hợp đồng mới."
+            description="Hợp đồng được tạo tự động khi duyệt báo giá."
           />
         }
       />

@@ -1,59 +1,60 @@
+import { apiFetch, toQuery } from "@/lib/api-client";
 import type { Product, ProductInput } from "@/features/products/types";
-import { crmRepository } from "@/features/shared/repository/crm-repository";
-import { createId } from "@/features/shared/utils/id";
-import { nowIso } from "@/features/shared/utils/date";
+
+type ApiProduct = {
+  id: string; sku: string; name: string; category?: string | null; unit: string;
+  unitPrice: number | string; vatPercent: number | string; minStock: number | string;
+  status: string; description?: string | null; createdAt?: string; updatedAt?: string;
+};
+
+function mapProduct(row: ApiProduct): Product {
+  return {
+    id: row.id,
+    sku: row.sku,
+    name: row.name,
+    category: row.category ?? "",
+    unit: row.unit,
+    unitPrice: Number(row.unitPrice),
+    vatPercent: Number(row.vatPercent),
+    minStock: Number(row.minStock),
+    status: (row.status as Product["status"]) || "active",
+    description: row.description ?? undefined,
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  };
+}
 
 export const productsService = {
-  list(): Product[] {
-    return crmRepository.listProducts();
+  async list(params?: { search?: string; status?: string }) {
+    const result = await apiFetch<ApiProduct[]>(`/api/v1/products${toQuery({ ...params, pageSize: 100 })}`);
+    return (result.data ?? []).map(mapProduct);
   },
-
-  getById(id: string): Product | undefined {
-    return crmRepository.listProducts().find((p) => p.id === id);
+  async getById(id: string) {
+    const list = await this.list();
+    return list.find((p) => p.id === id);
   },
-
-  search(query: string, filters?: { category?: string; status?: string }) {
-    const q = query.trim().toLowerCase();
-    return crmRepository.listProducts().filter((p) => {
-      if (filters?.category && p.category !== filters.category) return false;
-      if (filters?.status && p.status !== filters.status) return false;
-      if (!q) return true;
-      return (
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
-      );
+  async create(input: ProductInput) {
+    const result = await apiFetch<ApiProduct>("/api/v1/products", {
+      method: "POST",
+      body: JSON.stringify(input),
     });
+    return mapProduct(result.data);
   },
-
-  create(input: ProductInput): Product {
-    const now = nowIso();
-    const row: Product = { ...input, id: createId("prd"), createdAt: now, updatedAt: now };
-    crmRepository.saveProducts([row, ...crmRepository.listProducts()]);
-    return row;
+  async update(id: string, patch: Partial<ProductInput>) {
+    const result = await apiFetch<ApiProduct>(`/api/v1/products/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return mapProduct(result.data);
   },
-
-  update(id: string, patch: Partial<ProductInput>): Product {
-    const rows = crmRepository.listProducts();
-    const idx = rows.findIndex((p) => p.id === id);
-    if (idx < 0) throw new Error("Không tìm thấy sản phẩm");
-    const next = { ...rows[idx], ...patch, updatedAt: nowIso() };
-    const copy = [...rows];
-    copy[idx] = next;
-    crmRepository.saveProducts(copy);
-    return next;
+  async remove(id: string) {
+    await apiFetch(`/api/v1/products/${id}`, { method: "DELETE" });
   },
-
-  remove(id: string): void {
-    crmRepository.saveProducts(crmRepository.listProducts().filter((p) => p.id !== id));
+  async removeMany(ids: string[]) {
+    await Promise.all(ids.map((id) => this.remove(id)));
   },
-
-  removeMany(ids: string[]): void {
-    const set = new Set(ids);
-    crmRepository.saveProducts(crmRepository.listProducts().filter((p) => !set.has(p.id)));
-  },
-
-  categories(): string[] {
-    return [...new Set(crmRepository.listProducts().map((p) => p.category))];
+  async categories() {
+    const list = await this.list();
+    return [...new Set(list.map((p) => p.category).filter(Boolean))];
   },
 };

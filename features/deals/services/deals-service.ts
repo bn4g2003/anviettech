@@ -1,98 +1,87 @@
+import { apiFetch, toQuery } from "@/lib/api-client";
 import type { Deal, DealInput, DealStage } from "@/features/deals/types";
 import { DEAL_STAGE_META } from "@/features/deals/types";
-import { crmRepository } from "@/features/shared/repository/crm-repository";
-import { createId } from "@/features/shared/utils/id";
-import { nowIso, daysFromNow } from "@/features/shared/utils/date";
-import { tasksService } from "@/features/tasks/services/tasks-service";
+import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
-function nextCode(rows: Deal[]): string {
-  const max = rows.reduce((acc, r) => {
-    const n = Number(r.code.replace(/\D/g, ""));
-    return Number.isFinite(n) ? Math.max(acc, n) : acc;
-  }, 0);
-  return `CH-${String(max + 1).padStart(4, "0")}`;
+type ApiDeal = {
+  id: string; code: string; title: string; customerId: string; stage: DealStage; value: number | string;
+  probability: number; expectedCloseDate?: string | null; ownerId?: string | null; notes?: string | null;
+  createdAt?: string; updatedAt?: string;
+};
+
+async function mapDeal(row: ApiDeal): Promise<Deal> {
+  const owners = await loadOwners();
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title,
+    customerId: row.customerId,
+    stage: row.stage,
+    value: Number(row.value),
+    probability: row.probability,
+    expectedCloseDate: row.expectedCloseDate ?? "",
+    owner: ownerByIdSync(row.ownerId ?? "", owners),
+    productIds: [],
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 export const dealsService = {
-  list(): Deal[] {
-    return crmRepository.listDeals();
+  async list(params?: { search?: string; status?: string; ownerId?: string; customerId?: string }) {
+    const result = await apiFetch<ApiDeal[]>(`/api/v1/deals${toQuery({ ...params, pageSize: 100 })}`);
+    return Promise.all((result.data ?? []).map(mapDeal));
   },
-
-  getById(id: string): Deal | undefined {
-    return crmRepository.listDeals().find((d) => d.id === id);
+  async getById(id: string) {
+    const result = await apiFetch<ApiDeal>(`/api/v1/deals/${id}`);
+    return mapDeal(result.data);
   },
-
-  byCustomer(customerId: string): Deal[] {
-    return crmRepository.listDeals().filter((d) => d.customerId === customerId);
-  },
-
-  search(query: string, filters?: { stage?: DealStage; ownerId?: string; customerId?: string }) {
-    const q = query.trim().toLowerCase();
-    return crmRepository.listDeals().filter((d) => {
-      if (filters?.stage && d.stage !== filters.stage) return false;
-      if (filters?.ownerId && d.owner.id !== filters.ownerId) return false;
-      if (filters?.customerId && d.customerId !== filters.customerId) return false;
-      if (!q) return true;
-      return d.title.toLowerCase().includes(q) || d.code.toLowerCase().includes(q);
+  async create(input: DealInput) {
+    const result = await apiFetch<ApiDeal>("/api/v1/deals", {
+      method: "POST",
+      body: JSON.stringify({
+        title: input.title,
+        customerId: input.customerId,
+        value: input.value,
+        expectedCloseDate: input.expectedCloseDate || undefined,
+        ownerId: input.owner?.id,
+        notes: input.notes,
+        productIds: input.productIds,
+        probability: input.probability ?? DEAL_STAGE_META[input.stage]?.probability,
+      }),
     });
-  },
-
-  create(input: DealInput, opts?: { createFollowup?: boolean }): Deal {
-    const rows = crmRepository.listDeals();
-    const now = nowIso();
-    const stage = input.stage;
-    const row: Deal = {
-      ...input,
-      id: createId("deal"),
-      code: input.code ?? nextCode(rows),
-      probability: input.probability ?? DEAL_STAGE_META[stage].probability,
-      createdAt: now,
-      updatedAt: now,
-    };
-    crmRepository.saveDeals([row, ...rows]);
-
-    if (opts?.createFollowup !== false) {
-      tasksService.create({
-        title: `Follow-up: ${row.title}`,
-        type: "followup",
-        status: "open",
-        dueAt: daysFromNow(3),
-        owner: row.owner,
-        customerId: row.customerId,
-        dealId: row.id,
-      });
+    if (input.stage && input.stage !== "new") {
+      await this.setStage(result.data.id, input.stage);
+      return this.getById(result.data.id);
     }
-    return row;
+    return mapDeal(result.data);
   },
-
-  update(id: string, patch: Partial<DealInput>): Deal {
-    const rows = crmRepository.listDeals();
-    const idx = rows.findIndex((d) => d.id === id);
-    if (idx < 0) throw new Error("Không tìm thấy cơ hội");
-    const stage = patch.stage ?? rows[idx].stage;
-    const next: Deal = {
-      ...rows[idx],
-      ...patch,
-      stage,
-      probability: DEAL_STAGE_META[stage].probability,
-      updatedAt: nowIso(),
-    };
-    const copy = [...rows];
-    copy[idx] = next;
-    crmRepository.saveDeals(copy);
-    return next;
+  async update(id: string, patch: Partial<DealInput>) {
+    const result = await apiFetch<ApiDeal>(`/api/v1/deals/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: patch.title,
+        value: patch.value,
+        expectedCloseDate: patch.expectedCloseDate,
+        ownerId: patch.owner?.id,
+        notes: patch.notes,
+        probability: patch.probability,
+      }),
+    });
+    return mapDeal(result.data);
   },
-
-  setStage(id: string, stage: DealStage): Deal {
-    return this.update(id, { stage });
+  async setStage(id: string, stage: DealStage, reason?: string) {
+    const result = await apiFetch<ApiDeal>(`/api/v1/deals/${id}/stage`, {
+      method: "POST",
+      body: JSON.stringify({ stage, reason }),
+    });
+    return mapDeal(result.data);
   },
-
-  remove(id: string): void {
-    crmRepository.saveDeals(crmRepository.listDeals().filter((d) => d.id !== id));
+  async remove(id: string) {
+    await apiFetch(`/api/v1/deals/${id}`, { method: "DELETE" });
   },
-
-  removeMany(ids: string[]): void {
-    const set = new Set(ids);
-    crmRepository.saveDeals(crmRepository.listDeals().filter((d) => !set.has(d.id)));
+  async removeMany(ids: string[]) {
+    await Promise.all(ids.map((id) => this.remove(id)));
   },
 };

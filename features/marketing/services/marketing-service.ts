@@ -1,87 +1,78 @@
+import { apiFetch, toQuery } from "@/lib/api-client";
 import type { Campaign, CampaignInput } from "@/features/marketing/types";
-import { customersService } from "@/features/customers/services/customers-service";
-import { crmRepository } from "@/features/shared/repository/crm-repository";
-import { createId } from "@/features/shared/utils/id";
-import { nowIso } from "@/features/shared/utils/date";
-import type { Customer } from "@/features/customers/types";
+import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
-function nextCode(rows: Campaign[]): string {
-  const max = rows.reduce((acc, r) => {
-    const n = Number(r.code.replace(/\D/g, ""));
-    return Number.isFinite(n) ? Math.max(acc, n) : acc;
-  }, 0);
-  return `MK-${String(max + 1).padStart(4, "0")}`;
+type ApiCampaign = {
+  id: string; code: string; name: string; channel: string; status: string;
+  budget: number | string; spent: number | string; startDate?: string | null; endDate?: string | null;
+  ownerId?: string | null; createdAt?: string; updatedAt?: string;
+};
+
+async function mapCampaign(row: ApiCampaign, leadsCount = 0): Promise<Campaign> {
+  const owners = await loadOwners();
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    channel: row.channel as Campaign["channel"],
+    status: row.status as Campaign["status"],
+    budget: Number(row.budget),
+    spent: Number(row.spent),
+    leadsCount,
+    owner: ownerByIdSync(row.ownerId ?? "", owners),
+    startDate: row.startDate ?? "",
+    endDate: row.endDate ?? "",
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 export const marketingService = {
-  list(): Campaign[] {
-    return crmRepository.listCampaigns();
+  async list(params?: { search?: string; status?: string }) {
+    const result = await apiFetch<ApiCampaign[]>(`/api/v1/campaigns${toQuery({ ...params, pageSize: 100 })}`);
+    return Promise.all(
+      (result.data ?? []).map(async (c) => {
+        try {
+          const stats = await apiFetch<{ leadsCount: number }>(`/api/v1/campaigns/${c.id}/stats`);
+          return mapCampaign(c, stats.data.leadsCount);
+        } catch {
+          return mapCampaign(c, 0);
+        }
+      }),
+    );
   },
-
-  getById(id: string): Campaign | undefined {
-    return crmRepository.listCampaigns().find((c) => c.id === id);
-  },
-
-  search(query: string, filters?: { status?: string; channel?: string }) {
-    const q = query.trim().toLowerCase();
-    return crmRepository.listCampaigns().filter((c) => {
-      if (filters?.status && c.status !== filters.status) return false;
-      if (filters?.channel && c.channel !== filters.channel) return false;
-      if (!q) return true;
-      return c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
+  async create(input: CampaignInput) {
+    const result = await apiFetch<ApiCampaign>("/api/v1/campaigns", {
+      method: "POST",
+      body: JSON.stringify({
+        name: input.name,
+        channel: input.channel,
+        budget: input.budget,
+        startDate: input.startDate || undefined,
+        endDate: input.endDate || undefined,
+        ownerId: input.owner?.id,
+        status: input.status,
+      }),
     });
+    return mapCampaign(result.data, 0);
   },
-
-  create(input: CampaignInput): Campaign {
-    const rows = crmRepository.listCampaigns();
-    const now = nowIso();
-    const row: Campaign = {
-      ...input,
-      id: createId("camp"),
-      code: input.code ?? nextCode(rows),
-      createdAt: now,
-      updatedAt: now,
-    };
-    crmRepository.saveCampaigns([row, ...rows]);
-    return row;
-  },
-
-  update(id: string, patch: Partial<CampaignInput>): Campaign {
-    const rows = crmRepository.listCampaigns();
-    const idx = rows.findIndex((c) => c.id === id);
-    if (idx < 0) throw new Error("Không tìm thấy chiến dịch");
-    const next = { ...rows[idx], ...patch, updatedAt: nowIso() };
-    const copy = [...rows];
-    copy[idx] = next;
-    crmRepository.saveCampaigns(copy);
-    return next;
-  },
-
-  convertLeadToCustomer(
-    campaignId: string,
-    data: Pick<Customer, "name" | "phone" | "email" | "owner"> & Partial<Customer>,
-  ): Customer {
-    const campaign = this.getById(campaignId);
-    const customer = customersService.create({
-      name: data.name,
-      phone: data.phone,
-      email: data.email,
-      owner: data.owner,
-      type: data.type ?? "company",
-      address: data.address ?? "",
-      source: "Marketing",
-      status: "lead",
-      campaignId,
-      contactName: data.contactName,
-      logoColor: data.logoColor ?? "#6366f1",
+  async update(id: string, patch: Partial<CampaignInput>) {
+    const result = await apiFetch<ApiCampaign>(`/api/v1/campaigns/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: patch.name,
+        channel: patch.channel,
+        budget: patch.budget,
+        spent: patch.spent,
+        startDate: patch.startDate,
+        endDate: patch.endDate,
+        status: patch.status,
+        ownerId: patch.owner?.id,
+      }),
     });
-    if (campaign) {
-      this.update(campaignId, { leadsCount: campaign.leadsCount + 1 });
-    }
-    return customer;
+    return mapCampaign(result.data);
   },
-
-  remove(id: string): void {
-    crmRepository.saveCampaigns(crmRepository.listCampaigns().filter((c) => c.id !== id));
+  async remove() {
+    throw new Error("Xóa chiến dịch chưa hỗ trợ — hãy đặt trạng thái completed");
   },
 };

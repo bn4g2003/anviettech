@@ -23,6 +23,7 @@ export function TasksTable() {
     type: list.filters.type,
     ownerId: list.filters.ownerId,
     view: list.filters.view,
+    scope: list.filters.view === "my" ? "my" : undefined,
   });
   const { getById: getCustomer } = useCustomers();
   const { getById: getDeal } = useDeals();

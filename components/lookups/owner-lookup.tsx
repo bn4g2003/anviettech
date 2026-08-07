@@ -1,7 +1,7 @@
 "use client";
 
-import { OWNERS } from "@/features/shared/seed";
 import { Select } from "@/components/ui/select";
+import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type Props = {
   value?: string;
@@ -11,14 +11,11 @@ type Props = {
 };
 
 export function OwnerLookup({ value, onChange, className, allowEmpty = true }: Props) {
+  const owners = useOwners();
   return (
-    <Select
-      className={className}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
+    <Select className={className} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
       {allowEmpty ? <option value="">Người phụ trách</option> : null}
-      {OWNERS.map((o) => (
+      {owners.map((o) => (
         <option key={o.id} value={o.id}>
           {o.name}
         </option>
@@ -28,5 +25,6 @@ export function OwnerLookup({ value, onChange, className, allowEmpty = true }: P
 }
 
 export function ownerById(id: string) {
-  return OWNERS.find((o) => o.id === id) ?? OWNERS[0];
+  // sync fallback for forms; prefer useOwners in components
+  return ownerByIdSync(id, []);
 }

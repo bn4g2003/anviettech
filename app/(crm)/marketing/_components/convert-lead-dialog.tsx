@@ -1,12 +1,15 @@
 "use client";
 
-import { OwnerLookup, ownerById } from "@/components/lookups/owner-lookup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useToast } from "@/components/ui/toast";
 import { useMarketing } from "@/features/marketing/hooks/use-marketing";
+import { useOwners } from "@/features/shared/api/owners";
+import { apiFetch } from "@/lib/api-client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Props = {
   open: boolean;
@@ -14,96 +17,66 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
-const empty = {
-  name: "",
-  phone: "",
-  email: "",
-  ownerId: "u1",
-};
-
 export function ConvertLeadDialog({ open, campaignId, onOpenChange }: Props) {
-  const { convertLead, getById } = useMarketing();
+  const { getById } = useMarketing();
+  const owners = useOwners();
   const { toast } = useToast();
-  const [form, setForm] = useState(empty);
+  const router = useRouter();
+  const [form, setForm] = useState({ name: "", phone: "", email: "", companyName: "", ownerId: "" });
   const campaign = campaignId ? getById(campaignId) : null;
 
   useEffect(() => {
-    if (open) setForm(empty);
-  }, [open, campaignId]);
+    if (open) setForm({ name: "", phone: "", email: "", companyName: "", ownerId: owners[0]?.id ?? "" });
+  }, [open, campaignId, owners]);
 
-  function close() {
-    onOpenChange(false);
-    setForm(empty);
-  }
-
-  function save() {
-    if (!campaignId) return;
-    if (!form.name.trim()) {
-      toast("Vui lòng nhập tên khách hàng", "error");
+  async function save() {
+    if (!campaignId || !form.name.trim()) {
+      toast("Nhập tên liên hệ", "error");
       return;
     }
-    convertLead(campaignId, {
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      owner: ownerById(form.ownerId),
-    });
-    toast("Đã chuyển lead thành khách hàng", "success");
-    close();
+    try {
+      const lead = await apiFetch<{ id: string }>("/api/v1/leads", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name.trim(),
+          companyName: form.companyName || form.name,
+          phone: form.phone,
+          email: form.email,
+          ownerId: form.ownerId || undefined,
+          campaignId,
+          source: "Campaign",
+        }),
+      });
+      toast("Đã tạo lead từ chiến dịch — mở Tiềm năng để chuyển đổi", "success");
+      onOpenChange(false);
+      router.push("/tiem-nang");
+      void lead;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Lỗi", "error");
+    }
   }
 
   return (
     <Modal
       open={open}
-      onOpenChange={(v) => !v && close()}
-      title="Chuyển thành khách hàng"
-      description={
-        campaign
-          ? `Tạo KH từ chiến dịch ${campaign.code} — ${campaign.name}`
-          : undefined
-      }
+      onOpenChange={(v) => !v && onOpenChange(false)}
+      title="Tạo lead từ chiến dịch"
+      description={campaign ? `Chiến dịch: ${campaign.name}` : undefined}
       footer={
         <>
-          <Button variant="outline" onClick={close}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={save}>
-            Chuyển thành KH
-          </Button>
+          <Button onClick={() => void save()}>Tạo lead</Button>
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-3">
-        <label className="col-span-2 space-y-1 text-xs">
-          <span className="text-muted">Tên / Tổ chức *</span>
-          <Input
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          />
-        </label>
-        <label className="space-y-1 text-xs">
-          <span className="text-muted">SĐT</span>
-          <Input
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-          />
-        </label>
-        <label className="space-y-1 text-xs">
-          <span className="text-muted">Email</span>
-          <Input
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          />
-        </label>
-        <label className="col-span-2 space-y-1 text-xs">
-          <span className="text-muted">Phụ trách</span>
-          <OwnerLookup
-            className="w-full"
-            allowEmpty={false}
-            value={form.ownerId}
-            onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
-          />
-        </label>
+      <div className="space-y-3">
+        <Input placeholder="Tên liên hệ *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <Input placeholder="Công ty" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} />
+        <Input placeholder="SĐT" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        <Input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <OwnerLookup allowEmpty={false} value={form.ownerId} onChange={(v) => setForm({ ...form, ownerId: v })} className="w-full" />
       </div>
     </Modal>
   );

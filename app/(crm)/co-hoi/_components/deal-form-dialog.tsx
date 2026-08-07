@@ -108,7 +108,7 @@ export function DealFormDialog() {
       update(editing.id, payload);
       toast("Đã cập nhật cơ hội", "success");
     } else {
-      create(payload, { createFollowup: true });
+      create(payload);
       toast("Đã tạo cơ hội", "success");
     }
     close();

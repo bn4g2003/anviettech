@@ -4,9 +4,7 @@ import { ListPageProvider } from "@/features/shared/hooks/use-list-page";
 import { ContractsPageHeader } from "./_components/contracts-page-header";
 import { ContractsFilterBar } from "./_components/contracts-filter-bar";
 import { ContractsTable } from "./_components/contracts-table";
-import { ContractFormDialog } from "./_components/contract-form-dialog";
 import { ContractDetailDrawer } from "./_components/contract-detail-drawer";
-import { ContractDeleteDialog } from "./_components/contract-delete-dialog";
 
 const COLUMNS = [
   "code",
@@ -27,9 +25,7 @@ export default function HopDongPage() {
         <ContractsPageHeader />
         <ContractsFilterBar />
         <ContractsTable />
-        <ContractFormDialog />
         <ContractDetailDrawer />
-        <ContractDeleteDialog />
       </div>
     </ListPageProvider>
   );

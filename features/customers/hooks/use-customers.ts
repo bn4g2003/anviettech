@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import { useCrmStore } from "@/features/shared/store/crm-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { customersService } from "@/features/customers/services/customers-service";
-import type { CustomerInput } from "@/features/customers/types";
-import { financeService } from "@/features/finance/services/finance-service";
+import type { Customer, CustomerInput } from "@/features/customers/types";
+import { apiFetch, toQuery } from "@/lib/api-client";
 
 export function useCustomers(filters?: {
   query?: string;
@@ -12,24 +11,71 @@ export function useCustomers(filters?: {
   type?: string;
   ownerId?: string;
 }) {
-  const customers = useCrmStore((s) => s.customers);
+  const [rows, setRows] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [debts, setDebts] = useState<Record<string, number>>({});
 
-  const rows = useMemo(() => {
-    return customersService.search(filters?.query ?? "", {
-      status: filters?.status || undefined,
-      type: filters?.type || undefined,
-      ownerId: filters?.ownerId || undefined,
-    });
-  }, [customers, filters?.query, filters?.status, filters?.type, filters?.ownerId]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await customersService.list({
+        search: filters?.query,
+        status: filters?.status,
+        ownerId: filters?.ownerId,
+        pageSize: 100,
+      });
+      const filtered = filters?.type ? list.filter((c) => c.type === filters.type) : list;
+      setRows(filtered);
+
+      const invoices = await apiFetch<{ customerId: string; amount: number | string; paidAmount: number | string }[]>(
+        `/api/v1/invoices${toQuery({ pageSize: 100 })}`,
+      ).catch(() => ({ data: [] as { customerId: string; amount: number | string; paidAmount: number | string }[] }));
+      const map: Record<string, number> = {};
+      for (const inv of invoices.data ?? []) {
+        map[inv.customerId] = (map[inv.customerId] ?? 0) + (Number(inv.amount) - Number(inv.paidAmount));
+      }
+      setDebts(map);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải khách hàng");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters?.query, filters?.status, filters?.type, filters?.ownerId]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return {
     rows,
-    all: customers,
-    create: (input: CustomerInput) => customersService.create(input),
-    update: (id: string, patch: Partial<CustomerInput>) => customersService.update(id, patch),
-    remove: (id: string) => customersService.remove(id),
-    removeMany: (ids: string[]) => customersService.removeMany(ids),
-    getById: (id: string) => customersService.getById(id),
-    getDebt: (id: string) => financeService.getCustomerDebt(id),
+    all: rows,
+    loading,
+    error,
+    reload,
+    create: async (input: CustomerInput) => {
+      const row = await customersService.create(input);
+      await reload();
+      return row;
+    },
+    update: async (id: string, patch: Partial<CustomerInput>) => {
+      const row = await customersService.update(id, patch);
+      await reload();
+      return row;
+    },
+    remove: async (id: string) => {
+      await customersService.remove(id);
+      await reload();
+    },
+    removeMany: async (ids: string[]) => {
+      await customersService.removeMany(ids);
+      await reload();
+    },
+    getById: (id: string) => byId.get(id),
+    getDebt: (id: string) => debts[id] ?? 0,
   };
 }

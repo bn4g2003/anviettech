@@ -1,28 +1,40 @@
 "use client";
 
-import { useMemo } from "react";
-import { useCrmStore } from "@/features/shared/store/crm-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ordersService } from "@/features/orders/services/orders-service";
-import type { OrderInput } from "@/features/orders/types";
-import { confirmOrder } from "@/features/shared/workflows/sales-workflows";
+import type { Order } from "@/features/orders/types";
 
-export function useOrders(filters?: { query?: string; status?: string }) {
-  const orders = useCrmStore((s) => s.orders);
+export function useOrders(filters?: { query?: string; status?: string; customerId?: string }) {
+  const [rows, setRows] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const rows = useMemo(() => {
-    return ordersService.search(filters?.query ?? "", {
-      status: filters?.status || undefined,
-    });
-  }, [orders, filters?.query, filters?.status]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await ordersService.list(filters));
+    } finally {
+      setLoading(false);
+    }
+  }, [filters?.query, filters?.status, filters?.customerId]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return {
     rows,
-    all: orders,
-    getById: (id: string) => ordersService.getById(id),
-    create: (input: OrderInput) => ordersService.create(input),
-    update: (id: string, patch: Partial<OrderInput>) => ordersService.update(id, patch),
-    remove: (id: string) => ordersService.remove(id),
-    removeMany: (ids: string[]) => ordersService.removeMany(ids),
-    confirm: (id: string) => confirmOrder(id),
+    all: rows,
+    loading,
+    reload,
+    getById: (id: string) => byId.get(id),
+    confirm: async (id: string, warehouseId: string) => {
+      const result = await ordersService.confirm(id, warehouseId);
+      await reload();
+      return result.data;
+    },
+    remove: async () => undefined,
+    removeMany: async () => undefined,
   };
 }

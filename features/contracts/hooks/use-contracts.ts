@@ -1,27 +1,41 @@
 "use client";
 
-import { useMemo } from "react";
-import { useCrmStore } from "@/features/shared/store/crm-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { contractsService } from "@/features/contracts/services/contracts-service";
-import type { ContractInput } from "@/features/contracts/types";
+import type { Contract } from "@/features/contracts/types";
 
 export function useContracts(filters?: { query?: string; status?: string; customerId?: string }) {
-  const contracts = useCrmStore((s) => s.contracts);
+  const [rows, setRows] = useState<Contract[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const rows = useMemo(() => {
-    return contractsService.search(filters?.query ?? "", {
-      status: filters?.status || undefined,
-      customerId: filters?.customerId || undefined,
-    });
-  }, [contracts, filters?.query, filters?.status, filters?.customerId]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await contractsService.list(filters));
+    } finally {
+      setLoading(false);
+    }
+  }, [filters?.query, filters?.status, filters?.customerId]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
 
   return {
     rows,
-    all: contracts,
-    getById: (id: string) => contractsService.getById(id),
-    create: (input: ContractInput) => contractsService.create(input),
-    update: (id: string, patch: Partial<ContractInput>) => contractsService.update(id, patch),
-    remove: (id: string) => contractsService.remove(id),
-    removeMany: (ids: string[]) => contractsService.removeMany(ids),
+    all: rows,
+    loading,
+    reload,
+    getById: (id: string) => byId.get(id),
+    create: async () => {
+      throw new Error("Hợp đồng được tạo khi duyệt báo giá");
+    },
+    update: async () => {
+      throw new Error("Chỉnh sửa hợp đồng chưa hỗ trợ trên UI");
+    },
+    remove: async () => undefined,
+    removeMany: async () => undefined,
   };
 }

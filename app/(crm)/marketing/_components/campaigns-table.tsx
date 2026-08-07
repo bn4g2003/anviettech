@@ -120,7 +120,6 @@ export function CampaignsTable() {
         <RowActions
           onView={() => list.setViewId(r.id)}
           onEdit={() => list.setEditId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
         />
       ),
     },

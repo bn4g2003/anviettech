@@ -6,6 +6,7 @@ import { useOrders } from "@/features/orders/hooks/use-orders";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useQuotes } from "@/features/quotes/hooks/use-quotes";
 import { useContracts } from "@/features/contracts/hooks/use-contracts";
+import { inventoryService } from "@/features/inventory/services/inventory-service";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
 import { formatVnd } from "@/features/shared/utils/money";
@@ -55,16 +56,21 @@ export function OrderDetailDrawer() {
             <Button
               variant="primary"
               onClick={() => {
-                try {
-                  const result = confirm(order.id);
-                  toast(
-                    `Đã xác nhận — phiếu xuất & HĐ ${result.invoice.code}`,
-                    "success",
-                  );
-                  list.setViewId(null);
-                } catch (e) {
-                  toast(e instanceof Error ? e.message : "Lỗi xác nhận đơn", "error");
-                }
+                void (async () => {
+                  try {
+                    const warehouses = await inventoryService.listWarehouses();
+                    const warehouseId = warehouses.find((w) => w.isDefault)?.id ?? warehouses[0]?.id;
+                    if (!warehouseId) {
+                      toast("Chưa có kho mặc định", "error");
+                      return;
+                    }
+                    await confirm(order.id, warehouseId);
+                    toast("Đã xác nhận — phiếu xuất & hóa đơn đã tạo", "success");
+                    list.setViewId(null);
+                  } catch (e) {
+                    toast(e instanceof Error ? e.message : "Lỗi xác nhận đơn", "error");
+                  }
+                })();
               }}
             >
               Xác nhận đơn hàng
