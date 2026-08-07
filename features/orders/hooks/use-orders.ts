@@ -34,7 +34,7 @@ export function useOrders(filters?: { query?: string; status?: string; customerI
       await reload();
       return result.data;
     },
-    remove: async () => undefined,
-    removeMany: async () => undefined,
+    remove: async (_deleteId: string) => undefined,
+    removeMany: async (_ids: string[]) => undefined,
   };
 }

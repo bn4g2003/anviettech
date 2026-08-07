@@ -41,7 +41,7 @@ export function useMarketing(filters?: { query?: string; status?: string; channe
       await reload();
       return row;
     },
-    remove: async () => undefined,
+    remove: async (_deleteId: string) => undefined,
     convertLead: async () => {
       throw new Error("Dùng module Tiềm năng để chuyển đổi lead");
     },
