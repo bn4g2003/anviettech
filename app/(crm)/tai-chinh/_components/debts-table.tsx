@@ -19,7 +19,7 @@ type DebtRow = {
 
 export function DebtsTable() {
   const list = useListPage();
-  const { debts } = useFinance();
+  const { debts, loading } = useFinance();
 
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
@@ -79,6 +79,7 @@ export function DebtsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Wallet}

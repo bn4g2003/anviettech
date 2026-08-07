@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 export function CustomersTable() {
   const list = useListPage();
   const router = useRouter();
-  const { rows, getDebt, removeMany } = useCustomers({
+  const { rows, loading, getDebt, removeMany } = useCustomers({
     query: list.query,
     status: list.filters.status,
     type: list.filters.type,
@@ -148,6 +148,7 @@ export function CustomersTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Users}

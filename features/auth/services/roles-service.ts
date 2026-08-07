@@ -29,8 +29,24 @@ export async function listRoles() {
 }
 
 export async function getRole(id: string) {
-  const roles = await listRoles();
-  const role = roles.find((item) => item.id === id);
+  const result = await query<{
+    id: string;
+    name: string;
+    description: string | null;
+    isSystem: boolean;
+    permissions: { id: string; module: string; action: string; scope: string }[];
+  }>(
+    `SELECT r.id, r.name, r.description, r.is_system AS "isSystem",
+      COALESCE(jsonb_agg(jsonb_build_object('id', p.id, 'module', p.module, 'action', p.action, 'scope', p.scope)
+        ORDER BY p.module, p.action, p.scope) FILTER (WHERE p.id IS NOT NULL), '[]') permissions
+     FROM roles r
+     LEFT JOIN role_permissions rp ON rp.role_id=r.id
+     LEFT JOIN permissions p ON p.id=rp.permission_id
+     WHERE r.id=$1
+     GROUP BY r.id`,
+    [id],
+  );
+  const role = result.rows[0];
   if (!role) throw new ApiError(404, "Không tìm thấy vai trò");
   return role;
 }

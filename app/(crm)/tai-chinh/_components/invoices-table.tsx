@@ -17,7 +17,7 @@ import { InvoiceStatusBadge } from "./invoice-status";
 
 export function InvoicesTable() {
   const list = useListPage();
-  const { invoices } = useFinance({
+  const { invoices, loading } = useFinance({
     query: list.query,
     invoiceStatus: list.filters.invoiceStatus,
   });
@@ -122,6 +122,7 @@ export function InvoicesTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Receipt}

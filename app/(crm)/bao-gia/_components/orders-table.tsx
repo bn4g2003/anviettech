@@ -19,7 +19,7 @@ import { OrderStatusBadge } from "./order-status";
 
 export function OrdersTable() {
   const list = useListPage();
-  const { rows, confirm } = useOrders({
+  const { rows, loading, confirm } = useOrders({
     query: list.query,
     status: list.filters.status,
   });
@@ -150,6 +150,7 @@ export function OrdersTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={ShoppingCart}

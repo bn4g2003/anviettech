@@ -17,7 +17,7 @@ import { TaskStatusBadge } from "./task-status";
 
 export function TasksTable() {
   const list = useListPage();
-  const { rows, removeMany } = useTasks({
+  const { rows, loading, removeMany } = useTasks({
     query: list.query,
     status: list.filters.status,
     type: list.filters.type,
@@ -142,6 +142,7 @@ export function TasksTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={CheckSquare}

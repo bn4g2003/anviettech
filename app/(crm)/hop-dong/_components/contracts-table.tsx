@@ -19,7 +19,7 @@ import { ContractStatusBadge } from "./contract-status";
 export function ContractsTable() {
   const list = useListPage();
   const router = useRouter();
-  const { rows } = useContracts({
+  const { rows, loading } = useContracts({
     query: list.query,
     status: list.filters.status,
     customerId: list.filters.customerId,
@@ -127,6 +127,7 @@ export function ContractsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Handshake}

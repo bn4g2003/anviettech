@@ -61,3 +61,19 @@ body {
   background: #c4c4c4;
   border-radius: 4px;
 }
+
+@keyframes nav-progress {
+  0% {
+    transform: scaleX(0.08);
+  }
+  40% {
+    transform: scaleX(0.55);
+  }
+  100% {
+    transform: scaleX(0.85);
+  }
+}
+
+.animate-nav-progress {
+  animation: nav-progress 1.2s ease-out forwards;
+}

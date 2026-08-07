@@ -20,7 +20,7 @@ export function DealsTable() {
   const router = useRouter();
   const { getById: getCustomer } = useCustomers();
 
-  const { rows, removeMany } = useDeals({
+  const { rows, loading, removeMany } = useDeals({
     query: list.query,
     stage: (list.filters.stage as DealStage) || undefined,
     ownerId: list.filters.ownerId,
@@ -148,6 +148,7 @@ export function DealsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Briefcase}

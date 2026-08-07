@@ -19,7 +19,7 @@ const STATUS_MAP = {
 
 export function ProductsTable() {
   const list = useListPage();
-  const { rows, getStock, removeMany } = useProducts({
+  const { rows, loading, getStock, removeMany } = useProducts({
     query: list.query,
     category: list.filters.category,
     status: list.filters.status,
@@ -136,6 +136,7 @@ export function ProductsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Package}

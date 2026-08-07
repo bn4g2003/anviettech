@@ -32,7 +32,7 @@ function linesSummary(r: StockMove) {
 
 export function StockMovesTable({ moveType }: Props) {
   const list = useListPage();
-  const { moves, postMove } = useInventory();
+  const { moves, loading, postMove } = useInventory();
   const { toast } = useToast();
 
   const filtered = useMemo(() => {
@@ -136,6 +136,7 @@ export function StockMovesTable({ moveType }: Props) {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Package}

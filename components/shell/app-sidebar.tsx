@@ -8,14 +8,19 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HELP_ITEM, MAIN_NAV, PUBLIC_VIEWS } from "./nav-config";
+import { NavLink } from "./nav-link";
 
 type AppSidebarProps = {
   collapsed: boolean;
   onToggle: () => void;
 };
+
+function isNavActive(pathname: string, href: string) {
+  if (href.startsWith("/cai-dat")) return pathname.startsWith("/cai-dat");
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
@@ -54,11 +59,11 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         <ul className="space-y-0.5">
           {MAIN_NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = isNavActive(pathname, item.href);
             const Icon = item.icon;
             return (
               <li key={item.href}>
-                <Link
+                <NavLink
                   href={item.href}
                   title={item.label}
                   className={cn(
@@ -71,7 +76,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   {!collapsed ? <span className="truncate">{item.label}</span> : null}
-                </Link>
+                </NavLink>
               </li>
             );
           })}
@@ -85,8 +90,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <ul className="space-y-0.5">
               {PUBLIC_VIEWS.map((view) => (
                 <li key={view.href}>
-                  <Link
+                  <NavLink
                     href={view.href}
+                    showPendingHint={false}
                     className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground/80 hover:bg-surface"
                   >
                     {view.tone === "success" ? (
@@ -95,7 +101,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                       <span className="h-3.5 w-3.5" />
                     )}
                     <span className="truncate">{view.label}</span>
-                  </Link>
+                  </NavLink>
                 </li>
               ))}
             </ul>

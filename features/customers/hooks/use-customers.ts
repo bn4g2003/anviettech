@@ -20,18 +20,22 @@ export function useCustomers(filters?: {
     setLoading(true);
     setError(null);
     try {
-      const list = await customersService.list({
-        search: filters?.query,
-        status: filters?.status,
-        ownerId: filters?.ownerId,
-        pageSize: 100,
-      });
+      const [list, invoices] = await Promise.all([
+        customersService.list({
+          search: filters?.query,
+          status: filters?.status,
+          ownerId: filters?.ownerId,
+          pageSize: 100,
+        }),
+        apiFetch<{ customerId: string; amount: number | string; paidAmount: number | string }[]>(
+          `/api/v1/invoices${toQuery({ pageSize: 100 })}`,
+        ).catch(() => ({
+          data: [] as { customerId: string; amount: number | string; paidAmount: number | string }[],
+        })),
+      ]);
       const filtered = filters?.type ? list.filter((c) => c.type === filters.type) : list;
       setRows(filtered);
 
-      const invoices = await apiFetch<{ customerId: string; amount: number | string; paidAmount: number | string }[]>(
-        `/api/v1/invoices${toQuery({ pageSize: 100 })}`,
-      ).catch(() => ({ data: [] as { customerId: string; amount: number | string; paidAmount: number | string }[] }));
       const map: Record<string, number> = {};
       for (const inv of invoices.data ?? []) {
         map[inv.customerId] = (map[inv.customerId] ?? 0) + (Number(inv.amount) - Number(inv.paidAmount));

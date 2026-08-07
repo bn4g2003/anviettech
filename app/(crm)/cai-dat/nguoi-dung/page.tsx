@@ -22,6 +22,7 @@ type Role = { id: string; name: string };
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -33,13 +34,19 @@ export default function UsersPage() {
   });
 
   async function load() {
-    const [u, r] = await Promise.all([fetch("/api/v1/users"), fetch("/api/v1/roles")]);
-    if (!u.ok) {
-      setError("Không thể tải tài khoản");
-      return;
+    setLoading(true);
+    setError("");
+    try {
+      const [u, r] = await Promise.all([fetch("/api/v1/users"), fetch("/api/v1/roles")]);
+      if (!u.ok) {
+        setError("Không thể tải tài khoản");
+        return;
+      }
+      setUsers((await u.json()).data);
+      if (r.ok) setRoles((await r.json()).data);
+    } finally {
+      setLoading(false);
     }
-    setUsers((await u.json()).data);
-    if (r.ok) setRoles((await r.json()).data);
   }
 
   useEffect(() => {
@@ -85,15 +92,12 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Người dùng</h1>
-          <p className="text-sm text-muted">Tạo tài khoản, đổi vai trò và vô hiệu hóa truy cập.</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted">Tạo tài khoản, đổi vai trò và vô hiệu hóa truy cập.</p>
         <Button onClick={() => setOpen(true)}>Tạo tài khoản</Button>
       </div>
-      {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
-      <div className="mt-5 overflow-auto rounded-lg border border-border bg-white">
+      {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
+      <div className="mt-4 overflow-auto rounded-lg border border-border bg-white">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-muted">
@@ -106,38 +110,46 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-b border-border last:border-0">
-                <td className="p-3 font-medium">{user.fullName}</td>
-                <td>{user.email}</td>
-                <td>{user.roles.join(", ") || "—"}</td>
-                <td>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString("vi-VN") : "—"}</td>
-                <td>{user.status}</td>
-                <td className="space-x-2 p-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditId(user.id);
-                      setForm({
-                        fullName: user.fullName,
-                        email: user.email,
-                        temporaryPassword: "",
-                        roleIds: user.roleIds?.length ? user.roleIds : [],
-                      });
-                    }}
-                  >
-                    Sửa
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => void toggleStatus(user)}>
-                    {user.status === "active" ? "Vô hiệu" : "Kích hoạt"}
-                  </Button>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-sm text-muted">
+                  Đang tải...
                 </td>
               </tr>
-            ))}
+            ) : (
+              users.map((user) => (
+                <tr key={user.id} className="border-b border-border last:border-0">
+                  <td className="p-3 font-medium">{user.fullName}</td>
+                  <td>{user.email}</td>
+                  <td>{user.roles.join(", ") || "—"}</td>
+                  <td>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString("vi-VN") : "—"}</td>
+                  <td>{user.status}</td>
+                  <td className="space-x-2 p-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditId(user.id);
+                        setForm({
+                          fullName: user.fullName,
+                          email: user.email,
+                          temporaryPassword: "",
+                          roleIds: user.roleIds?.length ? user.roleIds : [],
+                        });
+                      }}
+                    >
+                      Sửa
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => void toggleStatus(user)}>
+                      {user.status === "active" ? "Vô hiệu" : "Kích hoạt"}
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {!users.length && !error ? (
+        {!loading && !users.length && !error ? (
           <EmptyState title="Chưa có tài khoản" description="Tạo tài khoản để mời nhân viên vào CRM." />
         ) : null}
       </div>

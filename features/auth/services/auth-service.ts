@@ -1,6 +1,7 @@
 import argon2 from "argon2";
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { query } from "@/lib/db";
 import { ApiError } from "@/lib/api";
 import type { CurrentUser } from "./auth-types";
@@ -16,9 +17,11 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/** Deduped per request — layout + page/API helpers share one session lookup. */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (!token) return null;
+  const hash = tokenHash(token);
   const result = await query<{
     id: string;
     full_name: string;
@@ -35,11 +38,11 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id
     WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at > now() AND u.status='active' AND u.deleted_at IS NULL
     GROUP BY u.id`,
-    [tokenHash(token)],
+    [hash],
   );
   const row = result.rows[0];
   if (!row) return null;
-  void query("UPDATE sessions SET last_seen_at=now() WHERE token_hash=$1", [tokenHash(token)]);
+  void query("UPDATE sessions SET last_seen_at=now() WHERE token_hash=$1", [hash]);
   return {
     id: row.id,
     fullName: row.full_name,
@@ -48,7 +51,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     roles: row.roles,
     permissions: row.permissions,
   };
-}
+});
 
 export async function requireUser() {
   const user = await getCurrentUser();

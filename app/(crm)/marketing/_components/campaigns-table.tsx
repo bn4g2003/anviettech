@@ -18,7 +18,7 @@ import {
 
 export function CampaignsTable() {
   const list = useListPage();
-  const { rows } = useMarketing({
+  const { rows, loading } = useMarketing({
     query: list.query,
     status: list.filters.status,
     channel: list.filters.channel,
@@ -139,6 +139,7 @@ export function CampaignsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Megaphone}

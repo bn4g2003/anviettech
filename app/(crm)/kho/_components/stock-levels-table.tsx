@@ -23,7 +23,7 @@ type StockRow = {
 
 export function StockLevelsTable() {
   const list = useListPage();
-  const { levels } = useInventory();
+  const { levels, loading } = useInventory();
 
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
@@ -115,6 +115,7 @@ export function StockLevelsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={Boxes}

@@ -1,11 +1,14 @@
+import { Suspense, type ReactNode } from "react";
 import { AppShell } from "@/components/shell/app-shell";
-import { ReactNode } from "react";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/features/auth/services/auth-service";
+import { PageSkeleton } from "@/components/shell/page-skeleton";
+import { AuthGate } from "./auth-gate";
 
-export default async function CrmLayout({ children }: { children: ReactNode }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/dang-nhap");
-  if (user.mustChangePassword) redirect("/doi-mat-khau");
-  return <AppShell>{children}</AppShell>;
+export default function CrmLayout({ children }: { children: ReactNode }) {
+  return (
+    <AppShell>
+      <Suspense fallback={<PageSkeleton />}>
+        <AuthGate>{children}</AuthGate>
+      </Suspense>
+    </AppShell>
+  );
 }

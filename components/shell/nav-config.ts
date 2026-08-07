@@ -10,7 +10,7 @@ import {
   Megaphone,
   Package,
   Receipt,
-  Settings,
+  Shield,
   Target,
   Users,
   type LucideIcon,
@@ -40,7 +40,7 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/tai-chinh", label: "Tài chính", icon: Receipt },
   { href: "/marketing", label: "Marketing", icon: Megaphone },
   { href: "/phan-tich", label: "Phân tích HĐKD", icon: BarChart3 },
-  { href: "/cai-dat/nguoi-dung", label: "Cài đặt", icon: Settings },
+  { href: "/cai-dat/nguoi-dung", label: "AUTH", icon: Shield },
 ];
 
 export const PUBLIC_VIEWS: PublicView[] = [

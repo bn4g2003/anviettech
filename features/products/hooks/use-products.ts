@@ -13,10 +13,12 @@ export function useProducts(filters?: { query?: string; status?: string; categor
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      let list = await productsService.list({ search: filters?.query, status: filters?.status });
-      if (filters?.category) list = list.filter((p) => p.category === filters.category);
+      const [rawList, levels] = await Promise.all([
+        productsService.list({ search: filters?.query, status: filters?.status }),
+        inventoryService.listLevels().catch(() => []),
+      ]);
+      const list = filters?.category ? rawList.filter((p) => p.category === filters.category) : rawList;
       setRows(list);
-      const levels = await inventoryService.listLevels().catch(() => []);
       const map: Record<string, number> = {};
       for (const level of levels) map[level.productId] = level.qty;
       setStock(map);

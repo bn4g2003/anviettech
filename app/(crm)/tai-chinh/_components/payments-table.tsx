@@ -21,7 +21,7 @@ const METHOD_LABEL: Record<PaymentMethod, string> = {
 
 export function PaymentsTable() {
   const list = useListPage();
-  const { payments, getById: getInvoice } = useFinance();
+  const { payments, loading, getById: getInvoice } = useFinance();
   const { getById: getCustomer } = useCustomers();
 
   const filtered = useMemo(() => {
@@ -108,6 +108,7 @@ export function PaymentsTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={CreditCard}

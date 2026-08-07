@@ -19,7 +19,7 @@ import { QuoteStatusBadge } from "./quote-status";
 export function QuotesTable() {
   const list = useListPage();
   const router = useRouter();
-  const { rows, removeMany } = useQuotes({
+  const { rows, loading, removeMany } = useQuotes({
     query: list.query,
     status: list.filters.status,
     customerId: list.filters.customerId,
@@ -143,6 +143,7 @@ export function QuotesTable() {
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}
+        loading={loading}
         empty={
           <EmptyState
             icon={FileText}

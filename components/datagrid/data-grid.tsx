@@ -23,6 +23,7 @@ type DataGridProps<T extends { id: string }> = {
   sortDir?: "asc" | "desc";
   onSort?: (key: string) => void;
   empty?: ReactNode;
+  loading?: boolean;
   className?: string;
 };
 
@@ -37,9 +38,11 @@ export function DataGrid<T extends { id: string }>({
   sortDir,
   onSort,
   empty,
+  loading = false,
   className,
 }: DataGridProps<T>) {
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id));
+  const colSpan = columns.length + (onToggleSelect ? 1 : 0);
 
   return (
     <div className={cn("min-h-0 flex-1 overflow-auto border-t border-border bg-white", className)}>
@@ -54,6 +57,7 @@ export function DataGrid<T extends { id: string }>({
                   onChange={onToggleSelectAll}
                   aria-label="Chọn tất cả"
                   className="rounded border-border"
+                  disabled={loading}
                 />
               </th>
             ) : null}
@@ -83,12 +87,15 @@ export function DataGrid<T extends { id: string }>({
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 ? (
+          {loading ? (
             <tr>
-              <td
-                colSpan={columns.length + (onToggleSelect ? 1 : 0)}
-                className="p-0"
-              >
+              <td colSpan={colSpan} className="px-2 py-10 text-center text-sm text-muted">
+                Đang tải dữ liệu...
+              </td>
+            </tr>
+          ) : rows.length === 0 ? (
+            <tr>
+              <td colSpan={colSpan} className="p-0">
                 {empty}
               </td>
             </tr>
