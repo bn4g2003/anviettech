@@ -223,7 +223,7 @@ export default function RolesPage() {
           }
         }}
         title={creating ? "Tạo Vai Trò & Phân Quyền" : `Cấu hình Phân quyền: ${edit?.name}`}
-        size="xl"
+        size="5xl"
         footer={
           <div className="flex items-center justify-end gap-2">
             <Button

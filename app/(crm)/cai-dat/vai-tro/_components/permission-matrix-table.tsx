@@ -422,7 +422,7 @@ export function PermissionMatrixTable({
 
       {/* Structured Matrix Table */}
       <div className="rounded-md border border-border bg-white overflow-hidden shadow-2xs">
-        <div className="overflow-x-auto max-h-[50vh]">
+        <div className="overflow-x-auto max-h-[62vh]">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="sticky top-0 z-10 border-b border-border bg-neutral-100 font-semibold text-foreground">

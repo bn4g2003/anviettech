@@ -13,7 +13,7 @@ type ModalProps = {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
-  size?: "md" | "lg" | "xl";
+  size?: "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
   className?: string;
 };
 
@@ -21,6 +21,11 @@ const sizes = {
   md: "max-w-lg",
   lg: "max-w-2xl",
   xl: "max-w-4xl",
+  "2xl": "max-w-5xl",
+  "3xl": "max-w-6xl",
+  "4xl": "max-w-7xl",
+  "5xl": "max-w-[1360px] w-[94vw]",
+  full: "max-w-[98vw] w-[98vw]",
 };
 
 export function Modal({
@@ -39,14 +44,14 @@ export function Modal({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in" />
         <Dialog.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border border-border bg-white shadow-lg",
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-md border border-border bg-white shadow-lg",
             sizes[size],
             className,
           )}
         >
-          <div className="flex items-start justify-between border-b border-border px-4 py-3">
+          <div className="flex items-start justify-between border-b border-border px-5 py-3.5">
             <div>
-              <Dialog.Title className="text-sm font-semibold">{title}</Dialog.Title>
+              <Dialog.Title className="text-sm font-bold text-foreground">{title}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="mt-0.5 text-xs text-muted">
                   {description}
@@ -59,9 +64,9 @@ export function Modal({
               </Button>
             </Dialog.Close>
           </div>
-          <div className="flex-1 overflow-y-auto px-4 py-3">{children}</div>
+          <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
           {footer ? (
-            <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
               {footer}
             </div>
           ) : null}
