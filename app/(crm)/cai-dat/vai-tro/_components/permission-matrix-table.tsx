@@ -360,7 +360,7 @@ export function PermissionMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={applyPresetAdmin}
               className="h-7 text-xs bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 hover:bg-blue-100 text-blue-900 dark:text-blue-200"
             >
@@ -369,7 +369,7 @@ export function PermissionMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={applyPresetSalesManager}
               className="h-7 text-xs bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 hover:bg-blue-100 text-blue-900 dark:text-blue-200"
             >
@@ -378,7 +378,7 @@ export function PermissionMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={applyPresetSalesRep}
               className="h-7 text-xs bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 hover:bg-blue-100 text-blue-900 dark:text-blue-200"
             >
@@ -387,7 +387,7 @@ export function PermissionMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={applyPresetAccountant}
               className="h-7 text-xs bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 hover:bg-blue-100 text-blue-900 dark:text-blue-200"
             >
@@ -396,7 +396,7 @@ export function PermissionMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={applyPresetWarehouse}
               className="h-7 text-xs bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 hover:bg-blue-100 text-blue-900 dark:text-blue-200"
             >
@@ -405,7 +405,7 @@ export function PermissionMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={clearAllPermissions}
               className="h-7 text-xs bg-white dark:bg-slate-800 border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300"
             >
