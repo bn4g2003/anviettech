@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "anviet_crm_session";
-const PUBLIC_PATHS = ["/dang-nhap", "/api/v1/auth/login"];
+const PUBLIC_PATHS = ["/dang-nhap", "/api/v1/auth/login", "/api/v1/auth/logout"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

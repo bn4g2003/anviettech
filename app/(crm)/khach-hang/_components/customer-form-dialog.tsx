@@ -64,9 +64,9 @@ export function CustomerFormDialog() {
       toast("Vui lòng nhập tên", "error");
       return;
     }
-    const owner = form.ownerId?.trim()
+    const owner: OwnerRef = form.ownerId?.trim()
       ? (owners.find((o) => o.id === form.ownerId) ?? { id: form.ownerId, name: "—" })
-      : undefined;
+      : (owners[0] ?? { id: "", name: "—" });
     const payload = {
       name: form.name,
       type: form.type,

@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LogOut } from "lucide-react";
 
 type PasswordError = {
   error?: {
@@ -88,6 +89,22 @@ export default function ChangePasswordPage() {
         <Button type="submit" className="mt-5 w-full" disabled={saving}>
           {saving ? "Đang lưu…" : "Đổi mật khẩu"}
         </Button>
+        <div className="mt-4 border-t border-border pt-4 text-center">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await fetch("/api/v1/auth/logout", { method: "POST" });
+              } finally {
+                window.location.href = "/dang-nhap";
+              }
+            }}
+            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-danger transition-colors cursor-pointer"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Đăng xuất & quay lại đăng nhập</span>
+          </button>
+        </div>
       </form>
     </main>
   );
