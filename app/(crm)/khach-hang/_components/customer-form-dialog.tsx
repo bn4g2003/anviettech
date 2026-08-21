@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
 import type { CustomerType, CustomerStatus } from "@/features/customers/types";
 import type { OwnerRef } from "@/features/shared/types/ids";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 
 const empty = {
   name: "",
@@ -29,6 +30,8 @@ const empty = {
 export function CustomerFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useCustomers();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("customers", "create");
   const owners = useOwners();
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
@@ -51,9 +54,9 @@ export function CustomerFormDialog() {
         notes: editing.notes ?? "",
       });
     } else if (list.createOpen) {
-      setForm({ ...empty, ownerId: owners[0]?.id ?? "" });
+      setForm({ ...empty, ownerId: user?.id ?? "" });
     }
-  }, [editing, list.createOpen, owners]);
+  }, [editing, list.createOpen, user?.id]);
 
   function close() {
     list.setCreateOpen(false);
@@ -65,9 +68,10 @@ export function CustomerFormDialog() {
       toast("Vui lòng nhập tên", "error");
       return;
     }
-    const owner: OwnerRef = form.ownerId?.trim()
-      ? (owners.find((o) => o.id === form.ownerId) ?? { id: form.ownerId, name: "—" })
-      : (owners[0] ?? { id: "", name: "—" });
+    const ownerId = form.ownerId?.trim() ? form.ownerId.trim() : (user?.id ?? "");
+    const owner: OwnerRef = ownerId
+      ? (owners.find((o) => o.id === ownerId) ?? { id: ownerId, name: user?.fullName ?? "—" })
+      : { id: user?.id ?? "", name: user?.fullName ?? "—" };
     const payload = {
       name: form.name,
       type: form.type,
@@ -176,9 +180,15 @@ export function CustomerFormDialog() {
           <OwnerLookup
             className="w-full"
             allowEmpty={false}
-            value={form.ownerId}
+            value={form.ownerId || user?.id || ""}
             onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+            disabled={!editing && !canAssign}
           />
+          {!editing && !canAssign ? (
+            <span className="block text-[10px] text-muted">
+              Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+            </span>
+          ) : null}
         </label>
         <label className="space-y-1 text-xs">
           <span className="text-muted">Nguồn</span>

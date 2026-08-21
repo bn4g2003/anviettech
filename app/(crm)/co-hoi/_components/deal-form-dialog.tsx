@@ -11,6 +11,7 @@ import { DEAL_STAGE_META, type DealStage } from "@/features/deals/types";
 import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { daysFromNow } from "@/features/shared/utils/date";
 import { useEffect, useState } from "react";
 
@@ -44,6 +45,8 @@ export function DealFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useDeals();
   const { all: products } = useProducts();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("deals", "create");
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
@@ -64,11 +67,12 @@ export function DealFormDialog() {
     } else if (list.createOpen) {
       setForm({
         ...empty,
+        ownerId: user?.id ?? "",
         customerId: list.filters.customerId || "",
         expectedCloseDate: toDateInput(daysFromNow(14)),
       });
     }
-  }, [editing, list.createOpen, list.filters.customerId]);
+  }, [editing, list.createOpen, list.filters.customerId, user?.id]);
 
   function close() {
     list.setCreateOpen(false);
@@ -99,7 +103,7 @@ export function DealFormDialog() {
       customerId: form.customerId,
       stage: form.stage,
       value,
-      owner: ownerById(form.ownerId),
+      owner: ownerById(form.ownerId || user?.id || ""),
       expectedCloseDate: fromDateInput(form.expectedCloseDate),
       productIds: form.productIds,
       notes: form.notes,
@@ -190,9 +194,15 @@ export function DealFormDialog() {
           <OwnerLookup
             className="w-full"
             allowEmpty={false}
-            value={form.ownerId}
+            value={form.ownerId || user?.id || ""}
             onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+            disabled={!editing && !canAssign}
           />
+          {!editing && !canAssign ? (
+            <span className="block text-[10px] text-muted">
+              Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+            </span>
+          ) : null}
         </label>
         <div className="col-span-2 space-y-1 text-xs">
           <span className="text-muted">Sản phẩm</span>

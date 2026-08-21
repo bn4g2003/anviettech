@@ -12,6 +12,7 @@ import { useQuotes } from "@/features/quotes/hooks/use-quotes";
 import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { calcLineTotal, formatVnd, sumAmounts } from "@/features/shared/utils/money";
 import { daysFromNow } from "@/features/shared/utils/date";
 import type { QuoteStatus } from "@/features/quotes/types";
@@ -44,8 +45,8 @@ const empty = {
   lines: [emptyLine()] as LineForm[],
 };
 
-function toDateInput(iso: string) {
-  return iso.slice(0, 10);
+function toDateInput(date: string) {
+  return date ? date.slice(0, 10) : "";
 }
 
 function fromDateInput(date: string) {
@@ -56,6 +57,8 @@ export function QuoteFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useQuotes();
   const { all: products } = useProducts();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("quotes", "create");
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
@@ -79,9 +82,9 @@ export function QuoteFormDialog() {
         })),
       });
     } else if (list.createOpen) {
-      setForm({ ...empty, lines: [emptyLine()] });
+      setForm({ ...empty, ownerId: user?.id ?? "", lines: [emptyLine()] });
     }
-  }, [editing, list.createOpen]);
+  }, [editing, list.createOpen, user?.id]);
 
   const previewTotal = useMemo(
     () =>
@@ -129,7 +132,7 @@ export function QuoteFormDialog() {
       status: form.status,
       validUntil: fromDateInput(form.validUntil),
       terms: form.terms || undefined,
-      owner: ownerById(form.ownerId),
+      owner: ownerById(form.ownerId || user?.id || ""),
       lines: form.lines.map((l) => ({
         productId: l.productId,
         qty: Number(l.qty) || 1,
@@ -219,9 +222,15 @@ export function QuoteFormDialog() {
             <OwnerLookup
               className="w-full"
               allowEmpty={false}
-              value={form.ownerId}
+              value={form.ownerId || user?.id || ""}
               onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+              disabled={!editing && !canAssign}
             />
+            {!editing && !canAssign ? (
+              <span className="block text-[10px] text-muted">
+                Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+              </span>
+            ) : null}
           </label>
           <label className="space-y-1 text-xs">
             <span className="text-muted">Điều khoản</span>

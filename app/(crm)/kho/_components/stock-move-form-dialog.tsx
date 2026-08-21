@@ -9,6 +9,7 @@ import { useInventory } from "@/features/inventory/hooks/use-inventory";
 import type { StockMoveStatus, StockMoveType } from "@/features/inventory/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -29,6 +30,8 @@ const TITLES: Record<StockMoveType, string> = {
 export function StockMoveFormDialog({ moveType }: Props) {
   const list = useListPage();
   const { createMove } = useInventory();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("inventory", "create");
   const { toast } = useToast();
   const open = list.createOpen;
   const [form, setForm] = useState({
@@ -46,12 +49,12 @@ export function StockMoveFormDialog({ moveType }: Props) {
         warehouseFrom: moveType === "in" ? "" : "Kho chính",
         warehouseTo: moveType === "out" ? "" : "Kho chính",
         orderId: "",
-        ownerId: "",
+        ownerId: user?.id ?? "",
         note: "",
         lines: [emptyLine()],
       });
     }
-  }, [list.createOpen, moveType]);
+  }, [list.createOpen, moveType, user?.id]);
 
   function close() {
     list.setCreateOpen(false);
@@ -91,7 +94,7 @@ export function StockMoveFormDialog({ moveType }: Props) {
       orderId: form.orderId || undefined,
       warehouseFrom: form.warehouseFrom || undefined,
       warehouseTo: form.warehouseTo || undefined,
-      owner: ownerById(form.ownerId),
+      owner: ownerById(form.ownerId || user?.id || ""),
       note: form.note || undefined,
       lines: form.lines.map((l) => ({
         productId: l.productId,
@@ -161,9 +164,15 @@ export function StockMoveFormDialog({ moveType }: Props) {
             <OwnerLookup
               className="w-full"
               allowEmpty={false}
-              value={form.ownerId}
+              value={form.ownerId || user?.id || ""}
               onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+              disabled={!canAssign}
             />
+            {!canAssign ? (
+              <span className="block text-[10px] text-muted">
+                Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+              </span>
+            ) : null}
           </label>
           <label className="col-span-2 space-y-1 text-xs">
             <span className="text-muted">Ghi chú</span>

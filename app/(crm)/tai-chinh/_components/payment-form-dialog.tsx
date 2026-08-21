@@ -11,6 +11,7 @@ import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useToast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useEffect, useMemo, useState } from "react";
 
 function toDateTimeLocal(iso: string) {
@@ -27,6 +28,8 @@ export function PaymentFormDialog() {
   const list = useListPage();
   const { allInvoices, recordPayment } = useFinance();
   const { getById: getCustomer } = useCustomers();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("finance", "create");
   const { toast } = useToast();
   const open = list.createOpen;
 
@@ -55,10 +58,10 @@ export function PaymentFormDialog() {
       amount: inv ? Math.max(0, inv.amount - inv.paidAmount) : 0,
       method: "bank",
       paidAt: toDateTimeLocal(new Date().toISOString()),
-      ownerId: inv?.owner.id ?? "",
+      ownerId: inv?.owner.id ?? (user?.id || ""),
       note: "",
     });
-  }, [list.createOpen, list.filters.payInvoiceId, unpaidInvoices]);
+  }, [list.createOpen, list.filters.payInvoiceId, unpaidInvoices, user?.id]);
 
   function close() {
     list.setCreateOpen(false);
@@ -96,7 +99,7 @@ export function PaymentFormDialog() {
       amount: Number(form.amount),
       method: form.method,
       paidAt: fromDateTimeLocal(form.paidAt),
-      owner: ownerById(form.ownerId),
+      owner: ownerById(form.ownerId || user?.id || ""),
       note: form.note || undefined,
     });
     toast("Đã ghi thanh toán", "success");
@@ -184,9 +187,15 @@ export function PaymentFormDialog() {
           <OwnerLookup
             className="w-full"
             allowEmpty={false}
-            value={form.ownerId}
+            value={form.ownerId || user?.id || ""}
             onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+            disabled={!canAssign}
           />
+          {!canAssign ? (
+            <span className="block text-[10px] text-muted">
+              Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+            </span>
+          ) : null}
         </label>
         <label className="col-span-2 space-y-1 text-xs">
           <span className="text-muted">Ghi chú</span>

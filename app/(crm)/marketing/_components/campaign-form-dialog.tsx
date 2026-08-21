@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useMarketing } from "@/features/marketing/hooks/use-marketing";
 import type { CampaignChannel, CampaignStatus } from "@/features/marketing/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -39,6 +40,8 @@ const empty = {
 export function CampaignFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useMarketing();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("campaigns", "create");
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
@@ -58,9 +61,9 @@ export function CampaignFormDialog() {
         endDate: toDateInput(editing.endDate),
       });
     } else if (list.createOpen) {
-      setForm(empty);
+      setForm({ ...empty, ownerId: user?.id ?? "" });
     }
-  }, [editing, list.createOpen]);
+  }, [editing, list.createOpen, user?.id]);
 
   function close() {
     list.setCreateOpen(false);
@@ -79,7 +82,7 @@ export function CampaignFormDialog() {
       budget: Number(form.budget) || 0,
       spent: Number(form.spent) || 0,
       leadsCount: Number(form.leadsCount) || 0,
-      owner: ownerById(form.ownerId),
+      owner: ownerById(form.ownerId || user?.id || ""),
       startDate: fromDateInput(form.startDate),
       endDate: fromDateInput(form.endDate),
     };
@@ -188,9 +191,15 @@ export function CampaignFormDialog() {
           <OwnerLookup
             className="w-full"
             allowEmpty={false}
-            value={form.ownerId}
+            value={form.ownerId || user?.id || ""}
             onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+            disabled={!editing && !canAssign}
           />
+          {!editing && !canAssign ? (
+            <span className="block text-[10px] text-muted">
+              Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+            </span>
+          ) : null}
         </label>
         <label className="space-y-1 text-xs">
           <span className="text-muted">Ngày bắt đầu</span>

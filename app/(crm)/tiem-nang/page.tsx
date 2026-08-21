@@ -11,6 +11,7 @@ import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, toQuery, ApiClientError } from "@/lib/api-client";
 import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useRouter } from "next/navigation";
 
 type Lead = {
@@ -23,9 +24,8 @@ type Lead = {
   source?: string | null;
   status: string;
   ownerId?: string | null;
-  campaignId?: string | null;
+  createdAt: string;
   notes?: string | null;
-  lostReason?: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -36,10 +36,12 @@ const STATUS_LABEL: Record<string, string> = {
   converted: "Đã chuyển đổi",
 };
 
-export default function LeadsPage() {
-  const { toast } = useToast();
+export default function TiemNangPage() {
   const router = useRouter();
   const owners = useOwners();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("leads", "create");
+  const { toast } = useToast();
   const [rows, setRows] = useState<Lead[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -80,8 +82,8 @@ export default function LeadsPage() {
   }, [reload]);
 
   useEffect(() => {
-    if (owners[0] && !form.ownerId) setForm((f) => ({ ...f, ownerId: owners[0].id }));
-  }, [owners, form.ownerId]);
+    if (user?.id && !form.ownerId) setForm((f) => ({ ...f, ownerId: user.id }));
+  }, [user?.id, form.ownerId]);
 
   async function create() {
     try {
@@ -89,11 +91,11 @@ export default function LeadsPage() {
         method: "POST",
         body: JSON.stringify({
           ...form,
-          ownerId: form.ownerId?.trim() ? form.ownerId.trim() : undefined,
+          ownerId: form.ownerId?.trim() ? form.ownerId.trim() : (user?.id ?? undefined),
         }),
       });
       setCreateOpen(false);
-      setForm({ name: "", companyName: "", email: "", phone: "", source: "Website", ownerId: owners[0]?.id ?? "", notes: "" });
+      setForm({ name: "", companyName: "", email: "", phone: "", source: "Website", ownerId: user?.id ?? "", notes: "" });
       toast("Đã tạo lead", "success");
       await reload();
     } catch (err) {
@@ -272,7 +274,18 @@ export default function LeadsPage() {
           </label>
           <label className="col-span-2 text-xs">
             Phụ trách
-            <OwnerLookup className="mt-1 w-full" allowEmpty={false} value={form.ownerId} onChange={(v) => setForm({ ...form, ownerId: v })} />
+            <OwnerLookup
+              className="mt-1 w-full"
+              allowEmpty={false}
+              value={form.ownerId || user?.id || ""}
+              onChange={(v) => setForm({ ...form, ownerId: v })}
+              disabled={!canAssign}
+            />
+            {!canAssign ? (
+              <span className="mt-0.5 block text-[10px] text-muted">
+                Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+              </span>
+            ) : null}
           </label>
           <label className="col-span-2 text-xs">
             Ghi chú

@@ -9,6 +9,7 @@ type Props = {
   className?: string;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  disabled?: boolean;
 };
 
 export function OwnerLookup({
@@ -17,10 +18,16 @@ export function OwnerLookup({
   className,
   allowEmpty = true,
   emptyLabel = "Người phụ trách",
+  disabled,
 }: Props) {
   const owners = useOwners();
   return (
-    <Select className={className} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+    <Select
+      className={className}
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+    >
       {allowEmpty ? <option value="">{emptyLabel}</option> : null}
       {!allowEmpty && !value ? <option value="">Chọn người phụ trách</option> : null}
       {owners.map((o) => (

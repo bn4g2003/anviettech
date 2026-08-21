@@ -46,7 +46,7 @@ export function ownerByIdSync(id: string, owners: OwnerRef[]): OwnerRef {
 }
 
 export async function resolveOwner(id?: string | null): Promise<OwnerRef> {
+  if (!id) return { id: "", name: "—" };
   const owners = await loadOwners();
-  if (!id) return owners[0] ?? { id: "", name: "—" };
   return ownerByIdSync(id, owners);
 }

@@ -16,6 +16,7 @@ import {
   Shield,
 } from "lucide-react";
 import type { CurrentUser } from "@/features/auth/services/auth-types";
+import { setCurrentUserCache } from "@/features/auth/hooks/use-current-user";
 import { HELP_ITEM, MAIN_NAV, PUBLIC_VIEWS } from "./nav-config";
 import { NavLink } from "./nav-link";
 
@@ -47,12 +48,16 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
   useEffect(() => {
     if (currentUser !== undefined) {
       setUser(currentUser);
+      if (currentUser) setCurrentUserCache(currentUser);
       return;
     }
     fetch("/api/v1/auth/me")
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
-        if (payload?.data) setUser(payload.data);
+        if (payload?.data) {
+          setUser(payload.data);
+          setCurrentUserCache(payload.data);
+        }
       })
       .catch(() => {});
   }, [currentUser]);

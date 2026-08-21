@@ -13,16 +13,15 @@ import { useTasks } from "@/features/tasks/hooks/use-tasks";
 import type { TaskStatus, TaskType } from "@/features/tasks/types";
 import { TASK_TYPE_LABEL } from "@/features/tasks/types";
 import { useToast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useEffect, useState } from "react";
 
 function toDateTimeLocal(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return iso ? iso.slice(0, 16) : "";
 }
 
-function fromDateTimeLocal(value: string) {
-  return new Date(value).toISOString();
+function fromDateTimeLocal(local: string) {
+  return new Date(local).toISOString();
 }
 
 const empty = {
@@ -39,6 +38,8 @@ const empty = {
 export function TaskFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useTasks();
+  const { user, canAssignOthers } = useCurrentUser();
+  const canAssign = canAssignOthers("tasks", "create");
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
@@ -57,9 +58,9 @@ export function TaskFormDialog() {
         notes: editing.notes ?? "",
       });
     } else if (list.createOpen) {
-      setForm(empty);
+      setForm({ ...empty, ownerId: user?.id ?? "" });
     }
-  }, [editing, list.createOpen]);
+  }, [editing, list.createOpen, user?.id]);
 
   function close() {
     list.setCreateOpen(false);
@@ -76,7 +77,7 @@ export function TaskFormDialog() {
       type: form.type,
       status: form.status,
       dueAt: fromDateTimeLocal(form.dueAt),
-      owner: ownerById(form.ownerId),
+      owner: ownerById(form.ownerId || user?.id || ""),
       customerId: form.customerId || undefined,
       dealId: form.dealId || undefined,
       notes: form.notes || undefined,
@@ -103,7 +104,7 @@ export function TaskFormDialog() {
             Hủy
           </Button>
           <Button variant="primary" onClick={save}>
-            Lưu
+            {editing ? "Lưu thay đổi" : "Tạo công việc"}
           </Button>
         </>
       }
@@ -125,11 +126,10 @@ export function TaskFormDialog() {
               setForm((f) => ({ ...f, type: e.target.value as TaskType }))
             }
           >
-            {Object.entries(TASK_TYPE_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+            <option value="call">Cuộc gọi</option>
+            <option value="email">Email</option>
+            <option value="meeting">Cuộc hẹn</option>
+            <option value="todo">Công việc</option>
           </Select>
         </label>
         <label className="space-y-1 text-xs">
@@ -141,9 +141,10 @@ export function TaskFormDialog() {
               setForm((f) => ({ ...f, status: e.target.value as TaskStatus }))
             }
           >
-            <option value="open">Mở</option>
-            <option value="done">Xong</option>
-            <option value="cancelled">Đã hủy</option>
+            <option value="open">Chưa thực hiện</option>
+            <option value="in_progress">Đang thực hiện</option>
+            <option value="completed">Đã hoàn thành</option>
+            <option value="canceled">Đã hủy</option>
           </Select>
         </label>
         <label className="space-y-1 text-xs">
@@ -159,9 +160,15 @@ export function TaskFormDialog() {
           <OwnerLookup
             className="w-full"
             allowEmpty={false}
-            value={form.ownerId}
+            value={form.ownerId || user?.id || ""}
             onChange={(v) => setForm((f) => ({ ...f, ownerId: v }))}
+            disabled={!editing && !canAssign}
           />
+          {!editing && !canAssign ? (
+            <span className="block text-[10px] text-muted">
+              Tự động gán cho bạn ({user?.fullName || "Tài khoản của bạn"})
+            </span>
+          ) : null}
         </label>
         <label className="space-y-1 text-xs">
           <span className="text-muted">Khách hàng</span>
