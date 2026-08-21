@@ -11,14 +11,15 @@ type ApiDeal = {
 
 async function mapDeal(row: ApiDeal): Promise<Deal> {
   const owners = await loadOwners();
+  const stage = (row.stage && row.stage in DEAL_STAGE_META) ? row.stage : "new";
   return {
     id: row.id,
-    code: row.code,
-    title: row.title,
+    code: row.code || "—",
+    title: row.title || "Không có tiêu đề",
     customerId: row.customerId,
-    stage: row.stage,
-    value: Number(row.value),
-    probability: row.probability,
+    stage,
+    value: Number(row.value) || 0,
+    probability: typeof row.probability === "number" ? row.probability : (DEAL_STAGE_META[stage]?.probability ?? 10),
     expectedCloseDate: row.expectedCloseDate ?? "",
     owner: ownerByIdSync(row.ownerId ?? "", owners),
     productIds: [],

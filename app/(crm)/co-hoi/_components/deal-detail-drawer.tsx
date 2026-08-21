@@ -35,19 +35,20 @@ export function DealDetailDrawer() {
     );
   }
 
-  const customer = getCustomer(deal.customerId);
-  const stageMeta = DEAL_STAGE_META[deal.stage];
-  const dealProducts = products.filter((p) => deal.productIds.includes(p.id));
+  const customer = deal.customerId ? getCustomer(deal.customerId) : null;
+  const stageMeta = DEAL_STAGE_META[deal.stage] ?? { label: deal.stage || "—", color: "blue", probability: 0 };
+  const dealProducts = products.filter((p) => (deal.productIds ?? []).includes(p.id));
 
   function createFollowupTask() {
+    if (!deal) return;
     createTask({
-      title: `Follow-up: ${deal!.title}`,
+      title: `Follow-up: ${deal.title}`,
       type: "followup",
       status: "open",
       dueAt: daysFromNow(3),
-      owner: deal!.owner,
-      customerId: deal!.customerId,
-      dealId: deal!.id,
+      owner: deal.owner ?? { id: "", name: "—" },
+      customerId: deal.customerId,
+      dealId: deal.id,
     });
     toast("Đã tạo công việc follow-up", "success");
   }
@@ -110,7 +111,7 @@ export function DealDetailDrawer() {
         </div>
         <div>
           <p className="text-xs text-muted">Phụ trách</p>
-          <p>{deal.owner.name}</p>
+          <p>{deal.owner?.name ?? "—"}</p>
         </div>
         <div className="col-span-2">
           <p className="text-xs text-muted">Sản phẩm</p>

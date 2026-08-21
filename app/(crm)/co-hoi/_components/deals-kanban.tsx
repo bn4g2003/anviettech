@@ -36,9 +36,9 @@ export function DealsKanban() {
     <div className="min-h-0 flex-1 overflow-x-auto p-3">
       <div className="flex h-full min-h-[420px] gap-2">
         {STAGES.map((stage) => {
-          const meta = DEAL_STAGE_META[stage];
-          const cards = byStage[stage];
-          const total = cards.reduce((s, d) => s + d.value, 0);
+          const meta = DEAL_STAGE_META[stage] ?? { label: stage, color: "blue", probability: 0 };
+          const cards = byStage[stage] ?? [];
+          const total = cards.reduce((s, d) => s + (Number(d.value) || 0), 0);
           return (
             <div
               key={stage}
@@ -53,7 +53,11 @@ export function DealsKanban() {
               </p>
               <div className="flex-1 space-y-1.5 overflow-y-auto p-1.5">
                 {cards.map((d) => {
-                  const customer = getCustomer(d.customerId);
+                  const customer = d.customerId ? getCustomer(d.customerId) : null;
+                  const currentIdx = STAGES.indexOf(d.stage);
+                  const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : undefined;
+                  const nextStage = currentIdx >= 0 && currentIdx < STAGES.length - 1 ? STAGES[currentIdx + 1] : undefined;
+                  const nextStages = [prevStage, nextStage].filter((s): s is DealStage => Boolean(s));
                   return (
                     <div
                       key={d.id}
@@ -72,19 +76,17 @@ export function DealsKanban() {
                         className="mt-1.5 flex flex-wrap gap-0.5"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {[STAGES[STAGES.indexOf(d.stage) - 1], STAGES[STAGES.indexOf(d.stage) + 1]]
-                          .filter((s): s is DealStage => Boolean(s))
-                          .map((s) => (
-                            <Button
-                              key={s}
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 px-1 text-[10px] text-muted"
-                              onClick={() => setStage(d.id, s)}
-                            >
-                              → {DEAL_STAGE_META[s].label}
-                            </Button>
-                          ))}
+                        {nextStages.map((s) => (
+                          <Button
+                            key={s}
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 px-1 text-[10px] text-muted"
+                            onClick={() => setStage(d.id, s)}
+                          >
+                            → {DEAL_STAGE_META[s]?.label ?? s}
+                          </Button>
+                        ))}
                       </div>
                     </div>
                   );

@@ -63,7 +63,9 @@ function TasksContent() {
 export default function CongViecPage() {
   return (
     <ListPageProvider defaultColumns={COLUMNS} defaultFilters={{ viewMode: "list" }}>
-      <TasksContent />
+      <Suspense fallback={<div className="p-4 text-sm text-muted">Đang tải...</div>}>
+        <TasksContent />
+      </Suspense>
     </ListPageProvider>
   );
 }

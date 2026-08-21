@@ -16,14 +16,16 @@ export function useDeals(filters?: {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(
-        await dealsService.list({
-          search: filters?.query,
-          status: filters?.stage,
-          ownerId: filters?.ownerId,
-          customerId: filters?.customerId,
-        }),
-      );
+      const data = await dealsService.list({
+        search: filters?.query,
+        status: filters?.stage,
+        ownerId: filters?.ownerId,
+        customerId: filters?.customerId,
+      });
+      setRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading deals:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }

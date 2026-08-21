@@ -67,7 +67,9 @@ function DealsContent() {
 export default function DealsPage() {
   return (
     <ListPageProvider defaultColumns={COLUMNS} defaultFilters={{ viewMode: "list" }}>
-      <DealsContent />
+      <Suspense fallback={<div className="p-4 text-sm text-muted">Đang tải...</div>}>
+        <DealsContent />
+      </Suspense>
     </ListPageProvider>
   );
 }

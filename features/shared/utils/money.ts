@@ -1,9 +1,10 @@
-export function formatVnd(amount: number): string {
+export function formatVnd(amount?: number | null): string {
+  const val = typeof amount === "number" && !isNaN(amount) ? amount : (Number(amount) || 0);
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(val);
 }
 
 export function calcLineTotal(

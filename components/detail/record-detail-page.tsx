@@ -32,21 +32,298 @@ function RelatedLink({ href, children }: { href: string; children: React.ReactNo
 function EmptyRelated({ label }: { label: string }) { return <p className="rounded border border-dashed border-border px-3 py-5 text-center text-xs text-muted">Chưa có {label} liên quan.</p>; }
 
 export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string }) {
-  const router = useRouter(); const { toast } = useToast(); const meta = kindMeta[kind]; const Icon = meta.icon;
-  const customers = useCustomers(); const deals = useDeals(); const tasks = useTasks(); const quotes = useQuotes(); const contracts = useContracts(); const orders = useOrders();
-  const record = (kind === "customer" ? customers.getById(id) : kind === "deal" ? deals.getById(id) : kind === "task" ? tasks.getById(id) : kind === "quote" ? quotes.getById(id) : contracts.getById(id)) as unknown as DetailRecord | undefined;
-  if (!record) return <main className="flex h-full items-center justify-center p-6"><div className="rounded-lg border border-border bg-white p-6 text-center"><p className="font-medium">Không tìm thấy bản ghi</p><Button className="mt-3" variant="outline" onClick={() => router.push(meta.back)}>Quay lại {meta.label}</Button></div></main>;
-  const title = kind === "customer" ? record.name : kind === "deal" ? record.title : kind === "task" ? record.title : record.code;
-  const customerId = kind === "customer" ? record.id : kind === "deal" || kind === "task" || kind === "quote" || kind === "contract" ? record.customerId : undefined;
+  const router = useRouter();
+  const { toast } = useToast();
+  const meta = kindMeta[kind];
+  const Icon = meta.icon;
+  const customers = useCustomers();
+  const deals = useDeals();
+  const tasks = useTasks();
+  const quotes = useQuotes();
+  const contracts = useContracts();
+  const orders = useOrders();
+
+  const isLoading =
+    kind === "customer"
+      ? customers.loading
+      : kind === "deal"
+        ? deals.loading
+        : kind === "task"
+          ? tasks.loading
+          : kind === "quote"
+            ? quotes.loading
+            : contracts.loading;
+
+  const record = (
+    kind === "customer"
+      ? customers.getById(id)
+      : kind === "deal"
+        ? deals.getById(id)
+        : kind === "task"
+          ? tasks.getById(id)
+          : kind === "quote"
+            ? quotes.getById(id)
+            : contracts.getById(id)
+  ) as unknown as DetailRecord | undefined;
+
+  if (isLoading && !record) {
+    return (
+      <main className="flex h-full items-center justify-center p-6">
+        <div className="rounded-lg border border-border bg-white p-6 text-center text-sm text-muted">
+          Đang tải dữ liệu...
+        </div>
+      </main>
+    );
+  }
+
+  if (!record) {
+    return (
+      <main className="flex h-full items-center justify-center p-6">
+        <div className="rounded-lg border border-border bg-white p-6 text-center">
+          <p className="font-medium">Không tìm thấy bản ghi</p>
+          <Button className="mt-3" variant="outline" onClick={() => router.push(meta.back)}>
+            Quay lại {meta.label}
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  const title =
+    kind === "customer"
+      ? record.name
+      : kind === "deal"
+        ? record.title
+        : kind === "task"
+          ? record.title
+          : record.code;
+  const customerId =
+    kind === "customer"
+      ? record.id
+      : kind === "deal" || kind === "task" || kind === "quote" || kind === "contract"
+        ? record.customerId
+        : undefined;
   const customer = customerId ? customers.getById(customerId) : undefined;
   const relatedDeals = customerId ? deals.byCustomer(customerId) : [];
-  const relatedTasks = customerId ? tasks.all.filter((task) => task.customerId === customerId || (kind === "deal" && task.dealId === id)) : [];
-  const relatedQuotes = customerId ? quotes.all.filter((quote) => quote.customerId === customerId || (kind === "deal" && quote.dealId === id)) : [];
-  const relatedContracts = customerId ? contracts.all.filter((contract) => contract.customerId === customerId || (kind === "deal" && contract.dealId === id)) : [];
-  return <main className="min-h-0 flex-1 overflow-auto bg-surface"><div className="mx-auto max-w-6xl p-4 lg:p-6"><button type="button" onClick={() => router.push(meta.back)} className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"><ArrowLeft className="h-4 w-4" />Quay lại {meta.label}</button><section className="rounded-xl border border-border bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="flex items-start gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-900 text-white"><Icon className="h-5 w-5" /></div><div><p className="text-xs font-medium uppercase tracking-wide text-muted">{meta.label}</p><h1 className="mt-0.5 text-xl font-semibold">{title}</h1><p className="mt-1 text-sm text-muted">{kind === "customer" ? `${record.code} · ${record.contactName ?? "Chưa có đầu mối"}` : customer?.name ?? "Bản ghi nghiệp vụ"}</p></div></div><Badge tone="info">{kind === "task" ? record.status : kind === "deal" ? `${record.probability}% xác suất` : kind === "quote" || kind === "contract" ? record.status : record.status}</Badge></div><div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 md:grid-cols-4">{kind === "customer" ? <><Info label="Điện thoại" value={record.phone} /><Info label="Email" value={record.email} /><Info label="Phụ trách" value={record.owner.name} /><Info label="Công nợ" value={formatVnd(customers.getDebt(record.id))} /></> : kind === "deal" ? <><Info label="Giá trị" value={formatVnd(record.value)} /><Info label="Dự kiến chốt" value={formatDate(record.expectedCloseDate)} /><Info label="Giai đoạn" value={record.stage} /><Info label="Phụ trách" value={record.owner.name} /></> : kind === "task" ? <><Info label="Loại" value={TASK_TYPE_LABEL[record.type]} /><Info label="Hạn xử lý" value={formatDateTime(record.dueAt)} /><Info label="Phụ trách" value={record.owner.name} /><label className="text-xs text-muted">Trạng thái<select className="mt-1 block w-full rounded border border-border bg-white px-2 py-1.5 text-sm text-foreground" value={record.status} onChange={(event) => tasks.update(record.id, { status: event.target.value as TaskStatus })}><option value="open">Cần thực hiện</option><option value="done">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></label></> : kind === "quote" ? <><Info label="Tổng giá trị" value={formatVnd(record.total)} /><Info label="Hiệu lực đến" value={formatDate(record.validUntil)} /><Info label="Phụ trách" value={record.owner.name} /><div><p className="text-xs text-muted">Thao tác</p>{(record.status === "draft" || record.status === "sent") ? <Button size="sm" className="mt-1" onClick={() => { try { quotes.approve(record.id); toast("Đã duyệt báo giá và tạo chứng từ liên quan", "success"); } catch (error) { toast(error instanceof Error ? error.message : "Không thể duyệt báo giá", "error"); } }}><CheckCircle2 className="h-3.5 w-3.5" />Duyệt báo giá</Button> : <p className="mt-1 text-sm">Đã xử lý</p>}</div></> : <><Info label="Giá trị" value={formatVnd(record.value)} /><Info label="Thời hạn" value={`${formatDate(record.startDate)} – ${formatDate(record.endDate)}`} /><Info label="Phụ trách" value={record.owner.name} /><Info label="Điều khoản" value={record.terms || "—"} /></>}</div></section>
-  {kind === "quote" ? <QuoteLines lines={record.lines} total={record.total} /> : null}
-  {kind === "contract" ? <ContractLinks quoteId={record.quoteId} dealId={record.dealId} orders={orders.all.filter((order) => order.contractId === record.id)} /> : null}
-  {kind === "task" ? <section className="mt-4 rounded-xl border border-border bg-white p-4"><h2 className="font-medium">Ghi chú</h2><p className="mt-2 text-sm text-muted">{record.notes || "Chưa có ghi chú."}</p></section> : <Tabs defaultValue="deals" className="mt-4 rounded-xl border border-border bg-white p-4"><TabsList><TabsTrigger value="deals">Cơ hội ({relatedDeals.length})</TabsTrigger><TabsTrigger value="tasks">Công việc ({relatedTasks.length})</TabsTrigger><TabsTrigger value="quotes">Báo giá ({relatedQuotes.length})</TabsTrigger><TabsTrigger value="contracts">HĐ ({relatedContracts.length})</TabsTrigger></TabsList><TabsContent value="deals"><RelatedList rows={relatedDeals} href={(row) => `/co-hoi/${row.id}`} title={(row) => row.title} meta={(row) => formatVnd(row.value)} empty="cơ hội" /></TabsContent><TabsContent value="tasks"><RelatedList rows={relatedTasks} href={() => "/cong-viec"} title={(row) => row.title} meta={(row) => formatDateTime(row.dueAt)} empty="công việc" /></TabsContent><TabsContent value="quotes"><RelatedList rows={relatedQuotes} href={(row) => `/bao-gia/${row.id}`} title={(row) => row.code} meta={(row) => formatVnd(row.total)} empty="báo giá" /></TabsContent><TabsContent value="contracts"><RelatedList rows={relatedContracts} href={(row) => `/hop-dong/${row.id}`} title={(row) => row.code} meta={(row) => formatVnd(row.value)} empty="hợp đồng" /></TabsContent></Tabs>}</div></main>;
+  const relatedTasks = customerId
+    ? tasks.all.filter(
+        (task) =>
+          task.customerId === customerId || (kind === "deal" && task.dealId === id),
+      )
+    : [];
+  const relatedQuotes = customerId
+    ? quotes.all.filter(
+        (quote) =>
+          quote.customerId === customerId || (kind === "deal" && quote.dealId === id),
+      )
+    : [];
+  const relatedContracts = customerId
+    ? contracts.all.filter(
+        (contract) =>
+          contract.customerId === customerId ||
+          (kind === "deal" && contract.dealId === id),
+      )
+    : [];
+  return (
+    <main className="min-h-0 flex-1 overflow-auto bg-surface">
+      <div className="mx-auto max-w-6xl p-4 lg:p-6">
+        <button
+          type="button"
+          onClick={() => router.push(meta.back)}
+          className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Quay lại {meta.label}
+        </button>
+        <section className="rounded-xl border border-border bg-white p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-900 text-white">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                  {meta.label}
+                </p>
+                <h1 className="mt-0.5 text-xl font-semibold">{title}</h1>
+                <p className="mt-1 text-sm text-muted">
+                  {kind === "customer"
+                    ? `${record.code} · ${record.contactName ?? "Chưa có đầu mối"}`
+                    : customer?.name ?? "Bản ghi nghiệp vụ"}
+                </p>
+              </div>
+            </div>
+            <Badge tone="info">
+              {kind === "task"
+                ? record.status
+                : kind === "deal"
+                  ? `${record.probability}% xác suất`
+                  : kind === "quote" || kind === "contract"
+                    ? record.status
+                    : record.status}
+            </Badge>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 md:grid-cols-4">
+            {kind === "customer" ? (
+              <>
+                <Info label="Điện thoại" value={record.phone} />
+                <Info label="Email" value={record.email} />
+                <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
+                <Info label="Công nợ" value={formatVnd(customers.getDebt(record.id))} />
+              </>
+            ) : kind === "deal" ? (
+              <>
+                <Info label="Giá trị" value={formatVnd(record.value)} />
+                <Info
+                  label="Dự kiến chốt"
+                  value={formatDate(record.expectedCloseDate)}
+                />
+                <Info label="Giai đoạn" value={record.stage} />
+                <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
+              </>
+            ) : kind === "task" ? (
+              <>
+                <Info label="Loại" value={TASK_TYPE_LABEL[record.type]} />
+                <Info label="Hạn xử lý" value={formatDateTime(record.dueAt)} />
+                <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
+                <label className="text-xs text-muted">
+                  Trạng thái
+                  <select
+                    className="mt-1 block w-full rounded border border-border bg-white px-2 py-1.5 text-sm text-foreground"
+                    value={record.status}
+                    onChange={(event) =>
+                      tasks.update(record.id, {
+                        status: event.target.value as TaskStatus,
+                      })
+                    }
+                  >
+                    <option value="open">Cần thực hiện</option>
+                    <option value="done">Hoàn thành</option>
+                    <option value="cancelled">Đã hủy</option>
+                  </select>
+                </label>
+              </>
+            ) : kind === "quote" ? (
+              <>
+                <Info label="Tổng giá trị" value={formatVnd(record.total)} />
+                <Info label="Hiệu lực đến" value={formatDate(record.validUntil)} />
+                <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
+                <div>
+                  <p className="text-xs text-muted">Thao tác</p>
+                  {record.status === "draft" || record.status === "sent" ? (
+                    <Button
+                      size="sm"
+                      className="mt-1"
+                      onClick={() => {
+                        try {
+                          quotes.approve(record.id);
+                          toast(
+                            "Đã duyệt báo giá và tạo chứng từ liên quan",
+                            "success",
+                          );
+                        } catch (error) {
+                          toast(
+                            error instanceof Error
+                              ? error.message
+                              : "Không thể duyệt báo giá",
+                            "error",
+                          );
+                        }
+                      }}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Duyệt báo giá
+                    </Button>
+                  ) : (
+                    <p className="mt-1 text-sm">Đã xử lý</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Info label="Giá trị" value={formatVnd(record.value)} />
+                <Info
+                  label="Thời hạn"
+                  value={`${formatDate(record.startDate)} – ${formatDate(record.endDate)}`}
+                />
+                <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
+                <Info label="Điều khoản" value={record.terms || "—"} />
+              </>
+            )}
+          </div>
+        </section>
+
+        {kind === "quote" && record.lines ? (
+          <QuoteLines lines={record.lines} total={record.total} />
+        ) : null}
+
+        {kind === "contract" ? (
+          <ContractLinks
+            quoteId={record.quoteId}
+            dealId={record.dealId}
+            orders={orders.all.filter((order) => order.contractId === record.id)}
+          />
+        ) : null}
+
+        {kind === "task" ? (
+          <section className="mt-4 rounded-xl border border-border bg-white p-4">
+            <h2 className="font-medium">Ghi chú</h2>
+            <p className="mt-2 text-sm text-muted">
+              {record.notes || "Chưa có ghi chú."}
+            </p>
+          </section>
+        ) : (
+          <Tabs
+            defaultValue="deals"
+            className="mt-4 rounded-xl border border-border bg-white p-4"
+          >
+            <TabsList>
+              <TabsTrigger value="deals">Cơ hội ({relatedDeals.length})</TabsTrigger>
+              <TabsTrigger value="tasks">Công việc ({relatedTasks.length})</TabsTrigger>
+              <TabsTrigger value="quotes">Báo giá ({relatedQuotes.length})</TabsTrigger>
+              <TabsTrigger value="contracts">HĐ ({relatedContracts.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="deals">
+              <RelatedList
+                rows={relatedDeals}
+                href={(row) => `/co-hoi/${row.id}`}
+                title={(row) => row.title}
+                meta={(row) => formatVnd(row.value)}
+                empty="cơ hội"
+              />
+            </TabsContent>
+            <TabsContent value="tasks">
+              <RelatedList
+                rows={relatedTasks}
+                href={() => "/cong-viec"}
+                title={(row) => row.title}
+                meta={(row) => formatDateTime(row.dueAt)}
+                empty="công việc"
+              />
+            </TabsContent>
+            <TabsContent value="quotes">
+              <RelatedList
+                rows={relatedQuotes}
+                href={(row) => `/bao-gia/${row.id}`}
+                title={(row) => row.code}
+                meta={(row) => formatVnd(row.total)}
+                empty="báo giá"
+              />
+            </TabsContent>
+            <TabsContent value="contracts">
+              <RelatedList
+                rows={relatedContracts}
+                href={(row) => `/hop-dong/${row.id}`}
+                title={(row) => row.code}
+                meta={(row) => formatVnd(row.value)}
+                empty="hợp đồng"
+              />
+            </TabsContent>
+          </Tabs>
+        )}
+      </div>
+    </main>
+  );
 }
 function Info({ label, value }: { label: string; value: string }) { return <div><p className="text-xs text-muted">{label}</p><p className="mt-1 truncate text-sm font-medium">{value}</p></div>; }
 function RelatedList<T extends { id: string }>({ rows, href, title, meta, empty }: { rows: T[]; href: (row: T) => string; title: (row: T) => string; meta: (row: T) => string; empty: string }) { if (!rows.length) return <EmptyRelated label={empty} />; return <div className="mt-3 divide-y divide-border rounded border border-border">{rows.map((row) => <div key={row.id} className="flex items-center justify-between gap-3 px-3 py-2"><RelatedLink href={href(row)}>{title(row)}</RelatedLink><span className="shrink-0 text-xs text-muted">{meta(row)}</span></div>)}</div>; }
