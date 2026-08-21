@@ -79,7 +79,7 @@ export async function resolveOwnerForCreate(
   action: string,
   requestedOwnerId?: string | null,
 ) {
-  const ownerId = requestedOwnerId ?? user.id;
+  const ownerId = requestedOwnerId && requestedOwnerId.trim() ? requestedOwnerId.trim() : user.id;
   const eligible = permissionMatches(user, module, action);
   if (!eligible.length) throw new ApiError(403, "Bạn không có quyền thực hiện thao tác này");
   const canAll = eligible.some((permission) => permission.scope === "all");

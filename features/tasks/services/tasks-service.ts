@@ -45,7 +45,7 @@ export const tasksService = {
         title: input.title,
         type: input.type,
         dueAt: input.dueAt || undefined,
-        ownerId: input.owner?.id,
+        ownerId: input.owner?.id?.trim() ? input.owner.id.trim() : undefined,
         customerId: input.customerId,
         dealId: input.dealId,
         notes: input.notes,
@@ -62,7 +62,7 @@ export const tasksService = {
         type: patch.type,
         status: patch.status,
         dueAt: patch.dueAt,
-        ownerId: patch.owner?.id,
+        ownerId: patch.owner?.id?.trim() ? patch.owner.id.trim() : undefined,
         notes: patch.notes,
       }),
     });

@@ -22,7 +22,7 @@ const empty = {
   startDate: nowIso().slice(0, 10),
   endDate: daysFromNow(365).slice(0, 10),
   terms: "",
-  ownerId: "u1",
+  ownerId: "",
 };
 
 function toDateInput(iso: string) {

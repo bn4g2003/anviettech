@@ -1,12 +1,18 @@
 import { errorResponse, ok, parseJson } from "@/lib/api";
-import { requirePermission } from "@/features/auth/services/auth-service";
-import { createUser, listUsers } from "@/features/auth/services/users-service";
+import { requireBusinessUser, requirePermission } from "@/features/auth/services/auth-service";
+import { createUser, listActiveUsers, listUsers } from "@/features/auth/services/users-service";
 import { userSchema } from "@/features/auth/validation";
 
 export async function GET() {
   try {
-    await requirePermission("users", "view");
-    return ok(await listUsers());
+    const user = await requireBusinessUser();
+    const hasFullView = user.permissions.some(
+      (p) => (p.module === "users" || p.module === "*") && p.action === "view"
+    );
+    if (hasFullView) {
+      return ok(await listUsers());
+    }
+    return ok(await listActiveUsers());
   } catch (error) {
     return errorResponse(error);
   }

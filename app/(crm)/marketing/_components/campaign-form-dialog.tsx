@@ -31,7 +31,7 @@ const empty = {
   budget: 0,
   spent: 0,
   leadsCount: 0,
-  ownerId: "u1",
+  ownerId: "",
   startDate: toDateInput(nowIso()),
   endDate: toDateInput(daysFromNow(30)),
 };

@@ -58,7 +58,7 @@ export const quotesService = {
         customerId: input.customerId,
         dealId: input.dealId,
         validUntil: input.validUntil || undefined,
-        ownerId: input.owner?.id,
+        ownerId: input.owner?.id?.trim() ? input.owner.id.trim() : undefined,
         terms: input.terms,
         lines: input.lines.map((l) => ({
           productId: l.productId,

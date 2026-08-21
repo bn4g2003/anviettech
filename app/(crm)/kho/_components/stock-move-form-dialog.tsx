@@ -35,7 +35,7 @@ export function StockMoveFormDialog({ moveType }: Props) {
     warehouseFrom: "",
     warehouseTo: "Kho chính",
     orderId: "",
-    ownerId: "u1",
+    ownerId: "",
     note: "",
     lines: [emptyLine()] as LineForm[],
   });
@@ -46,7 +46,7 @@ export function StockMoveFormDialog({ moveType }: Props) {
         warehouseFrom: moveType === "in" ? "" : "Kho chính",
         warehouseTo: moveType === "out" ? "" : "Kho chính",
         orderId: "",
-        ownerId: "u1",
+        ownerId: "",
         note: "",
         lines: [emptyLine()],
       });

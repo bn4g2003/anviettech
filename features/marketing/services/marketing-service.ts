@@ -50,7 +50,7 @@ export const marketingService = {
         budget: input.budget,
         startDate: input.startDate || undefined,
         endDate: input.endDate || undefined,
-        ownerId: input.owner?.id,
+        ownerId: input.owner?.id?.trim() ? input.owner.id.trim() : undefined,
         status: input.status,
       }),
     });
@@ -67,7 +67,7 @@ export const marketingService = {
         startDate: patch.startDate,
         endDate: patch.endDate,
         status: patch.status,
-        ownerId: patch.owner?.id,
+        ownerId: patch.owner?.id?.trim() ? patch.owner.id.trim() : undefined,
       }),
     });
     return mapCampaign(result.data);

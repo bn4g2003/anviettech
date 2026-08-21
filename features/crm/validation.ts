@@ -1,14 +1,15 @@
 import { z } from "zod";
 
 const dbUuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "ID không hợp lệ");
+const optionalDbUuid = dbUuid.optional().nullable().or(z.literal("")).transform((v) => (v ? v : undefined));
 
 export const pageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   search: z.string().trim().max(120).optional(),
   status: z.string().trim().max(40).optional(),
-  ownerId: dbUuid.optional(),
-  customerId: dbUuid.optional(),
+  ownerId: optionalDbUuid,
+  customerId: optionalDbUuid,
   sort: z.string().trim().max(40).optional(),
   direction: z.enum(["asc", "desc"]).optional(),
   type: z.string().trim().max(40).optional(),
@@ -21,24 +22,24 @@ export const customerSchema = z.object({
   name: z.string().trim().min(2).max(255),
   type: z.enum(["company", "individual"]),
   email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().max(32).optional(),
-  address: z.string().max(1000).optional(),
-  source: z.string().max(100).optional(),
-  ownerId: dbUuid.optional(),
-  campaignId: dbUuid.optional(),
-  notes: z.string().max(5000).optional(),
+  phone: z.string().max(32).optional().or(z.literal("")),
+  address: z.string().max(1000).optional().or(z.literal("")),
+  source: z.string().max(100).optional().or(z.literal("")),
+  ownerId: optionalDbUuid,
+  campaignId: optionalDbUuid,
+  notes: z.string().max(5000).optional().or(z.literal("")),
   status: z.enum(["active", "inactive"]).optional(),
 });
 
 export const leadCreateSchema = z.object({
   name: z.string().trim().min(2).max(255),
-  companyName: z.string().trim().max(255).optional(),
+  companyName: z.string().trim().max(255).optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().max(32).optional(),
-  source: z.string().max(100).optional(),
-  ownerId: dbUuid.optional(),
-  campaignId: dbUuid.optional(),
-  notes: z.string().max(5000).optional(),
+  phone: z.string().max(32).optional().or(z.literal("")),
+  source: z.string().max(100).optional().or(z.literal("")),
+  ownerId: optionalDbUuid,
+  campaignId: optionalDbUuid,
+  notes: z.string().max(5000).optional().or(z.literal("")),
 });
 
 export const leadConvertSchema = z.object({
@@ -67,9 +68,9 @@ export const activitySchema = z.object({
   type: z.enum(["call", "email", "meeting", "note"]),
   subject: z.string().trim().min(2).max(255),
   content: z.string().max(5000).optional(),
-  customerId: dbUuid.optional(),
-  leadId: dbUuid.optional(),
-  dealId: dbUuid.optional(),
+  customerId: optionalDbUuid,
+  leadId: optionalDbUuid,
+  dealId: optionalDbUuid,
   occurredAt: z.string().optional(),
 });
 
@@ -77,10 +78,10 @@ export const taskSchema = z.object({
   title: z.string().trim().min(2).max(255),
   type: z.enum(["call", "email", "meeting", "todo", "followup"]),
   dueAt: z.string().optional(),
-  ownerId: dbUuid.optional(),
-  customerId: dbUuid.optional(),
-  leadId: dbUuid.optional(),
-  dealId: dbUuid.optional(),
+  ownerId: optionalDbUuid,
+  customerId: optionalDbUuid,
+  leadId: optionalDbUuid,
+  dealId: optionalDbUuid,
   notes: z.string().max(5000).optional(),
   status: z.enum(["open", "done", "cancelled"]).optional(),
 });
@@ -88,11 +89,11 @@ export const taskSchema = z.object({
 export const dealSchema = z.object({
   title: z.string().trim().min(2).max(255),
   customerId: dbUuid,
-  contactId: dbUuid.optional(),
+  contactId: optionalDbUuid,
   value: z.coerce.number().min(0).optional(),
   probability: z.coerce.number().int().min(0).max(100).optional(),
   expectedCloseDate: z.string().optional(),
-  ownerId: dbUuid.optional(),
+  ownerId: optionalDbUuid,
   notes: z.string().max(5000).optional(),
   productIds: z.array(dbUuid).optional(),
 });
@@ -124,9 +125,9 @@ export const quoteLineSchema = z.object({
 
 export const quoteSchema = z.object({
   customerId: dbUuid,
-  dealId: dbUuid.optional(),
+  dealId: optionalDbUuid,
   validUntil: z.string().optional(),
-  ownerId: dbUuid.optional(),
+  ownerId: optionalDbUuid,
   terms: z.string().max(5000).optional(),
   lines: z.array(quoteLineSchema).min(1),
 });
@@ -156,14 +157,14 @@ export const campaignSchema = z.object({
   spent: z.coerce.number().min(0).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  ownerId: dbUuid.optional(),
+  ownerId: optionalDbUuid,
   status: z.enum(["draft", "running", "paused", "completed"]).optional(),
 });
 
 export const stockMoveSchema = z.object({
   type: z.enum(["in", "out", "transfer"]),
-  warehouseFromId: dbUuid.optional(),
-  warehouseToId: dbUuid.optional(),
+  warehouseFromId: optionalDbUuid,
+  warehouseToId: optionalDbUuid,
   note: z.string().max(2000).optional(),
   post: z.boolean().optional(),
   lines: z.array(z.object({ productId: dbUuid, qty: z.coerce.number().positive() })).min(1),

@@ -56,13 +56,13 @@ export const customersService = {
       body: JSON.stringify({
         name: input.name,
         type: input.type,
-        email: input.email,
-        phone: input.phone,
-        address: input.address,
-        source: input.source,
-        ownerId: input.owner?.id,
-        notes: input.notes,
-        campaignId: input.campaignId,
+        email: input.email || undefined,
+        phone: input.phone || undefined,
+        address: input.address || undefined,
+        source: input.source || undefined,
+        ownerId: input.owner?.id?.trim() ? input.owner.id.trim() : undefined,
+        notes: input.notes || undefined,
+        campaignId: input.campaignId || undefined,
       }),
     });
     return mapCustomer(result.data);
@@ -74,14 +74,14 @@ export const customersService = {
       body: JSON.stringify({
         name: patch.name,
         type: patch.type,
-        email: patch.email,
-        phone: patch.phone,
-        address: patch.address,
-        source: patch.source,
-        ownerId: patch.owner?.id,
-        notes: patch.notes,
+        email: patch.email || undefined,
+        phone: patch.phone || undefined,
+        address: patch.address || undefined,
+        source: patch.source || undefined,
+        ownerId: patch.owner?.id?.trim() ? patch.owner.id.trim() : undefined,
+        notes: patch.notes || undefined,
         status: patch.status,
-        campaignId: patch.campaignId,
+        campaignId: patch.campaignId || undefined,
       }),
     });
     return mapCustomer(result.data);

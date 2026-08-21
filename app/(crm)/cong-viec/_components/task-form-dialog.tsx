@@ -30,7 +30,7 @@ const empty = {
   type: "call" as TaskType,
   status: "open" as TaskStatus,
   dueAt: toDateTimeLocal(daysFromNow(1)),
-  ownerId: "u1",
+  ownerId: "",
   customerId: "",
   dealId: "",
   notes: "",

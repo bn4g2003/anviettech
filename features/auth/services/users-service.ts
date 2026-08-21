@@ -29,6 +29,26 @@ export async function listUsers() {
   return result.rows;
 }
 
+export async function listActiveUsers() {
+  const result = await query<{
+    id: string;
+    fullName: string;
+    email: string;
+    status: string;
+    roles: string[];
+  }>(
+    `SELECT u.id, u.full_name AS "fullName", u.email, u.status,
+      COALESCE(array_agg(r.name) FILTER (WHERE r.id IS NOT NULL), '{}') roles
+     FROM users u
+     LEFT JOIN user_roles ur ON ur.user_id=u.id
+     LEFT JOIN roles r ON r.id=ur.role_id
+     WHERE u.deleted_at IS NULL AND u.status = 'active'
+     GROUP BY u.id
+     ORDER BY u.full_name ASC`,
+  );
+  return result.rows;
+}
+
 export async function createUser(
   input: { fullName: string; email: string; temporaryPassword: string; roleIds: string[] },
   actorId: string,

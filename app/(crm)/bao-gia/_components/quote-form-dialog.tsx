@@ -40,7 +40,7 @@ const empty = {
   status: "draft" as QuoteStatus,
   validUntil: daysFromNow(30).slice(0, 10),
   terms: "",
-  ownerId: "u1",
+  ownerId: "",
   lines: [emptyLine()] as LineForm[],
 };
 

@@ -8,13 +8,21 @@ type Props = {
   onChange: (ownerId: string) => void;
   className?: string;
   allowEmpty?: boolean;
+  emptyLabel?: string;
 };
 
-export function OwnerLookup({ value, onChange, className, allowEmpty = true }: Props) {
+export function OwnerLookup({
+  value,
+  onChange,
+  className,
+  allowEmpty = true,
+  emptyLabel = "Người phụ trách",
+}: Props) {
   const owners = useOwners();
   return (
     <Select className={className} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
-      {allowEmpty ? <option value="">Người phụ trách</option> : null}
+      {allowEmpty ? <option value="">{emptyLabel}</option> : null}
+      {!allowEmpty && !value ? <option value="">Chọn người phụ trách</option> : null}
       {owners.map((o) => (
         <option key={o.id} value={o.id}>
           {o.name}

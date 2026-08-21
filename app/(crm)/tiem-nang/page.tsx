@@ -85,7 +85,13 @@ export default function LeadsPage() {
 
   async function create() {
     try {
-      await apiFetch("/api/v1/leads", { method: "POST", body: JSON.stringify(form) });
+      await apiFetch("/api/v1/leads", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          ownerId: form.ownerId?.trim() ? form.ownerId.trim() : undefined,
+        }),
+      });
       setCreateOpen(false);
       setForm({ name: "", companyName: "", email: "", phone: "", source: "Website", ownerId: owners[0]?.id ?? "", notes: "" });
       toast("Đã tạo lead", "success");

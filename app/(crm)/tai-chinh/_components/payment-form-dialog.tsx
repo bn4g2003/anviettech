@@ -40,7 +40,7 @@ export function PaymentFormDialog() {
     amount: 0,
     method: "bank" as PaymentMethod,
     paidAt: toDateTimeLocal(new Date().toISOString()),
-    ownerId: "u1",
+    ownerId: "",
     note: "",
   });
 
@@ -55,7 +55,7 @@ export function PaymentFormDialog() {
       amount: inv ? Math.max(0, inv.amount - inv.paidAmount) : 0,
       method: "bank",
       paidAt: toDateTimeLocal(new Date().toISOString()),
-      ownerId: inv?.owner.id ?? "u1",
+      ownerId: inv?.owner.id ?? "",
       note: "",
     });
   }, [list.createOpen, list.filters.payInvoiceId, unpaidInvoices]);

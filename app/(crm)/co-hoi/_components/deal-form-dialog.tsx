@@ -35,7 +35,7 @@ const empty = {
   stage: "new" as DealStage,
   value: "",
   expectedCloseDate: toDateInput(daysFromNow(14)),
-  ownerId: "u1",
+  ownerId: "",
   productIds: [] as string[],
   notes: "",
 };
