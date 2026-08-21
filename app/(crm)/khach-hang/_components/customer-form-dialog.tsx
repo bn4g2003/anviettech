@@ -11,6 +11,7 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
 import type { CustomerType, CustomerStatus } from "@/features/customers/types";
+import type { OwnerRef } from "@/features/shared/types/ids";
 
 const empty = {
   name: "",
