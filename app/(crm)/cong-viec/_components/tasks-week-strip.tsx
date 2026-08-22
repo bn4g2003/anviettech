@@ -70,7 +70,7 @@ export function TasksWeekStrip() {
                   >
                     <p className="truncate text-xs font-medium">{t.title}</p>
                     <p className="truncate text-[10px] text-muted">
-                      {TASK_TYPE_LABEL[t.type]} · {t.owner.name}
+                      {TASK_TYPE_LABEL[t.type] ?? t.type} · {t.owner?.name ?? "—"}
                     </p>
                     <div className="mt-0.5">
                       <TaskStatusBadge status={t.status} />

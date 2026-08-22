@@ -36,8 +36,12 @@ export function useFinance(filters?: {
         }),
         financeService.listPayments({ search: filters?.query, customerId: filters?.customerId }),
       ]);
-      setInvoices(inv);
-      setPayments(pay);
+      setInvoices(Array.isArray(inv) ? inv : []);
+      setPayments(Array.isArray(pay) ? pay : []);
+    } catch (err) {
+      console.error("Error loading finance data:", err);
+      setInvoices([]);
+      setPayments([]);
     } finally {
       setLoading(false);
     }

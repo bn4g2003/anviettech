@@ -17,12 +17,12 @@ import {
   CAMPAIGN_STATUS_LABELS,
 } from "./campaign-status";
 
-function toDateInput(iso: string) {
-  return iso.slice(0, 10);
+function toDateInput(iso?: string | null) {
+  return iso ? iso.slice(0, 10) : "";
 }
 
-function fromDateInput(date: string) {
-  return new Date(`${date}T00:00:00`).toISOString();
+function fromDateInput(date?: string | null) {
+  return date || "";
 }
 
 const empty = {

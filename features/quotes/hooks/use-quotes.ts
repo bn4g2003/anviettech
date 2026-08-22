@@ -11,7 +11,11 @@ export function useQuotes(filters?: { query?: string; status?: string; customerI
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await quotesService.list({ search: filters?.query, status: filters?.status, customerId: filters?.customerId }));
+      const data = await quotesService.list({ search: filters?.query, status: filters?.status, customerId: filters?.customerId });
+      setRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading quotes:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }

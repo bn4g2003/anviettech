@@ -12,8 +12,11 @@ export function useMarketing(filters?: { query?: string; status?: string; channe
     setLoading(true);
     try {
       let list = await marketingService.list({ search: filters?.query, status: filters?.status });
-      if (filters?.channel) list = list.filter((c) => c.channel === filters.channel);
-      setRows(list);
+      if (Array.isArray(list) && filters?.channel) list = list.filter((c) => c.channel === filters.channel);
+      setRows(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error("Error loading marketing campaigns:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }

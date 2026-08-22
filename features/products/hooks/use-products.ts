@@ -17,11 +17,15 @@ export function useProducts(filters?: { query?: string; status?: string; categor
         productsService.list({ search: filters?.query, status: filters?.status }),
         inventoryService.listLevels().catch(() => []),
       ]);
-      const list = filters?.category ? rawList.filter((p) => p.category === filters.category) : rawList;
+      const list = (Array.isArray(rawList) ? rawList : []).filter((p) => !filters?.category || p.category === filters.category);
       setRows(list);
       const map: Record<string, number> = {};
-      for (const level of levels) map[level.productId] = level.qty;
+      for (const level of levels ?? []) map[level.productId] = level.qty;
       setStock(map);
+    } catch (err) {
+      console.error("Error loading products:", err);
+      setRows([]);
+      setStock({});
     } finally {
       setLoading(false);
     }

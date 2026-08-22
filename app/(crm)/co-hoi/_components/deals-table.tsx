@@ -11,6 +11,7 @@ import { DEAL_STAGE_META, type Deal, type DealStage } from "@/features/deals/typ
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatDate, relativeTime } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Briefcase } from "lucide-react";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,7 @@ import { useRouter } from "next/navigation";
 export function DealsTable() {
   const list = useListPage();
   const router = useRouter();
+  const { canEdit, canDelete } = useCurrentUser();
   const { getById: getCustomer } = useCustomers();
 
   const { rows, loading, removeMany } = useDeals({
@@ -115,8 +117,8 @@ export function DealsTable() {
       cell: (r) => (
         <RowActions
           onView={() => router.push(`/co-hoi/${r.id}`)}
-          onEdit={() => list.setEditId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
+          onEdit={canEdit("deals", r.owner?.id) ? () => list.setEditId(r.id) : undefined}
+          onDelete={canDelete("deals", r.owner?.id) ? () => list.setDeleteId(r.id) : undefined}
         />
       ),
     },

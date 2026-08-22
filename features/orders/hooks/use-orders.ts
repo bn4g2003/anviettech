@@ -11,7 +11,11 @@ export function useOrders(filters?: { query?: string; status?: string; customerI
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await ordersService.list(filters));
+      const data = await ordersService.list(filters);
+      setRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading orders:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }

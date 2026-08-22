@@ -114,11 +114,11 @@ export function CustomerWorkspace({ id }: { id: string }) {
           <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white" style={{ background: customer.logoColor ?? "#334155" }}>
-                {customer.name.slice(0, 1)}
+                {(customer.name || "K").slice(0, 1)}
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="truncate text-lg font-semibold">{customer.name}</h1>
+                  <h1 className="truncate text-lg font-semibold">{customer.name || "Khách hàng"}</h1>
                   <CustomerStatusBadge status={customer.status} />
                 </div>
                 <p className="mt-1 font-mono text-xs text-muted">
@@ -335,7 +335,7 @@ function ActivityPanel({ tasks, activities }: { tasks: ReturnType<typeof useTask
         <Clock3 className="h-4 w-4 text-muted" />
       </div>
       <div className="mt-3 space-y-0 border-l border-border pl-3">
-        {activities.slice(0, 4).map((a) => (
+        {(activities ?? []).slice(0, 4).map((a) => (
           <div key={a.id} className="relative pb-3">
             <i className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-blue-500" />
             <p className="text-sm font-medium">{a.subject}</p>
@@ -344,7 +344,7 @@ function ActivityPanel({ tasks, activities }: { tasks: ReturnType<typeof useTask
             </p>
           </div>
         ))}
-        {tasks.slice(0, 4).map((task) => (
+        {(tasks ?? []).slice(0, 4).map((task) => (
           <div key={task.id} className="relative pb-3 last:pb-0">
             <i className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-emerald-500" />
             <p className="text-sm font-medium">{task.title}</p>
@@ -353,7 +353,7 @@ function ActivityPanel({ tasks, activities }: { tasks: ReturnType<typeof useTask
             </p>
           </div>
         ))}
-        {!activities.length && !tasks.length ? <p className="text-sm text-muted">Chưa có hoạt động.</p> : null}
+        {!(activities ?? []).length && !(tasks ?? []).length ? <p className="text-sm text-muted">Chưa có hoạt động.</p> : null}
       </div>
     </section>
   );
@@ -366,7 +366,7 @@ function InvoicePanel({ invoices }: { invoices: ReturnType<typeof useFinance>["a
         <ReceiptText className="h-4 w-4 text-muted" />
       </div>
       <div className="mt-3 overflow-hidden rounded border border-border">
-        {invoices.slice(0, 5).map((invoice) => (
+        {(invoices ?? []).slice(0, 5).map((invoice) => (
           <div key={invoice.id} className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 last:border-0">
             <div>
               <p className="font-mono text-xs font-medium">{invoice.code}</p>

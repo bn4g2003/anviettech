@@ -11,6 +11,7 @@ import type { Quote } from "@/features/quotes/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
 import { formatDate } from "@/features/shared/utils/date";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { FileText } from "lucide-react";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,7 @@ import { QuoteStatusBadge } from "./quote-status";
 export function QuotesTable() {
   const list = useListPage();
   const router = useRouter();
+  const { canEdit, canDelete } = useCurrentUser();
   const { rows, loading, removeMany } = useQuotes({
     query: list.query,
     status: list.filters.status,
@@ -91,14 +93,17 @@ export function QuotesTable() {
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-            {r.owner.name.slice(0, 1)}
+      cell: (r) => {
+        const ownerName = r.owner?.name || "—";
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
+              {ownerName.slice(0, 1)}
+            </span>
+            {ownerName}
           </span>
-          {r.owner.name}
-        </span>
-      ),
+        );
+      },
     },
     {
       id: "actions",
@@ -107,8 +112,8 @@ export function QuotesTable() {
       cell: (r) => (
         <RowActions
           onView={() => router.push(`/bao-gia/${r.id}`)}
-          onEdit={() => list.setEditId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
+          onEdit={canEdit("quotes", r.owner?.id) ? () => list.setEditId(r.id) : undefined}
+          onDelete={canDelete("quotes", r.owner?.id) ? () => list.setDeleteId(r.id) : undefined}
         />
       ),
     },

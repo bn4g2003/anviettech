@@ -26,6 +26,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<{ d
 
   if (response.status === 204) return { data: undefined as T };
 
+  if (response.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/dang-nhap")) {
+    window.location.href = `/dang-nhap?redirect=${encodeURIComponent(window.location.pathname)}`;
+  }
+
   const body = (await response.json()) as ApiSuccess<T> | ApiFailure;
   if (!response.ok || !body.success) {
     const err = !body.success ? body.error : { code: "REQUEST_ERROR", message: "Yêu cầu thất bại" };

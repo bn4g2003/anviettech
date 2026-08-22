@@ -2,6 +2,7 @@
 
 import { AppHeader } from "@/components/shell/app-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 
 export type FinanceTab = "invoices" | "payments" | "debts";
@@ -13,7 +14,8 @@ type Props = {
 
 export function FinancePageHeader({ tab, onTabChange }: Props) {
   const { setCreateOpen } = useListPage();
-  const canCreate = tab === "invoices" || tab === "payments";
+  const { canCreate: userCanCreate } = useCurrentUser();
+  const canCreate = (tab === "invoices" || tab === "payments") && userCanCreate("finance");
 
   return (
     <AppHeader

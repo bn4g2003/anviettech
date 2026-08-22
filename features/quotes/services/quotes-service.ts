@@ -13,8 +13,12 @@ async function mapQuote(row: ApiQuote): Promise<Quote> {
   const owners = await loadOwners();
   let lines = row.lines;
   if (!lines) {
-    const full = await apiFetch<ApiQuote>(`/api/v1/quotes/${row.id}`);
-    lines = full.data.lines ?? [];
+    try {
+      const full = await apiFetch<ApiQuote>(`/api/v1/quotes/${row.id}`);
+      lines = full?.data?.lines ?? [];
+    } catch {
+      lines = [];
+    }
   }
   return {
     id: row.id,

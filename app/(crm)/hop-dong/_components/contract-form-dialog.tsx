@@ -15,12 +15,12 @@ import { daysFromNow, nowIso } from "@/features/shared/utils/date";
 import type { ContractStatus } from "@/features/contracts/types";
 import { useEffect, useMemo, useState } from "react";
 
-function toDateInput(iso: string) {
+function toDateInput(iso?: string | null) {
   return iso ? iso.slice(0, 10) : "";
 }
 
-function fromDateInput(date: string) {
-  return new Date(`${date}T00:00:00`).toISOString();
+function fromDateInput(date?: string | null) {
+  return date || "";
 }
 
 const empty = {

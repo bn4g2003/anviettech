@@ -2,15 +2,18 @@
 
 import { AppHeader } from "@/components/shell/app-header";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 
 export function CustomersPageHeader() {
   const { setCreateOpen, selectedIds, clearSelection } = useListPage();
+  const { canCreate } = useCurrentUser();
+  const allowed = canCreate("customers");
 
   return (
     <AppHeader
       moduleLabel="Khách hàng"
-      onCreate={() => setCreateOpen(true)}
+      onCreate={allowed ? () => setCreateOpen(true) : undefined}
       createLabel="Tạo"
       secondaryAction={
         selectedIds.length > 0 ? (

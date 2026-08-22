@@ -2,6 +2,7 @@
 
 import { AppHeader } from "@/components/shell/app-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 
 export type InventoryTab = "stock" | "in" | "out" | "transfer";
@@ -19,7 +20,8 @@ const CREATE_LABEL: Record<Exclude<InventoryTab, "stock">, string> = {
 
 export function InventoryPageHeader({ tab, onTabChange }: Props) {
   const { setCreateOpen } = useListPage();
-  const canCreate = tab !== "stock";
+  const { canCreate: userCanCreate } = useCurrentUser();
+  const canCreate = tab !== "stock" && userCanCreate("inventory");
 
   return (
     <AppHeader

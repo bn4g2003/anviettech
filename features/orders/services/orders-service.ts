@@ -12,8 +12,12 @@ async function mapOrder(row: ApiOrder): Promise<Order> {
   const owners = await loadOwners();
   let lines = row.lines;
   if (!lines) {
-    const full = await apiFetch<ApiOrder>(`/api/v1/orders/${row.id}`);
-    lines = full.data.lines ?? [];
+    try {
+      const full = await apiFetch<ApiOrder>(`/api/v1/orders/${row.id}`);
+      lines = full?.data?.lines ?? [];
+    } catch {
+      lines = [];
+    }
   }
   return {
     id: row.id,

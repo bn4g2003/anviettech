@@ -45,12 +45,12 @@ const empty = {
   lines: [emptyLine()] as LineForm[],
 };
 
-function toDateInput(date: string) {
+function toDateInput(date?: string | null) {
   return date ? date.slice(0, 10) : "";
 }
 
-function fromDateInput(date: string) {
-  return new Date(`${date}T00:00:00`).toISOString();
+function fromDateInput(date?: string | null) {
+  return date || "";
 }
 
 export function QuoteFormDialog() {

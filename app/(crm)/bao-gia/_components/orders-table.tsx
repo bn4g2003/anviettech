@@ -103,14 +103,17 @@ export function OrdersTable() {
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-            {r.owner.name.slice(0, 1)}
+      cell: (r) => {
+        const ownerName = r.owner?.name || "—";
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
+              {ownerName.slice(0, 1)}
+            </span>
+            {ownerName}
           </span>
-          {r.owner.name}
-        </span>
-      ),
+        );
+      },
     },
     {
       id: "actions",

@@ -9,6 +9,7 @@ import { useProducts } from "@/features/products/hooks/use-products";
 import type { Product } from "@/features/products/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Package } from "lucide-react";
 import { useMemo } from "react";
 
@@ -19,6 +20,7 @@ const STATUS_MAP = {
 
 export function ProductsTable() {
   const list = useListPage();
+  const { canEdit, canDelete } = useCurrentUser();
   const { rows, loading, getStock, removeMany } = useProducts({
     query: list.query,
     category: list.filters.category,
@@ -100,8 +102,8 @@ export function ProductsTable() {
       cell: (r) => (
         <RowActions
           onView={() => list.setViewId(r.id)}
-          onEdit={() => list.setEditId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
+          onEdit={canEdit("products") ? () => list.setEditId(r.id) : undefined}
+          onDelete={canDelete("products") ? () => list.setDeleteId(r.id) : undefined}
         />
       ),
     },

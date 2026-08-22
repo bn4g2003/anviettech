@@ -94,7 +94,7 @@ export function StockMovesTable({ moveType }: Props) {
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => r.owner.name,
+      cell: (r) => r.owner?.name ?? "—",
     },
     {
       id: "actions",

@@ -9,6 +9,7 @@ import type { Campaign } from "@/features/marketing/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatDate } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Megaphone } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -18,6 +19,7 @@ import {
 
 export function CampaignsTable() {
   const list = useListPage();
+  const { canEdit } = useCurrentUser();
   const { rows, loading } = useMarketing({
     query: list.query,
     status: list.filters.status,
@@ -91,14 +93,17 @@ export function CampaignsTable() {
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-            {r.owner.name.slice(0, 1)}
+      cell: (r) => {
+        const ownerName = r.owner?.name || "—";
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
+              {ownerName.slice(0, 1)}
+            </span>
+            {ownerName}
           </span>
-          {r.owner.name}
-        </span>
-      ),
+        );
+      },
     },
     {
       id: "startDate",
@@ -119,7 +124,7 @@ export function CampaignsTable() {
       cell: (r) => (
         <RowActions
           onView={() => list.setViewId(r.id)}
-          onEdit={() => list.setEditId(r.id)}
+          onEdit={canEdit("campaigns", r.owner?.id) ? () => list.setEditId(r.id) : undefined}
         />
       ),
     },

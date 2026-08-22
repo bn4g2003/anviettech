@@ -49,9 +49,13 @@ export function useCurrentUser() {
     };
   }, []);
 
+  const isAdmin = Boolean(
+    user?.roles.some((r) => r.toLowerCase().includes("admin")),
+  );
+
   const canAssignOthers = (module: string, action = "create") => {
     if (!user) return false;
-    if (user.roles.some((r) => r.toLowerCase().includes("admin"))) return true;
+    if (isAdmin) return true;
     return user.permissions.some(
       (p) => (p.module === "*" || p.module === module) && p.action === action && p.scope === "all",
     );
@@ -59,11 +63,55 @@ export function useCurrentUser() {
 
   const hasPermission = (module: string, action: string) => {
     if (!user) return false;
-    if (user.roles.some((r) => r.toLowerCase().includes("admin"))) return true;
+    if (isAdmin) return true;
     return user.permissions.some(
       (p) => (p.module === "*" || p.module === module) && p.action === action,
     );
   };
 
-  return { user, loading, canAssignOthers, hasPermission };
+  const canView = (module: string) => hasPermission(module, "view");
+  const canCreate = (module: string) => hasPermission(module, "create");
+  const canApprove = (module: string) => hasPermission(module, "approve");
+
+  const canEdit = (module: string, ownerId?: string) => {
+    if (!user) return false;
+    if (isAdmin) return true;
+    const perms = user.permissions.filter(
+      (p) => (p.module === "*" || p.module === module) && p.action === "update",
+    );
+    if (perms.some((p) => p.scope === "all")) return true;
+    if (perms.some((p) => p.scope === "own")) {
+      return !ownerId || ownerId === user.id;
+    }
+    return false;
+  };
+
+  const canDelete = (module: string, ownerId?: string) => {
+    if (!user) return false;
+    if (isAdmin) return true;
+    const perms = user.permissions.filter(
+      (p) => (p.module === "*" || p.module === module) && p.action === "delete",
+    );
+    if (perms.some((p) => p.scope === "all")) return true;
+    if (perms.some((p) => p.scope === "own")) {
+      return !ownerId || ownerId === user.id;
+    }
+    return false;
+  };
+
+  const primaryRole = user?.roles?.[0] || "Thành viên";
+
+  return {
+    user,
+    loading,
+    isAdmin,
+    primaryRole,
+    canAssignOthers,
+    hasPermission,
+    canView,
+    canCreate,
+    canEdit,
+    canDelete,
+    canApprove,
+  };
 }

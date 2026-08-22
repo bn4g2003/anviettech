@@ -17,17 +17,12 @@ import { useEffect, useState } from "react";
 
 const STAGES = Object.keys(DEAL_STAGE_META) as DealStage[];
 
-function toDateInput(iso: string) {
-  try {
-    return new Date(iso).toISOString().slice(0, 10);
-  } catch {
-    return "";
-  }
+function toDateInput(iso?: string | null) {
+  return iso ? iso.slice(0, 10) : "";
 }
 
-function fromDateInput(value: string) {
-  if (!value) return daysFromNow(14);
-  return new Date(`${value}T00:00:00`).toISOString();
+function fromDateInput(value?: string | null) {
+  return value || daysFromNow(14).slice(0, 10);
 }
 
 const empty = {

@@ -2,6 +2,7 @@
 
 import { AppHeader } from "@/components/shell/app-header";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { cn } from "@/lib/cn";
 import { CalendarDays, Columns3, List } from "lucide-react";
@@ -9,13 +10,15 @@ import { CalendarDays, Columns3, List } from "lucide-react";
 export function TasksPageHeader() {
   const { setCreateOpen, selectedIds, clearSelection, filters, setFilter } =
     useListPage();
+  const { canCreate } = useCurrentUser();
   const viewMode = filters.viewMode === "week" ? "week" : filters.viewMode === "kanban" ? "kanban" : "list";
+  const allowed = canCreate("tasks");
 
   return (
     <AppHeader
       moduleLabel="Công việc"
       viewLabel={viewMode === "week" ? "Tuần" : viewMode === "kanban" ? "Kanban" : "Danh sách"}
-      onCreate={() => setCreateOpen(true)}
+      onCreate={allowed ? () => setCreateOpen(true) : undefined}
       createLabel="Tạo"
       viewModes={
         <div className="inline-flex items-center gap-0.5 rounded-md border border-border p-0.5">

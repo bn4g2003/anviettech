@@ -94,7 +94,7 @@ export function PaymentsTable() {
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => r.owner.name,
+      cell: (r) => r.owner?.name ?? "—",
     },
   ];
 

@@ -22,10 +22,16 @@ export function useInventory() {
         productsService.list(),
         inventoryService.listWarehouses(),
       ]);
-      setStockLevels(levels);
-      setStockMoves(moves);
-      setProducts(prods);
-      setWarehouses(wh);
+      setStockLevels(Array.isArray(levels) ? levels : []);
+      setStockMoves(Array.isArray(moves) ? moves : []);
+      setProducts(Array.isArray(prods) ? prods : []);
+      setWarehouses(Array.isArray(wh) ? wh : []);
+    } catch (err) {
+      console.error("Error loading inventory:", err);
+      setStockLevels([]);
+      setStockMoves([]);
+      setProducts([]);
+      setWarehouses([]);
     } finally {
       setLoading(false);
     }

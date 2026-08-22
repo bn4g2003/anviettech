@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import type { CurrentUser } from "@/features/auth/services/auth-types";
 import { setCurrentUserCache } from "@/features/auth/hooks/use-current-user";
-import { HELP_ITEM, MAIN_NAV, PUBLIC_VIEWS } from "./nav-config";
+import { HELP_ITEM, MAIN_NAV, getRoleQuickViews } from "./nav-config";
 import { NavLink } from "./nav-link";
 
 type AppSidebarProps = {
@@ -206,7 +206,15 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
 
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         <ul className="space-y-0.5">
-          {MAIN_NAV.map((item) => {
+          {MAIN_NAV.filter((item) => {
+            if (!user) return true;
+            if (item.adminOnly) return canAccessAuth;
+            if (!item.module) return true;
+            if (user.roles.some((r) => r.toLowerCase().includes("admin"))) return true;
+            return user.permissions.some(
+              (p) => p.module === "*" || p.module === item.module,
+            );
+          }).map((item) => {
             const active = isNavActive(pathname, item.href);
             const Icon = item.icon;
             return (
@@ -233,11 +241,11 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
         {!collapsed ? (
           <div className="mt-4">
             <p className="mb-1 px-2 text-[11px] font-medium uppercase tracking-wide text-muted">
-              Views công khai
+              Góc nhìn nhanh
             </p>
             <ul className="space-y-0.5">
-              {PUBLIC_VIEWS.map((view) => (
-                <li key={view.href}>
+              {getRoleQuickViews(user).map((view) => (
+                <li key={view.href + view.label}>
                   <NavLink
                     href={view.href}
                     showPendingHint={false}

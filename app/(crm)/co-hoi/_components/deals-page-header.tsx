@@ -2,19 +2,22 @@
 
 import { AppHeader } from "@/components/shell/app-header";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { cn } from "@/lib/cn";
 import { Kanban, List } from "lucide-react";
 
 export function DealsPageHeader() {
   const { setCreateOpen, filters, setFilter } = useListPage();
+  const { canCreate } = useCurrentUser();
   const viewMode = filters.viewMode === "kanban" ? "kanban" : "list";
+  const allowed = canCreate("deals");
 
   return (
     <AppHeader
       moduleLabel="Cơ hội"
       viewLabel={viewMode === "kanban" ? "Kanban" : "Danh sách"}
-      onCreate={() => setCreateOpen(true)}
+      onCreate={allowed ? () => setCreateOpen(true) : undefined}
       createLabel="Tạo"
       viewModes={
         <div className="inline-flex items-center gap-0.5 rounded-md border border-border p-0.5">

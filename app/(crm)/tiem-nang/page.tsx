@@ -39,8 +39,9 @@ const STATUS_LABEL: Record<string, string> = {
 export default function TiemNangPage() {
   const router = useRouter();
   const owners = useOwners();
-  const { user, canAssignOthers } = useCurrentUser();
+  const { user, canAssignOthers, canCreate } = useCurrentUser();
   const canAssign = canAssignOthers("leads", "create");
+  const allowedCreate = canCreate("leads");
   const { toast } = useToast();
   const [rows, setRows] = useState<Lead[]>([]);
   const [query, setQuery] = useState("");
@@ -157,7 +158,7 @@ export default function TiemNangPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <AppHeader moduleLabel="Tiềm năng" onCreate={() => setCreateOpen(true)} createLabel="Tạo lead" />
+      <AppHeader moduleLabel="Tiềm năng" onCreate={allowedCreate ? () => setCreateOpen(true) : undefined} createLabel="Tạo lead" />
       <div className="flex items-center gap-2 border-b border-border px-5 py-3">
         <Input className="max-w-xs" placeholder="Tìm lead..." value={query} onChange={(e) => setQuery(e.target.value)} />
         <Select className="w-44" value={status} onChange={(e) => setStatus(e.target.value)}>

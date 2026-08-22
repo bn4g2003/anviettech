@@ -11,7 +11,11 @@ export function useContracts(filters?: { query?: string; status?: string; custom
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await contractsService.list(filters));
+      const data = await contractsService.list(filters);
+      setRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading contracts:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }

@@ -33,7 +33,10 @@ export function useTasks(filters?: {
         due: viewToDue(filters?.view),
         scope: filters?.scope === "my" || filters?.view === "my" ? "my" : undefined,
       });
-      setRows(list);
+      setRows(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }

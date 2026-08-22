@@ -11,12 +11,14 @@ import { formatDateTime, relativeTime } from "@/features/shared/utils/date";
 import { useTasks } from "@/features/tasks/hooks/use-tasks";
 import type { Task } from "@/features/tasks/types";
 import { TASK_TYPE_LABEL } from "@/features/tasks/types";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { CheckSquare } from "lucide-react";
 import { useMemo } from "react";
 import { TaskStatusBadge } from "./task-status";
 
 export function TasksTable() {
   const list = useListPage();
+  const { canEdit, canDelete } = useCurrentUser();
   const { rows, loading, removeMany } = useTasks({
     query: list.query,
     status: list.filters.status,
@@ -50,7 +52,7 @@ export function TasksTable() {
     {
       id: "type",
       header: "Loại",
-      cell: (r) => TASK_TYPE_LABEL[r.type],
+      cell: (r) => TASK_TYPE_LABEL[r.type] ?? r.type,
     },
     {
       id: "status",
@@ -70,14 +72,17 @@ export function TasksTable() {
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-            {r.owner.name.slice(0, 1)}
+      cell: (r) => {
+        const ownerName = r.owner?.name || "—";
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
+              {ownerName.slice(0, 1)}
+            </span>
+            {ownerName}
           </span>
-          {r.owner.name}
-        </span>
-      ),
+        );
+      },
     },
     {
       id: "customer",
@@ -106,8 +111,8 @@ export function TasksTable() {
       cell: (r) => (
         <RowActions
           onView={() => list.setViewId(r.id)}
-          onEdit={() => list.setEditId(r.id)}
-          onDelete={() => list.setDeleteId(r.id)}
+          onEdit={canEdit("tasks", r.owner?.id) ? () => list.setEditId(r.id) : undefined}
+          onDelete={canDelete("tasks", r.owner?.id) ? () => list.setDeleteId(r.id) : undefined}
         />
       ),
     },
