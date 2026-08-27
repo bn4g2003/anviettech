@@ -9,6 +9,7 @@ type Props = {
   className?: string;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  disabled?: boolean;
 };
 
 export function CustomerLookup({
@@ -17,6 +18,7 @@ export function CustomerLookup({
   className,
   allowEmpty = true,
   emptyLabel = "Chọn khách hàng",
+  disabled,
 }: Props) {
   const { all } = useCustomers();
   return (
@@ -24,8 +26,11 @@ export function CustomerLookup({
       className={className}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
     >
-      {allowEmpty ? <option value="">{emptyLabel}</option> : null}
+      <option value="" disabled={!allowEmpty}>
+        {emptyLabel}
+      </option>
       {all.map((c) => (
         <option key={c.id} value={c.id}>
           {c.code} — {c.name}

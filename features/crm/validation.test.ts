@@ -9,6 +9,7 @@ import {
   documentSchema,
   taskSchema,
   dealSchema,
+  contractSchema,
 } from "./validation";
 
 describe("CRM validation", () => {
@@ -81,6 +82,22 @@ describe("CRM validation", () => {
       lines: [{ productId: "22222222-2222-4222-8222-222222222222", qty: 1, unitPrice: 1000 }],
     });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts a manual contract and normalizes empty linked IDs", () => {
+    const result = contractSchema.safeParse({
+      customerId: "11111111-1111-4111-8111-111111111111",
+      quoteId: "",
+      dealId: "",
+      status: "draft",
+      value: 1500000,
+      ownerId: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.quoteId).toBeUndefined();
+      expect(result.data.ownerId).toBeUndefined();
+    }
   });
 
   it("validates payment method", () => {

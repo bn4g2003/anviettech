@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import { apiFetch, toQuery, ApiClientError } from "@/lib/api-client";
 import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { LEAD_SOURCE_OPTIONS } from "@/features/leads/source-options";
 import { useRouter } from "next/navigation";
 
 type Lead = {
@@ -263,7 +264,17 @@ export default function TiemNangPage() {
           </label>
           <label className="text-xs">
             Nguồn
-            <Input className="mt-1 w-full" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
+            <Select
+              className="mt-1 w-full"
+              value={form.source}
+              onChange={(e) => setForm({ ...form, source: e.target.value })}
+            >
+              {LEAD_SOURCE_OPTIONS.map((source) => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
+            </Select>
           </label>
           <label className="text-xs">
             Email

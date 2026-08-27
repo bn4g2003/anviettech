@@ -14,14 +14,21 @@ export function useTasks(filters?: {
   status?: string;
   ownerId?: string;
   customerId?: string;
+  dealId?: string;
   type?: string;
   view?: string;
   scope?: string;
+  enabled?: boolean;
 }) {
   const [rows, setRows] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    if (filters?.enabled === false) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const list = await tasksService.list({
@@ -29,6 +36,7 @@ export function useTasks(filters?: {
         status: filters?.status,
         ownerId: filters?.ownerId,
         customerId: filters?.customerId,
+        dealId: filters?.dealId,
         type: filters?.type,
         due: viewToDue(filters?.view),
         scope: filters?.scope === "my" || filters?.view === "my" ? "my" : undefined,
@@ -40,7 +48,7 @@ export function useTasks(filters?: {
     } finally {
       setLoading(false);
     }
-  }, [filters?.query, filters?.status, filters?.ownerId, filters?.customerId, filters?.type, filters?.view, filters?.scope]);
+  }, [filters?.query, filters?.status, filters?.ownerId, filters?.customerId, filters?.dealId, filters?.type, filters?.view, filters?.scope, filters?.enabled]);
 
   useEffect(() => {
     void reload();

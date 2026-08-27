@@ -33,11 +33,15 @@ export function useContracts(filters?: { query?: string; status?: string; custom
     loading,
     reload,
     getById: (id: string) => byId.get(id),
-    create: async (_input: ContractInput) => {
-      throw new Error("Hợp đồng được tạo khi duyệt báo giá");
+    create: async (input: ContractInput) => {
+      const created = await contractsService.create(input);
+      await reload();
+      return created;
     },
-    update: async (_id: string, _patch: Partial<ContractInput>) => {
-      throw new Error("Chỉnh sửa hợp đồng chưa hỗ trợ trên UI");
+    update: async (id: string, patch: Partial<ContractInput>) => {
+      const updated = await contractsService.update(id, patch);
+      await reload();
+      return updated;
     },
     remove: async (_deleteId: string) => undefined,
     removeMany: async (_ids: string[]) => undefined,

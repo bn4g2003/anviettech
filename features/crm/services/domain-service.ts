@@ -568,6 +568,57 @@ export async function getContract(id: string) {
   return result.rows[0];
 }
 
+type ContractInput = {
+  customerId: string; quoteId?: string; dealId?: string; status?: string; value: number;
+  startDate?: string; endDate?: string; ownerId?: string; terms?: string;
+};
+
+async function assertContractQuote(client: { query: typeof query }, quoteId: string, customerId: string) {
+  const quote = await client.query<{ customer_id: string; status: string }>(
+    "SELECT customer_id, status FROM quotes WHERE id=$1 AND deleted_at IS NULL", [quoteId],
+  );
+  if (!quote.rows[0]) throw new ApiError(422, "Báo giá không tồn tại");
+  if (quote.rows[0].status !== "approved") throw new ApiError(422, "Chỉ có thể liên kết báo giá đã duyệt");
+  if (quote.rows[0].customer_id !== customerId) throw new ApiError(422, "Báo giá không thuộc khách hàng đã chọn");
+  const linked = await client.query("SELECT 1 FROM contracts WHERE quote_id=$1 AND deleted_at IS NULL", [quoteId]);
+  if (linked.rows[0]) throw new ApiError(409, "Báo giá này đã có hợp đồng");
+}
+
+export async function createContract(input: ContractInput, actorId: string) {
+  await assertCustomerExists(input.customerId);
+  if (input.dealId) await assertDealBelongsToCustomer(input.dealId, input.customerId);
+  return transaction(async (client) => {
+    if (input.quoteId) await assertContractQuote(client, input.quoteId, input.customerId);
+    const result = await client.query(
+      `INSERT INTO contracts(code,customer_id,quote_id,deal_id,status,value,start_date,end_date,owner_id,terms,created_by,updated_by)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)
+       RETURNING id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [code("HD"), input.customerId, input.quoteId ?? null, input.dealId ?? null, input.status ?? "draft", input.value, input.startDate || null, input.endDate || null, input.ownerId ?? actorId, input.terms || null, actorId],
+    );
+    await audit(client, actorId, "contracts", "create", "contract", result.rows[0].id, result.rows[0]);
+    return result.rows[0];
+  });
+}
+
+export async function updateContract(id: string, input: Partial<ContractInput>, actorId: string) {
+  const current = await getContract(id);
+  if (input.customerId && input.customerId !== current.customerId) {
+    throw new ApiError(422, "Không thể đổi khách hàng của hợp đồng");
+  }
+  if (input.quoteId && input.quoteId !== current.quoteId) {
+    throw new ApiError(422, "Không thể đổi báo giá liên kết của hợp đồng");
+  }
+  const result = await query(
+    `UPDATE contracts SET status=COALESCE($1,status), value=COALESCE($2,value), start_date=COALESCE($3,start_date),
+     end_date=COALESCE($4,end_date), owner_id=COALESCE($5,owner_id), terms=COALESCE($6,terms), updated_at=now(), updated_by=$7
+     WHERE id=$8 AND deleted_at IS NULL
+     RETURNING id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    [input.status ?? null, input.value ?? null, input.startDate || null, input.endDate || null, input.ownerId ?? null, input.terms || null, actorId, id],
+  );
+  await audit(query, actorId, "contracts", "update", "contract", id, result.rows[0], current);
+  return result.rows[0];
+}
+
 // —— Campaigns ——
 export async function getCampaign(id: string) {
   const result = await query<{

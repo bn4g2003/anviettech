@@ -24,7 +24,9 @@ export function ProductLookup({
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
     >
-      {allowEmpty ? <option value="">Chọn sản phẩm</option> : null}
+      <option value="" disabled={!allowEmpty}>
+        Chọn sản phẩm
+      </option>
       {active.map((p) => (
         <option key={p.id} value={p.id}>
           {p.sku} — {p.name}

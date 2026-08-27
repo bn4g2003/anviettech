@@ -30,6 +30,7 @@ export const tasksService = {
     search?: string;
     status?: string;
     customerId?: string;
+    dealId?: string;
     ownerId?: string;
     type?: string;
     due?: string;

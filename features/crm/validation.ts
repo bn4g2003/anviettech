@@ -10,6 +10,7 @@ export const pageSchema = z.object({
   status: z.string().trim().max(40).optional(),
   ownerId: optionalDbUuid,
   customerId: optionalDbUuid,
+  dealId: optionalDbUuid,
   sort: z.string().trim().max(40).optional(),
   direction: z.enum(["asc", "desc"]).optional(),
   type: z.string().trim().max(40).optional(),
@@ -130,6 +131,18 @@ export const quoteSchema = z.object({
   ownerId: optionalDbUuid,
   terms: z.string().max(5000).optional(),
   lines: z.array(quoteLineSchema).min(1),
+});
+
+export const contractSchema = z.object({
+  customerId: dbUuid,
+  quoteId: optionalDbUuid,
+  dealId: optionalDbUuid,
+  status: z.enum(["draft", "active", "completed", "cancelled"]).optional(),
+  value: z.coerce.number().min(0),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  ownerId: optionalDbUuid,
+  terms: z.string().max(5000).optional().or(z.literal("")),
 });
 
 export const orderUpdateSchema = z.object({

@@ -13,12 +13,11 @@ import { formatVnd } from "@/features/shared/utils/money";
 import { formatDate } from "@/features/shared/utils/date";
 import { Handshake } from "lucide-react";
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { ContractStatusBadge } from "./contract-status";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 
 export function ContractsTable() {
   const list = useListPage();
-  const router = useRouter();
   const { rows, loading } = useContracts({
     query: list.query,
     status: list.filters.status,
@@ -26,6 +25,7 @@ export function ContractsTable() {
   });
   const { getById: getCustomer } = useCustomers();
   const { all: quotes } = useQuotes();
+  const { canEdit } = useCurrentUser();
 
   const filtered = useMemo(() => {
     let result = rows;
@@ -114,7 +114,10 @@ export function ContractsTable() {
       header: "Thao tác",
       sticky: "right",
       cell: (r) => (
-        <RowActions onView={() => router.push(`/hop-dong/${r.id}`)} />
+        <RowActions
+          onView={() => list.setViewId(r.id)}
+          onEdit={canEdit("contracts", r.owner.id) ? () => list.setEditId(r.id) : undefined}
+        />
       ),
     },
   ];
@@ -126,7 +129,7 @@ export function ContractsTable() {
       <DataGrid
         columns={columns}
         rows={pageRows}
-        onRowClick={(r) => router.push(`/hop-dong/${r.id}`)}
+        onRowClick={(r) => list.setViewId(r.id)}
         sortKey={list.sortKey}
         sortDir={list.sortDir}
         onSort={list.toggleSort}

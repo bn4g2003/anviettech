@@ -9,6 +9,9 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
 import { formatVnd } from "@/features/shared/utils/money";
 import { formatDate } from "@/features/shared/utils/date";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { getQuoteDetailAction } from "@/features/quotes/quote-detail-actions";
+import { canApproveQuoteByRole } from "@/features/quotes/quote-approval-policy";
 import { QuoteStatusBadge } from "./quote-status";
 
 export function QuoteDetailDrawer() {
@@ -17,6 +20,7 @@ export function QuoteDetailDrawer() {
   const { getById: getCustomer } = useCustomers();
   const { all: deals } = useDeals();
   const { toast } = useToast();
+  const { user, canApprove, canEdit } = useCurrentUser();
   const quote = list.viewId ? getById(list.viewId) : null;
 
   if (!quote) {
@@ -33,7 +37,11 @@ export function QuoteDetailDrawer() {
 
   const customer = getCustomer(quote.customerId);
   const deal = quote.dealId ? deals.find((d) => d.id === quote.dealId) : null;
-  const canApprove = quote.status === "draft" || quote.status === "sent";
+  const action = getQuoteDetailAction(
+    quote.status,
+    Boolean(user && canApprove("quotes") && canApproveQuoteByRole(user.roles)),
+    canEdit("quotes", quote.owner.id),
+  );
 
   return (
     <Drawer
@@ -47,7 +55,7 @@ export function QuoteDetailDrawer() {
           <Button variant="outline" onClick={() => list.setViewId(null)}>
             Đóng
           </Button>
-          {canApprove ? (
+          {action === "approve" ? (
             <Button
               variant="primary"
               onClick={() => {
@@ -61,7 +69,7 @@ export function QuoteDetailDrawer() {
             >
               Duyệt báo giá
             </Button>
-          ) : (
+          ) : action === "edit" ? (
             <Button
               variant="primary"
               onClick={() => {
@@ -71,7 +79,7 @@ export function QuoteDetailDrawer() {
             >
               Sửa
             </Button>
-          )}
+          ) : null}
         </>
       }
     >

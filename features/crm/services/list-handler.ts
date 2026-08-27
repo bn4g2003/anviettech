@@ -23,6 +23,7 @@ export async function listHandler(request: Request, resource: ResourceName, modu
       type: params.type,
       due: params.due,
       scope: params.scope,
+      dealId: params.dealId,
     });
     return ok(result.rows, result.meta);
   } catch (error) {

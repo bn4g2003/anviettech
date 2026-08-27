@@ -299,7 +299,7 @@ export function CustomerWorkspace({ id }: { id: string }) {
 
         <PaymentModal open={paymentOpen} onOpenChange={setPaymentOpen} customerId={id} invoices={invoices} onSave={finance.recordPayment} toast={toast} owner={customer.owner} />
         <QuickTaskModal open={taskOpen} onOpenChange={setTaskOpen} customerId={id} owner={customer.owner} onSave={tasks.create} toast={toast} />
-        <DealModal open={dealOpen} onOpenChange={setDealOpen} customerId={id} owner={customer.owner} products={products} onSave={dealsApi.create} toast={toast} />
+        <DealModal open={dealOpen} onOpenChange={setDealOpen} customerId={id} owner={customer.owner} onSave={dealsApi.create} toast={toast} />
         <QuoteModal open={quoteOpen} onOpenChange={setQuoteOpen} customerId={id} owner={customer.owner} deals={deals} products={products} onSave={quotesApi.create} toast={toast} />
         <ContactModal open={contactOpen} onOpenChange={setContactOpen} customerId={id} onCreated={reloadCustomer} toast={toast} />
         <ActivityModal open={activityOpen} onOpenChange={setActivityOpen} customerId={id} onCreated={reloadCustomer} toast={toast} />
@@ -708,7 +708,6 @@ function DealModal({
   onOpenChange,
   customerId,
   owner,
-  products,
   onSave,
   toast,
 }: {
@@ -716,13 +715,11 @@ function DealModal({
   onOpenChange: (value: boolean) => void;
   customerId: string;
   owner: { id: string; name: string };
-  products: ReturnType<typeof useProducts>["all"];
   onSave: ReturnType<typeof useDeals>["create"];
   toast: ReturnType<typeof useToast>["toast"];
 }) {
   const [title, setTitle] = useState("");
-  const [value, setValue] = useState(0);
-  const [productId, setProductId] = useState("");
+  const [notes, setNotes] = useState("");
   return (
     <Modal
       open={open}
@@ -741,15 +738,15 @@ function DealModal({
                 title: title.trim(),
                 customerId,
                 stage: "new",
-                value,
+                value: 0,
                 owner,
                 expectedCloseDate: daysFromNow(14),
-                productIds: productId ? [productId] : [],
+                productIds: [],
+                notes: notes.trim() || undefined,
               }).then(() => {
                 toast("Đã tạo cơ hội", "success");
                 setTitle("");
-                setValue(0);
-                setProductId("");
+                setNotes("");
                 onOpenChange(false);
               });
             }}
@@ -761,15 +758,7 @@ function DealModal({
     >
       <div className="grid gap-3">
         <Input placeholder="Tên cơ hội" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input type="number" value={value} onChange={(e) => setValue(Number(e.target.value) || 0)} />
-        <Select className="w-full" value={productId} onChange={(e) => setProductId(e.target.value)}>
-          <option value="">Sản phẩm</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </Select>
+        <Input placeholder="Ghi chú / nội dung trao đổi" value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
     </Modal>
   );

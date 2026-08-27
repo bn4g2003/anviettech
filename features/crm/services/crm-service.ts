@@ -9,6 +9,7 @@ export type ListOptions = {
   status?: string;
   ownerId?: string;
   customerId?: string;
+  dealId?: string;
   sort?: string;
   direction?: "asc" | "desc";
   actorId: string;
@@ -197,6 +198,10 @@ export async function listResource(name: ResourceName, options: ListOptions) {
   if (options.customerId && (name === "contacts" || name === "activities" || name === "tasks" || name === "deals" || name === "quotes" || name === "orders" || name === "contracts" || name === "invoices" || name === "payments")) {
     values.push(options.customerId);
     where.push(`customer_id=$${values.length}`);
+  }
+  if (options.dealId && (name === "activities" || name === "tasks")) {
+    values.push(options.dealId);
+    where.push(`deal_id=$${values.length}`);
   }
   if (options.search) {
     values.push(`%${options.search}%`);

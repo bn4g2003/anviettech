@@ -10,6 +10,7 @@ export function useCustomers(filters?: {
   status?: string;
   type?: string;
   ownerId?: string;
+  scope?: "my";
 }) {
   const [rows, setRows] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,7 @@ export function useCustomers(filters?: {
           search: filters?.query,
           status: filters?.status,
           ownerId: filters?.ownerId,
+          scope: filters?.scope,
           pageSize: 100,
         }),
         apiFetch<{ customerId: string; amount: number | string; paidAmount: number | string }[]>(
@@ -47,7 +49,7 @@ export function useCustomers(filters?: {
     } finally {
       setLoading(false);
     }
-  }, [filters?.query, filters?.status, filters?.type, filters?.ownerId]);
+  }, [filters?.query, filters?.status, filters?.type, filters?.ownerId, filters?.scope]);
 
   useEffect(() => {
     void reload();

@@ -33,16 +33,19 @@ export function setCurrentUserCache(user: CurrentUser | null) {
 }
 
 export function useCurrentUser() {
-  const [user, setUser] = useState<CurrentUser | null>(cachedUser);
-  const [loading, setLoading] = useState(!cachedUser);
+  // The server and browser must begin with the same value during hydration.
+  // Read the client-side cache only after the component has mounted.
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const listener = (u: CurrentUser | null) => setUser(u);
     listeners.add(listener);
-    if (!cachedUser) {
-      void loadCurrentUser().finally(() => setLoading(false));
-    } else {
+    if (cachedUser) {
+      setUser(cachedUser);
       setLoading(false);
+    } else {
+      void loadCurrentUser().finally(() => setLoading(false));
     }
     return () => {
       listeners.delete(listener);

@@ -14,6 +14,7 @@ import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Users } from "lucide-react";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { scopeForCustomerView } from "@/features/customers/customer-scope";
 
 export function CustomersTable() {
   const list = useListPage();
@@ -24,6 +25,7 @@ export function CustomersTable() {
     status: list.filters.status,
     type: list.filters.type,
     ownerId: list.filters.ownerId,
+    scope: scopeForCustomerView(list.filters.view),
   });
 
   const sorted = useMemo(() => {

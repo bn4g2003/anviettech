@@ -11,7 +11,7 @@ import { useQuotes } from "@/features/quotes/hooks/use-quotes";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
-import { daysFromNow, nowIso } from "@/features/shared/utils/date";
+import { daysFromNow } from "@/features/shared/utils/date";
 import type { ContractStatus } from "@/features/contracts/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -86,7 +86,7 @@ export function ContractFormDialog() {
     }));
   }
 
-  function save() {
+  async function save() {
     if (!form.customerId) {
       toast("Vui lòng chọn khách hàng", "error");
       return;
@@ -105,14 +105,18 @@ export function ContractFormDialog() {
       terms: form.terms || undefined,
       owner: ownerById(form.ownerId || user?.id || ""),
     };
-    if (editing) {
-      update(editing.id, payload);
-      toast("Đã cập nhật hợp đồng", "success");
-    } else {
-      create(payload);
-      toast("Đã tạo hợp đồng", "success");
+    try {
+      if (editing) {
+        await update(editing.id, payload);
+        toast("Đã cập nhật hợp đồng", "success");
+      } else {
+        await create(payload);
+        toast("Đã tạo hợp đồng", "success");
+      }
+      close();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Không thể lưu hợp đồng", "error");
     }
-    close();
   }
 
   return (
@@ -126,7 +130,7 @@ export function ContractFormDialog() {
           <Button variant="outline" onClick={close}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={save}>
+          <Button variant="primary" onClick={() => void save()}>
             Lưu
           </Button>
         </>
@@ -139,6 +143,7 @@ export function ContractFormDialog() {
             className="w-full"
             allowEmpty={false}
             value={form.customerId}
+            disabled={Boolean(editing?.quoteId)}
             onChange={(v) =>
               setForm((f) => ({ ...f, customerId: v, quoteId: "" }))
             }
@@ -149,6 +154,7 @@ export function ContractFormDialog() {
           <Select
             className="w-full"
             value={form.quoteId}
+            disabled={Boolean(editing?.quoteId)}
             onChange={(e) => onQuoteChange(e.target.value)}
           >
             <option value="">Không liên kết</option>

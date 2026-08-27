@@ -11,15 +11,21 @@ import type { Customer } from "@/features/customers/types";
 import { useDeals } from "@/features/deals/hooks/use-deals";
 import type { Deal } from "@/features/deals/types";
 import { useOrders } from "@/features/orders/hooks/use-orders";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { canApproveQuoteByRole } from "@/features/quotes/quote-approval-policy";
 import { useQuotes } from "@/features/quotes/hooks/use-quotes";
 import type { Quote } from "@/features/quotes/types";
 import { formatDate, formatDateTime } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useTasks } from "@/features/tasks/hooks/use-tasks";
+import { useActivities } from "@/features/activities/hooks/use-activities";
 import { TASK_TYPE_LABEL, type Task, type TaskStatus } from "@/features/tasks/types";
 import { ArrowLeft, CheckCircle2, ExternalLink, FileText, Handshake, ListTodo, UserRound } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type RecordKind = "customer" | "deal" | "task" | "quote" | "contract";
 type DetailRecord = Omit<Customer, "type" | "status"> & Omit<Deal, "status"> & Omit<Task, "type" | "status"> & Omit<Quote, "status"> & Omit<Contract, "status"> & { type: Task["type"]; status: Customer["status"] | Deal["stage"] | Task["status"] | Quote["status"] | Contract["status"] };
@@ -42,6 +48,9 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
   const quotes = useQuotes();
   const contracts = useContracts();
   const orders = useOrders();
+  const activities = useActivities({ dealId: kind === "deal" ? id : undefined, enabled: kind === "deal" });
+  const { user, canApprove, canCreate } = useCurrentUser();
+  const [remarketing, setRemarketing] = useState({ type: "call" as const, subject: "", content: "", nextFollowupAt: "" });
 
   const isLoading =
     kind === "customer"
@@ -124,6 +133,44 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
           (kind === "deal" && contract.dealId === id),
       )
     : [];
+  const canApproveCurrentQuote =
+    kind === "quote" &&
+    record.status === "sent" &&
+    Boolean(user && canApprove("quotes") && canApproveQuoteByRole(user.roles));
+
+  async function saveRemarketing() {
+    if (!record || kind !== "deal" || remarketing.subject.trim().length < 2) {
+      toast("Nhập nội dung chăm sóc", "error");
+      return;
+    }
+    try {
+      await activities.create({
+        type: remarketing.type,
+        subject: remarketing.subject.trim(),
+        content: remarketing.content.trim() || undefined,
+        customerId: record.customerId,
+        dealId: record.id,
+        occurredAt: new Date().toISOString(),
+      });
+      if (remarketing.nextFollowupAt) {
+        await tasks.create({
+          title: `Follow-up: ${remarketing.subject.trim()}`,
+          type: "followup",
+          status: "open",
+          dueAt: remarketing.nextFollowupAt,
+          owner: record.owner,
+          customerId: record.customerId,
+          dealId: record.id,
+          notes: remarketing.content.trim() || undefined,
+        });
+      }
+      setRemarketing({ type: "call", subject: "", content: "", nextFollowupAt: "" });
+      toast("Đã ghi nhận lịch sử chăm sóc", "success");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Không thể lưu lịch sử chăm sóc", "error");
+    }
+  }
+
   return (
     <main className="min-h-0 flex-1 overflow-auto bg-surface">
       <div className="mx-auto max-w-6xl p-4 lg:p-6">
@@ -210,25 +257,27 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
                 <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
                 <div>
                   <p className="text-xs text-muted">Thao tác</p>
-                  {record.status === "draft" || record.status === "sent" ? (
+                  {canApproveCurrentQuote ? (
                     <Button
                       size="sm"
                       className="mt-1"
                       onClick={() => {
-                        try {
-                          quotes.approve(record.id);
-                          toast(
+                        void quotes
+                          .approve(record.id)
+                          .then(() =>
+                            toast(
                             "Đã duyệt báo giá và tạo chứng từ liên quan",
                             "success",
-                          );
-                        } catch (error) {
-                          toast(
+                          ),
+                          )
+                          .catch((error) =>
+                            toast(
                             error instanceof Error
                               ? error.message
                               : "Không thể duyệt báo giá",
                             "error",
+                          ),
                           );
-                        }
                       }}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
@@ -282,6 +331,7 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
               <TabsTrigger value="tasks">Công việc ({relatedTasks.length})</TabsTrigger>
               <TabsTrigger value="quotes">Báo giá ({relatedQuotes.length})</TabsTrigger>
               <TabsTrigger value="contracts">HĐ ({relatedContracts.length})</TabsTrigger>
+              {kind === "deal" ? <TabsTrigger value="remarketing">Chăm sóc ({activities.rows.length})</TabsTrigger> : null}
             </TabsList>
             <TabsContent value="deals">
               <RelatedList
@@ -319,6 +369,39 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
                 empty="hợp đồng"
               />
             </TabsContent>
+            {kind === "deal" ? (
+              <TabsContent value="remarketing">
+                {canCreate("activities") ? (
+                  <div className="mt-3 grid gap-2 rounded-lg border border-border bg-muted-bg/30 p-3 md:grid-cols-2">
+                    <Select value={remarketing.type} onChange={(event) => setRemarketing((value) => ({ ...value, type: event.target.value as typeof value.type }))}>
+                      <option value="call">Gọi điện</option>
+                      <option value="email">Email</option>
+                      <option value="meeting">Gặp mặt</option>
+                      <option value="note">Ghi chú</option>
+                    </Select>
+                    <Input placeholder="Nội dung chăm sóc *" value={remarketing.subject} onChange={(event) => setRemarketing((value) => ({ ...value, subject: event.target.value }))} />
+                    <Input className="md:col-span-2" placeholder="Chi tiết trao đổi" value={remarketing.content} onChange={(event) => setRemarketing((value) => ({ ...value, content: event.target.value }))} />
+                    <Input type="datetime-local" value={remarketing.nextFollowupAt} onChange={(event) => setRemarketing((value) => ({ ...value, nextFollowupAt: event.target.value }))} />
+                    <Button onClick={() => void saveRemarketing()}>Lưu chăm sóc</Button>
+                  </div>
+                ) : null}
+                <div className="mt-3 space-y-2">
+                  {activities.rows.map((activity) => (
+                    <div key={activity.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+                      <p className="font-medium">{activity.subject}</p>
+                      {activity.content ? <p className="mt-0.5 text-muted">{activity.content}</p> : null}
+                      <p className="mt-1 text-xs text-muted">{activity.owner.name} · {formatDateTime(activity.occurredAt)}</p>
+                    </div>
+                  ))}
+                  {tasks.all.filter((task) => task.dealId === id && task.type === "followup" && task.status === "open").map((task) => (
+                    <div key={task.id} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                      Hẹn chăm sóc: {task.title} · {formatDateTime(task.dueAt)}
+                    </div>
+                  ))}
+                  {!activities.rows.length && !tasks.all.some((task) => task.dealId === id && task.type === "followup") ? <EmptyRelated label="lịch sử chăm sóc" /> : null}
+                </div>
+              </TabsContent>
+            ) : null}
           </Tabs>
         )}
       </div>

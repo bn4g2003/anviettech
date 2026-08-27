@@ -1,5 +1,5 @@
 import { apiFetch, toQuery } from "@/lib/api-client";
-import type { Contract } from "@/features/contracts/types";
+import type { Contract, ContractInput } from "@/features/contracts/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type ApiContract = {
@@ -34,6 +34,20 @@ export const contractsService = {
   },
   async getById(id: string) {
     const result = await apiFetch<ApiContract>(`/api/v1/contracts/${id}`);
+    return mapContract(result.data);
+  },
+  async create(input: ContractInput) {
+    const result = await apiFetch<ApiContract>("/api/v1/contracts", {
+      method: "POST",
+      body: JSON.stringify({ ...input, ownerId: input.owner?.id }),
+    });
+    return mapContract(result.data);
+  },
+  async update(id: string, input: Partial<ContractInput>) {
+    const result = await apiFetch<ApiContract>(`/api/v1/contracts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ ...input, ownerId: input.owner?.id }),
+    });
     return mapContract(result.data);
   },
 };
