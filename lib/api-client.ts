@@ -14,7 +14,15 @@ export class ApiClientError extends Error {
 type ApiSuccess<T> = { success: true; data: T; meta?: ApiMeta };
 type ApiFailure = { success: false; error: { code: string; message: string; fields?: Record<string, string> } };
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<{ data: T; meta?: ApiMeta }> {
+const inFlightMutations = new Map<string, Promise<unknown>>();
+
+function mutationKey(path: string, init?: RequestInit) {
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method === "GET" || method === "HEAD" || typeof init?.body !== "string") return undefined;
+  return `${method}:${path}:${init.body}`;
+}
+
+async function sendRequest<T>(path: string, init?: RequestInit): Promise<{ data: T; meta?: ApiMeta }> {
   const response = await fetch(path, {
     ...init,
     headers: {
@@ -36,6 +44,18 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<{ d
     throw new ApiClientError(err.message, response.status, err.code, err.fields);
   }
   return { data: body.data, meta: body.meta };
+}
+
+export function apiFetch<T>(path: string, init?: RequestInit): Promise<{ data: T; meta?: ApiMeta }> {
+  const key = mutationKey(path, init);
+  if (!key) return sendRequest<T>(path, init);
+
+  const existing = inFlightMutations.get(key) as Promise<{ data: T; meta?: ApiMeta }> | undefined;
+  if (existing) return existing;
+
+  const request = sendRequest<T>(path, init).finally(() => inFlightMutations.delete(key));
+  inFlightMutations.set(key, request);
+  return request;
 }
 
 export function toQuery(params: Record<string, string | number | undefined | null>) {
