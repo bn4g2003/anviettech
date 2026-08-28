@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -720,6 +720,40 @@ function DealModal({
 }) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+
+  async function createDeal() {
+    if (savingRef.current) return;
+    if (!title.trim()) {
+      toast("Nhập tên cơ hội", "error");
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        customerId,
+        stage: "new",
+        value: 0,
+        owner,
+        expectedCloseDate: daysFromNow(14),
+        productIds: [],
+        notes: notes.trim() || undefined,
+      });
+      toast("Đã tạo cơ hội", "success");
+      setTitle("");
+      setNotes("");
+      onOpenChange(false);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Không thể tạo cơ hội", "error");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -732,26 +766,10 @@ function DealModal({
           </Button>
           <Button
             variant="primary"
-            onClick={() => {
-              if (!title.trim()) return toast("Nhập tên cơ hội", "error");
-              void onSave({
-                title: title.trim(),
-                customerId,
-                stage: "new",
-                value: 0,
-                owner,
-                expectedCloseDate: daysFromNow(14),
-                productIds: [],
-                notes: notes.trim() || undefined,
-              }).then(() => {
-                toast("Đã tạo cơ hội", "success");
-                setTitle("");
-                setNotes("");
-                onOpenChange(false);
-              });
-            }}
+            disabled={saving}
+            onClick={() => void createDeal()}
           >
-            Tạo cơ hội
+            {saving ? "Đang tạo..." : "Tạo cơ hội"}
           </Button>
         </>
       }
