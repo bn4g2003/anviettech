@@ -71,6 +71,7 @@ export function useFinance(filters?: {
       map.set(inv.customerId, cur);
     }
     for (const entry of revenueEntries) {
+      if (entry.invoiceId) continue;
       const remaining = Number(entry.totalAmount) - Number(entry.paidAmount);
       if (remaining <= 0) continue;
       const cur = map.get(entry.customerId) ?? { debt: 0, invoiceCount: 0 };
@@ -111,7 +112,7 @@ export function useFinance(filters?: {
     getCustomerDebt: (customerId: string) =>
       Math.max(0,
         invoices.filter((i) => i.customerId === customerId && i.status !== "cancelled").reduce((s, i) => s + (i.amount - i.paidAmount), 0) +
-        revenueEntries.filter((entry) => entry.customerId === customerId).reduce((s, entry) => s + Number(entry.totalAmount) - Number(entry.paidAmount), 0) -
+        revenueEntries.filter((entry) => entry.customerId === customerId && !entry.invoiceId).reduce((s, entry) => s + Number(entry.totalAmount) - Number(entry.paidAmount), 0) -
         revenueReductions.filter((item) => item.customerId === customerId).reduce((s, item) => s + Number(item.amount), 0),
       ),
   };

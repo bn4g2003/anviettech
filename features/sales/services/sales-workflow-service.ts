@@ -137,6 +137,15 @@ export async function recordPayment(
       [code("PT"), row.id, row.customer_id, input.amount, input.method, input.paidAt, row.owner_id ?? actorId, input.note ?? null, actorId],
     );
     await client.query("UPDATE invoices SET paid_amount=$1, status=$2, updated_at=now(), updated_by=$3 WHERE id=$4", [next, status, actorId, row.id]);
+    const paidRatio = amount === 0 ? 0 : next / amount;
+    await client.query(
+      `UPDATE revenue_entries
+       SET paid_amount=LEAST(total_amount, ROUND(total_amount * $1, 2)),
+           payment_status=CASE WHEN $1 <= 0 THEN 'unpaid' WHEN $1 >= 1 THEN 'paid' ELSE 'partial' END,
+           updated_at=now(), updated_by=$2
+       WHERE invoice_id=$3 AND deleted_at IS NULL`,
+      [paidRatio, actorId, row.id],
+    );
     await client.query(
       "INSERT INTO audit_logs(actor_id,module,action,entity_type,entity_id,after_data) VALUES($1,'finance','payment','invoice',$2,$3)",
       [actorId, row.id, JSON.stringify({ paymentId: payment.rows[0].id, status, paidAmount: next })],

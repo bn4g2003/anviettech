@@ -76,7 +76,7 @@ export function useCurrentUser() {
   const canCreate = (module: string) => hasPermission(module, "create");
   const canApprove = (module: string) => hasPermission(module, "approve");
 
-  const canEdit = (module: string, ownerId?: string) => {
+  const canEdit = (module: string, ownerId?: string | null) => {
     if (!user) return false;
     if (isAdmin) return true;
     const perms = user.permissions.filter(

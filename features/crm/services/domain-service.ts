@@ -1122,21 +1122,29 @@ export async function createOperatingExpense(input: { category: string; amount: 
 
 export async function createRevenueEntry(input: { occurredAt: string; customerId: string; projectId?: string; productId: string; employeeId?: string; invoiceId?: string; documentCode?: string; businessType: string; qty: number; unitPrice: number; vatPercent: number; costAmount: number; paymentStatus: string; paidAmount: number; note?: string }, actorId: string) {
   return transaction(async (client) => {
-    const [customer, product, project, employee] = await Promise.all([
+    const [customer, product, project, employee, invoice] = await Promise.all([
       client.query("SELECT id FROM customers WHERE id=$1 AND deleted_at IS NULL AND status='active'", [input.customerId]),
       client.query("SELECT id FROM products WHERE id=$1 AND deleted_at IS NULL AND status='active'", [input.productId]),
       input.projectId ? client.query("SELECT id FROM projects WHERE id=$1 AND customer_id=$2 AND deleted_at IS NULL", [input.projectId, input.customerId]) : Promise.resolve({ rows: [{ id: null }] }),
       input.employeeId ? client.query("SELECT id FROM users WHERE id=$1 AND deleted_at IS NULL AND status='active'", [input.employeeId]) : Promise.resolve({ rows: [{ id: actorId }] }),
+      input.invoiceId ? client.query<{ customer_id: string; amount: string; paid_amount: string; status: string }>("SELECT customer_id,amount,paid_amount,status FROM invoices WHERE id=$1 AND deleted_at IS NULL", [input.invoiceId]) : Promise.resolve({ rows: [] as Array<{ customer_id: string; amount: string; paid_amount: string; status: string }> }),
     ]);
     if (!customer.rows[0]) throw new ApiError(422, "Khách hàng không hợp lệ");
     if (!product.rows[0]) throw new ApiError(422, "Hàng hóa/dịch vụ không hợp lệ");
     if (!project.rows[0]) throw new ApiError(422, "Công trình không thuộc khách hàng đã chọn");
     if (!employee.rows[0]) throw new ApiError(422, "Nhân viên không hợp lệ hoặc đã ngưng hoạt động");
+    if (input.invoiceId && !invoice.rows[0]) throw new ApiError(422, "Hóa đơn không hợp lệ");
+    if (invoice.rows[0]?.customer_id !== undefined && invoice.rows[0].customer_id !== input.customerId) throw new ApiError(422, "Hóa đơn không thuộc khách hàng đã chọn");
+    if (invoice.rows[0]?.status === "cancelled") throw new ApiError(422, "Không thể liên kết hóa đơn đã hủy");
     const subtotal = Math.round(input.qty * input.unitPrice * 100) / 100;
     const vatAmount = Math.round(subtotal * input.vatPercent) / 100;
     const totalAmount = subtotal + vatAmount;
     if (input.paidAmount > totalAmount) throw new ApiError(422, "Số đã thanh toán không vượt tổng thu");
-    const row = await client.query(`INSERT INTO revenue_entries(code,occurred_at,customer_id,project_id,product_id,employee_id,invoice_id,document_code,business_type,qty,unit_price,vat_percent,subtotal,vat_amount,total_amount,cost_amount,payment_status,paid_amount,note,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$20) RETURNING id,code`, [code("DT"), input.occurredAt, input.customerId, input.projectId ?? null, input.productId, input.employeeId ?? actorId, input.invoiceId ?? null, input.documentCode || null, input.businessType, input.qty, input.unitPrice, input.vatPercent, subtotal, vatAmount, totalAmount, input.costAmount, input.paymentStatus, input.paidAmount, input.note || null, actorId]);
+    const invoiceAmount = invoice.rows[0] ? Number(invoice.rows[0].amount) : 0;
+    const paidRatio = invoice.rows[0] ? (invoiceAmount > 0 ? Number(invoice.rows[0].paid_amount) / invoiceAmount : 0) : null;
+    const paidAmount = paidRatio === null ? input.paidAmount : Math.min(totalAmount, Math.round(totalAmount * paidRatio * 100) / 100);
+    const paymentStatus = paidAmount === 0 ? "unpaid" : paidAmount >= totalAmount ? "paid" : "partial";
+    const row = await client.query(`INSERT INTO revenue_entries(code,occurred_at,customer_id,project_id,product_id,employee_id,invoice_id,document_code,business_type,qty,unit_price,vat_percent,subtotal,vat_amount,total_amount,cost_amount,payment_status,paid_amount,note,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$20) RETURNING id,code`, [code("DT"), input.occurredAt, input.customerId, input.projectId ?? null, input.productId, input.employeeId ?? actorId, input.invoiceId ?? null, input.documentCode || null, input.businessType, input.qty, input.unitPrice, input.vatPercent, subtotal, vatAmount, totalAmount, input.costAmount, paymentStatus, paidAmount, input.note || null, actorId]);
     await audit(client, actorId, "finance", "create_revenue_entry", "revenue_entry", row.rows[0].id, { totalAmount });
     return row.rows[0];
   });
@@ -1171,6 +1179,12 @@ export async function updateRevenueEntryPayment(id: string, paidAmount: number, 
     await audit(client, actorId, "finance", "update_revenue_payment", "revenue_entry", id, { paidAmount, paymentStatus });
     return { id, paidAmount, paymentStatus };
   });
+}
+
+export async function getRevenueEntryPaymentTarget(id: string) {
+  const result = await query<{ id: string; ownerId: string | null }>("SELECT id,employee_id AS \"ownerId\" FROM revenue_entries WHERE id=$1 AND deleted_at IS NULL", [id]);
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy chi tiết doanh thu");
+  return result.rows[0];
 }
 
 // —— Finance ——
@@ -1472,7 +1486,7 @@ export async function getFinanceReport(filters: FinanceReportFilters) {
 
   // Normalise data from manual revenue and confirmed orders into one reporting shape.
   const manualSql = `SELECT re.customer_id AS "customerId", re.employee_id AS "employeeId", re.project_id AS "projectId", re.total_amount AS revenue, re.cost_amount AS cogs, re.paid_amount AS paid FROM revenue_entries re WHERE ${manualWhere.join(" AND ")}`;
-  const orderSql = `SELECT o.customer_id AS "customerId", o.owner_id AS "employeeId", NULL::uuid AS "projectId", o.total AS revenue, COALESCE(sum(ol.qty*ol.cost_price),0) AS cogs, 0::numeric AS paid FROM orders o LEFT JOIN order_lines ol ON ol.order_id=o.id WHERE ${orderWhere.join(" AND ")} GROUP BY o.id`;
+  const orderSql = `SELECT o.customer_id AS "customerId", o.owner_id AS "employeeId", NULL::uuid AS "projectId", o.total AS revenue, COALESCE(sum(ol.qty*ol.cost_price),0) AS cogs, LEAST(o.total,COALESCE((SELECT sum(i.paid_amount) FROM invoices i WHERE i.order_id=o.id AND i.deleted_at IS NULL AND i.status <> 'cancelled'),0)) AS paid FROM orders o LEFT JOIN order_lines ol ON ol.order_id=o.id WHERE ${orderWhere.join(" AND ")} AND NOT EXISTS (SELECT 1 FROM invoices i JOIN revenue_entries linked_re ON linked_re.invoice_id=i.id AND linked_re.deleted_at IS NULL WHERE i.order_id=o.id AND i.deleted_at IS NULL) GROUP BY o.id`;
   const allValues = [...manualValues, ...orderValues];
   const offsetOrder = manualValues.length;
   const shiftedOrderSql = orderSql.replace(/\$(\d+)/g, (_, index) => `$${Number(index) + offsetOrder}`);

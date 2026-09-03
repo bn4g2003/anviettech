@@ -14,7 +14,7 @@ type ApiPayment = {
   createdAt?: string; updatedAt?: string;
 };
 
-export type RevenueDebtEntry = { id: string; customerId: string; totalAmount: number | string; paidAmount: number | string };
+export type RevenueDebtEntry = { id: string; customerId: string; invoiceId?: string | null; totalAmount: number | string; paidAmount: number | string };
 export type RevenueReductionDebt = { id: string; customerId: string; amount: number | string };
 
 async function mapInvoice(row: ApiInvoice): Promise<Invoice> {
@@ -88,7 +88,7 @@ export const financeService = {
       this.listInvoices({ customerId }), this.listRevenueEntries({ customerId }), this.listRevenueReductions({ customerId }),
     ]);
     const invoiceDebt = invoices.filter((invoice) => invoice.status !== "cancelled").reduce((sum, invoice) => sum + (invoice.amount - invoice.paidAmount), 0);
-    const revenueDebt = entries.reduce((sum, entry) => sum + Number(entry.totalAmount) - Number(entry.paidAmount), 0);
+    const revenueDebt = entries.filter((entry) => !entry.invoiceId).reduce((sum, entry) => sum + Number(entry.totalAmount) - Number(entry.paidAmount), 0);
     return Math.max(0, invoiceDebt + revenueDebt - reductions.reduce((sum, item) => sum + Number(item.amount), 0));
   },
 };
