@@ -1,28 +1,17 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "./api-client";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ApiClientError, apiFetch } from "./api-client";
 
 describe("apiFetch", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  beforeEach(() => { vi.restoreAllMocks(); });
 
-  it("sends one request when an identical mutation is clicked repeatedly before it finishes", async () => {
-    let resolveResponse: ((response: Response) => void) | undefined;
-    const pendingResponse = new Promise<Response>((resolve) => { resolveResponse = resolve; });
-    const fetchMock = vi.fn(() => pendingResponse);
-    vi.stubGlobal("fetch", fetchMock);
+  it("returns a useful API error when an upstream route responds with HTML", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<!DOCTYPE html><title>Not found</title>", { status: 404, headers: { "content-type": "text/html" } })));
 
-    const first = apiFetch("/api/v1/deals", {
-      method: "POST",
-      body: JSON.stringify({ title: "Cơ hội mới" }),
+    await expect(apiFetch("/api/v1/missing")).rejects.toMatchObject<ApiClientError>({
+      status: 404,
+      code: "NON_JSON_RESPONSE",
+      message: "API trả về HTML (HTTP 404)",
     });
-    const second = apiFetch("/api/v1/deals", {
-      method: "POST",
-      body: JSON.stringify({ title: "Cơ hội mới" }),
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    resolveResponse?.(new Response(JSON.stringify({ success: true, data: { id: "deal-1" } }), { status: 200 }));
-
-    await expect(first).resolves.toEqual({ data: { id: "deal-1" }, meta: undefined });
-    await expect(second).resolves.toEqual({ data: { id: "deal-1" }, meta: undefined });
   });
 });

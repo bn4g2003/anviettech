@@ -38,7 +38,14 @@ async function sendRequest<T>(path: string, init?: RequestInit): Promise<{ data:
     window.location.href = `/dang-nhap?redirect=${encodeURIComponent(window.location.pathname)}`;
   }
 
-  const body = (await response.json()) as ApiSuccess<T> | ApiFailure;
+  const rawBody = await response.text();
+  let body: ApiSuccess<T> | ApiFailure;
+  try {
+    body = JSON.parse(rawBody) as ApiSuccess<T> | ApiFailure;
+  } catch {
+    const kind = rawBody.trimStart().startsWith("<") ? "HTML" : "dữ liệu không hợp lệ";
+    throw new ApiClientError(`API trả về ${kind} (HTTP ${response.status})`, response.status, "NON_JSON_RESPONSE");
+  }
   if (!response.ok || !body.success) {
     const err = !body.success ? body.error : { code: "REQUEST_ERROR", message: "Yêu cầu thất bại" };
     throw new ApiClientError(err.message, response.status, err.code, err.fields);
