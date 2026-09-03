@@ -14,6 +14,8 @@ import {
   Wallet,
   Boxes,
   PackageSearch,
+  Truck,
+  HardHat,
   CheckSquare,
   BarChart3,
   BadgePercent,
@@ -108,6 +110,16 @@ const MODULE_DEFINITIONS: Record<string, Omit<ModuleMeta, "key">> = {
     title: "Danh mục Sản phẩm & Vật tư",
     icon: <PackageSearch className="h-3.5 w-3.5 text-muted" />,
     note: "Mã SKU, đơn giá bán, giá vốn & VAT vật tư thiết bị",
+  },
+  suppliers: {
+    title: "Nhà cung cấp (Suppliers)",
+    icon: <Truck className="h-3.5 w-3.5 text-muted" />,
+    note: "Danh bạ nhà cung cấp, người liên hệ và thông tin mua hàng",
+  },
+  projects: {
+    title: "Công trình (Projects)",
+    icon: <HardHat className="h-3.5 w-3.5 text-muted" />,
+    note: "Theo dõi công trình theo khách hàng, tiến độ và người phụ trách",
   },
   stock_moves: {
     title: "Phiếu Nhập / Xuất / Chuyển kho",
@@ -283,7 +295,7 @@ export function PermissionMatrixTable({
   };
 
   const applyPresetSalesManager = () => {
-    const managerModules = ["leads", "customers", "contacts", "deals", "quotes", "orders", "contracts", "tasks", "analytics"];
+    const managerModules = ["leads", "customers", "contacts", "deals", "quotes", "orders", "contracts", "tasks", "projects", "analytics"];
     const ids = permissions
       .filter((p) => managerModules.includes(p.module) && (p.scope === "all" || p.action !== "view"))
       .map((p) => p.id);
@@ -291,7 +303,7 @@ export function PermissionMatrixTable({
   };
 
   const applyPresetSalesRep = () => {
-    const repModules = ["leads", "customers", "contacts", "deals", "quotes", "tasks"];
+    const repModules = ["leads", "customers", "contacts", "deals", "quotes", "tasks", "projects"];
     const ids = permissions
       .filter((p) => repModules.includes(p.module) && (p.scope === "own" || ["create", "update"].includes(p.action)))
       .map((p) => p.id);
@@ -307,7 +319,7 @@ export function PermissionMatrixTable({
   };
 
   const applyPresetWarehouse = () => {
-    const whModules = ["inventory", "products", "stock_moves", "warehouses", "orders"];
+    const whModules = ["inventory", "products", "stock_moves", "warehouses", "suppliers", "orders"];
     const ids = permissions
       .filter((p) => whModules.includes(p.module))
       .map((p) => p.id);

@@ -27,6 +27,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-anviet_crm}
       POSTGRES_USER: ${POSTGRES_USER:-anviet}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-anviet_dev_password}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-anviet_dev_password}
     volumes:
       - ./database/migrations:/migrations:ro
     command:

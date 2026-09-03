@@ -18,6 +18,7 @@ const STOCK_COLUMNS = ["sku", "name", "qty", "minStock", "status", "category"];
 const MOVE_COLUMNS = [
   "code",
   "status",
+  "reason",
   "warehouse",
   "orderId",
   "lines",

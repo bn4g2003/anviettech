@@ -13,6 +13,7 @@ const COLUMN_DEFS = [
   { id: "sku", label: "SKU" },
   { id: "name", label: "Tên" },
   { id: "category", label: "Danh mục" },
+  { id: "itemType", label: "Loại" },
   { id: "unit", label: "Đơn vị" },
   { id: "price", label: "Đơn giá" },
   { id: "vat", label: "VAT" },

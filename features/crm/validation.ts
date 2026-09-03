@@ -110,10 +110,51 @@ export const productSchema = z.object({
   category: z.string().max(120).optional(),
   unit: z.string().trim().min(1).max(32),
   unitPrice: z.coerce.number().min(0),
+  costPrice: z.coerce.number().min(0).optional(),
   vatPercent: z.coerce.number().min(0).max(100).optional(),
   minStock: z.coerce.number().min(0).optional(),
   description: z.string().max(5000).optional(),
   status: z.enum(["active", "inactive"]).optional(),
+  itemType: z.enum(["goods", "service"]).optional(),
+});
+
+export const supplierSchema = z.object({
+  name: z.string().trim().min(2).max(255),
+  contactName: z.string().trim().max(255).optional().or(z.literal("")),
+  phone: z.string().trim().max(32).optional().or(z.literal("")),
+  email: z.string().email().optional().or(z.literal("")),
+  address: z.string().trim().max(1000).optional().or(z.literal("")),
+  status: z.enum(["active", "inactive"]).optional(),
+  notes: z.string().max(5000).optional().or(z.literal("")),
+  ownerId: optionalDbUuid,
+});
+
+const projectFieldsSchema = z.object({
+  name: z.string().trim().min(2).max(255),
+  customerId: dbUuid,
+  address: z.string().trim().max(1000).optional().or(z.literal("")),
+  status: z.enum(["planning", "active", "completed", "cancelled"]).optional(),
+  startDate: z.string().date().optional().or(z.literal("")),
+  endDate: z.string().date().optional().or(z.literal("")),
+  ownerId: optionalDbUuid,
+  notes: z.string().max(5000).optional().or(z.literal("")),
+});
+
+export const projectSchema = projectFieldsSchema.refine(
+  (value) => !value.startDate || !value.endDate || value.endDate >= value.startDate,
+  { message: "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu", path: ["endDate"] },
+);
+
+export const projectUpdateSchema = projectFieldsSchema.partial().refine(
+  (value) => !value.startDate || !value.endDate || value.endDate >= value.startDate,
+  { message: "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu", path: ["endDate"] },
+);
+
+export const warehouseSchema = z.object({
+  code: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(2).max(160),
+  address: z.string().trim().max(1000).optional().or(z.literal("")),
+  isDefault: z.boolean().optional(),
 });
 
 export const quoteLineSchema = z.object({
@@ -176,12 +217,83 @@ export const campaignSchema = z.object({
 
 export const stockMoveSchema = z.object({
   type: z.enum(["in", "out", "transfer"]),
+  reason: z.enum(["purchase_receipt", "customer_return", "warranty_receipt", "installation_issue", "sales_issue", "supplier_return", "transfer"]),
+  requestId: optionalDbUuid,
   warehouseFromId: optionalDbUuid,
   warehouseToId: optionalDbUuid,
+  supplierId: optionalDbUuid,
+  customerId: optionalDbUuid,
+  projectId: optionalDbUuid,
   note: z.string().max(2000).optional(),
   post: z.boolean().optional(),
   lines: z.array(z.object({ productId: dbUuid, qty: z.coerce.number().positive() })).min(1),
+}).superRefine((value, ctx) => {
+  const need = (field: "supplierId" | "customerId" | "projectId", message: string) => {
+    if (!value[field]) ctx.addIssue({ code: "custom", path: [field], message });
+  };
+  if (["purchase_receipt", "supplier_return"].includes(value.reason)) need("supplierId", "Chọn nhà cung cấp");
+  if (["customer_return", "warranty_receipt", "sales_issue"].includes(value.reason)) need("customerId", "Chọn khách hàng");
+  if (value.reason === "installation_issue") need("projectId", "Chọn công trình");
+  const expectedType = value.reason === "transfer" ? "transfer" : value.reason.endsWith("receipt") || value.reason === "customer_return" ? "in" : "out";
+  if (value.type !== expectedType) ctx.addIssue({ code: "custom", path: ["type"], message: "Loại phiếu không khớp nghiệp vụ" });
 });
+
+export const productSupplierSchema = z.object({
+  supplierId: dbUuid,
+  supplierSku: z.string().trim().max(160).optional().or(z.literal("")),
+  purchasePrice: z.coerce.number().min(0).optional(),
+  leadTimeDays: z.coerce.number().int().min(0).optional(),
+  minOrderQty: z.coerce.number().positive().optional(),
+  isPreferred: z.boolean().optional(),
+  status: z.enum(["active", "inactive"]).optional(),
+  note: z.string().max(2000).optional().or(z.literal("")),
+});
+
+export const serialNumberSchema = z.object({
+  productId: dbUuid, serial: z.string().trim().min(1).max(160), warehouseId: optionalDbUuid,
+  customerId: optionalDbUuid, projectId: optionalDbUuid,
+  status: z.enum(["in_stock", "installed", "warranty", "damaged", "returned"]).optional(),
+  warrantyUntil: z.string().date().optional().or(z.literal("")), note: z.string().max(2000).optional().or(z.literal("")),
+});
+
+export const inventoryCountSchema = z.object({
+  warehouseId: dbUuid, countedAt: z.string().optional(), note: z.string().max(2000).optional(),
+  lines: z.array(z.object({ productId: dbUuid, countedQty: z.coerce.number().min(0) })).min(1),
+});
+
+export const operatingExpenseSchema = z.object({
+  category: z.enum(["salary", "insurance", "office_rent", "tax", "management", "tech_dept", "other"]),
+  amount: z.coerce.number().positive(), expenseDate: z.string().date(), note: z.string().max(2000).optional().or(z.literal("")),
+});
+
+export const revenueEntrySchema = z.object({
+  occurredAt: z.string().date(), customerId: dbUuid, projectId: optionalDbUuid, productId: dbUuid, employeeId: optionalDbUuid,
+  invoiceId: optionalDbUuid, documentCode: z.string().trim().max(80).optional().or(z.literal("")),
+  businessType: z.enum(["new_construction", "repair", "warranty", "retail"]), qty: z.coerce.number().positive(),
+  unitPrice: z.coerce.number().min(0), vatPercent: z.coerce.number().min(0).max(100), costAmount: z.coerce.number().min(0),
+  paymentStatus: z.enum(["unpaid", "partial", "paid"]), paidAmount: z.coerce.number().min(0), note: z.string().max(2000).optional().or(z.literal("")),
+}).superRefine((value, ctx) => {
+  const total = value.qty * value.unitPrice * (1 + value.vatPercent / 100);
+  if (value.paidAmount > total) ctx.addIssue({ code: "custom", path: ["paidAmount"], message: "Số đã thanh toán không vượt tổng thu" });
+  if (value.paymentStatus === "paid" && value.paidAmount !== total) ctx.addIssue({ code: "custom", path: ["paidAmount"], message: "Khoản đã thanh toán phải bằng tổng thu" });
+});
+
+export const revenueReductionSchema = z.object({
+  occurredAt: z.string().date(), customerId: optionalDbUuid, revenueEntryId: optionalDbUuid,
+  type: z.enum(["discount", "return", "other"]), amount: z.coerce.number().positive(), note: z.string().max(2000).optional().or(z.literal("")),
+}).refine((value) => !!value.customerId || !!value.revenueEntryId, {
+  message: "Chọn chi tiết doanh thu hoặc khách hàng cho khoản giảm trừ",
+  path: ["customerId"],
+});
+
+export const revenueEntryPaymentSchema = z.object({
+  paidAmount: z.coerce.number().min(0),
+});
+
+export const financeReportFilterSchema = z.object({
+  from: z.string().date().optional(), to: z.string().date().optional(),
+  customerId: optionalDbUuid, employeeId: optionalDbUuid, projectId: optionalDbUuid,
+}).refine((value) => !value.from || !value.to || value.from <= value.to, { message: "Khoảng thời gian không hợp lệ", path: ["to"] });
 
 export const documentSchema = z.object({
   entityType: z.enum(["customer", "lead", "deal", "quote", "order", "contract", "invoice", "campaign"]),

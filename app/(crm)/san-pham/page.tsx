@@ -12,6 +12,7 @@ const COLUMNS = [
   "sku",
   "name",
   "category",
+  "itemType",
   "unit",
   "price",
   "vat",

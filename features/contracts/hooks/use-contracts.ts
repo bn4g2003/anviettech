@@ -4,11 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { contractsService } from "@/features/contracts/services/contracts-service";
 import type { Contract, ContractInput } from "@/features/contracts/types";
 
-export function useContracts(filters?: { query?: string; status?: string; customerId?: string }) {
+export function useContracts(filters?: { query?: string; status?: string; customerId?: string; enabled?: boolean }) {
   const [rows, setRows] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    if (filters?.enabled === false) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await contractsService.list(filters);
@@ -19,7 +24,7 @@ export function useContracts(filters?: { query?: string; status?: string; custom
     } finally {
       setLoading(false);
     }
-  }, [filters?.query, filters?.status, filters?.customerId]);
+  }, [filters?.query, filters?.status, filters?.customerId, filters?.enabled]);
 
   useEffect(() => {
     void reload();

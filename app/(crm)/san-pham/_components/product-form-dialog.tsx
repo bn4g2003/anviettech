@@ -8,7 +8,7 @@ import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
-import type { ProductStatus } from "@/features/products/types";
+import type { ProductItemType, ProductStatus } from "@/features/products/types";
 
 const empty = {
   sku: "",
@@ -16,9 +16,11 @@ const empty = {
   category: "Thiết bị điện",
   unit: "cái",
   unitPrice: 0,
+  costPrice: 0,
   vatPercent: 8,
   minStock: 0,
   status: "active" as ProductStatus,
+  itemType: "goods" as ProductItemType,
   description: "",
 };
 
@@ -38,9 +40,11 @@ export function ProductFormDialog() {
         category: editing.category,
         unit: editing.unit,
         unitPrice: editing.unitPrice,
+        costPrice: editing.costPrice,
         vatPercent: editing.vatPercent,
         minStock: editing.minStock,
         status: editing.status,
+        itemType: editing.itemType,
         description: editing.description ?? "",
       });
     } else if (list.createOpen) {
@@ -53,7 +57,9 @@ export function ProductFormDialog() {
     list.setEditId(null);
   }
 
-  function save() {
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
     if (!form.sku.trim()) {
       toast("Vui lòng nhập SKU", "error");
       return;
@@ -68,19 +74,28 @@ export function ProductFormDialog() {
       category: form.category,
       unit: form.unit,
       unitPrice: Number(form.unitPrice) || 0,
+      costPrice: Number(form.costPrice) || 0,
       vatPercent: Number(form.vatPercent) || 0,
       minStock: Number(form.minStock) || 0,
       status: form.status,
+      itemType: form.itemType,
       description: form.description.trim() || undefined,
     };
-    if (editing) {
-      update(editing.id, payload);
-      toast("Đã cập nhật sản phẩm", "success");
-    } else {
-      create(payload);
-      toast("Đã tạo sản phẩm", "success");
+    setSaving(true);
+    try {
+      if (editing) {
+        await update(editing.id, payload);
+        toast("Đã cập nhật sản phẩm", "success");
+      } else {
+        await create(payload);
+        toast("Đã tạo sản phẩm", "success");
+      }
+      close();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Không thể lưu sản phẩm", "error");
+    } finally {
+      setSaving(false);
     }
-    close();
   }
 
   const categoryOptions = categories.includes(form.category)
@@ -97,11 +112,11 @@ export function ProductFormDialog() {
       size="lg"
       footer={
         <>
-          <Button variant="outline" onClick={close}>
+          <Button variant="outline" onClick={close} disabled={saving}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={save}>
-            Lưu
+          <Button variant="primary" onClick={() => void save()} disabled={saving}>
+            {saving ? "Đang lưu..." : "Lưu"}
           </Button>
         </>
       }
@@ -113,6 +128,17 @@ export function ProductFormDialog() {
             value={form.sku}
             onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
           />
+        </label>
+        <label className="space-y-1 text-xs">
+          <span className="text-muted">Loại</span>
+          <Select
+            className="w-full"
+            value={form.itemType}
+            onChange={(e) => setForm((f) => ({ ...f, itemType: e.target.value as ProductItemType }))}
+          >
+            <option value="goods">Hàng hóa</option>
+            <option value="service">Dịch vụ</option>
+          </Select>
         </label>
         <label className="space-y-1 text-xs">
           <span className="text-muted">Trạng thái</span>
@@ -167,6 +193,17 @@ export function ProductFormDialog() {
           />
         </label>
         <label className="space-y-1 text-xs">
+          <span className="text-muted">Giá vốn</span>
+          <Input
+            type="number"
+            min={0}
+            value={form.costPrice}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, costPrice: Number(e.target.value) }))
+            }
+          />
+        </label>
+        <label className="space-y-1 text-xs">
           <span className="text-muted">VAT (%)</span>
           <Input
             type="number"
@@ -177,7 +214,7 @@ export function ProductFormDialog() {
             }
           />
         </label>
-        <label className="space-y-1 text-xs">
+        {form.itemType === "goods" ? <label className="space-y-1 text-xs">
           <span className="text-muted">Tồn tối thiểu</span>
           <Input
             type="number"
@@ -187,7 +224,7 @@ export function ProductFormDialog() {
               setForm((f) => ({ ...f, minStock: Number(e.target.value) }))
             }
           />
-        </label>
+        </label> : <div className="flex items-end pb-1 text-xs text-muted">Dịch vụ không theo dõi tồn kho.</div>}
         <label className="col-span-2 space-y-1 text-xs">
           <span className="text-muted">Mô tả</span>
           <Input

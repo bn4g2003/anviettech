@@ -42,14 +42,15 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
   const { toast } = useToast();
   const meta = kindMeta[kind];
   const Icon = meta.icon;
+  const { user, canApprove, canCreate, canView } = useCurrentUser();
+  const canLoad = (module: string) => Boolean(user && canView(module));
   const customers = useCustomers();
-  const deals = useDeals();
-  const tasks = useTasks();
-  const quotes = useQuotes();
-  const contracts = useContracts();
+  const deals = useDeals({ enabled: canLoad("deals") });
+  const tasks = useTasks({ enabled: canLoad("tasks") });
+  const quotes = useQuotes({ enabled: canLoad("quotes") });
+  const contracts = useContracts({ enabled: canLoad("contracts") });
   const orders = useOrders();
-  const activities = useActivities({ dealId: kind === "deal" ? id : undefined, enabled: kind === "deal" });
-  const { user, canApprove, canCreate } = useCurrentUser();
+  const activities = useActivities({ dealId: kind === "deal" ? id : undefined, enabled: kind === "deal" && canLoad("activities") });
   const [remarketing, setRemarketing] = useState({ type: "call" as const, subject: "", content: "", nextFollowupAt: "" });
 
   const isLoading =

@@ -30,8 +30,12 @@ export async function approveQuote(quoteId: string, actorId: string) {
 
     await client.query("DELETE FROM order_lines WHERE order_id=$1", [order.rows[0].id]);
     await client.query(
-      `INSERT INTO order_lines(order_id,product_id,product_name,qty,unit_price,line_total)
-       SELECT $1, product_id, product_name, qty, unit_price, line_total FROM quote_lines WHERE quote_id=$2`,
+      `INSERT INTO order_lines(order_id,product_id,product_name,qty,unit_price,line_total,cost_price,business_type)
+       SELECT $1, q.product_id, q.product_name, q.qty, q.unit_price, q.line_total,
+              COALESCE(p.cost_price, 0), COALESCE(p.business_type, 'new_construction')
+       FROM quote_lines q
+       JOIN products p ON p.id=q.product_id AND p.deleted_at IS NULL
+       WHERE q.quote_id=$2`,
       [order.rows[0].id, quoteId],
     );
 

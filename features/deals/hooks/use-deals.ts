@@ -3,17 +3,34 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { dealsService } from "@/features/deals/services/deals-service";
 import type { Deal, DealInput, DealStage } from "@/features/deals/types";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 
 export function useDeals(filters?: {
   query?: string;
   stage?: DealStage;
   ownerId?: string;
   customerId?: string;
+  enabled?: boolean;
 }) {
   const [rows, setRows] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: userLoading } = useCurrentUser();
+  const canViewDeals = Boolean(user?.permissions.some(
+    (permission) => (permission.module === "*" || permission.module === "deals") && permission.action === "view",
+  ));
 
   const reload = useCallback(async () => {
+    if (userLoading) return;
+    if (!canViewDeals) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    if (filters?.enabled === false) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await dealsService.list({
@@ -29,7 +46,7 @@ export function useDeals(filters?: {
     } finally {
       setLoading(false);
     }
-  }, [filters?.query, filters?.stage, filters?.ownerId, filters?.customerId]);
+  }, [filters?.query, filters?.stage, filters?.ownerId, filters?.customerId, filters?.enabled, canViewDeals, userLoading]);
 
   useEffect(() => {
     void reload();

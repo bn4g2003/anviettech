@@ -9,6 +9,7 @@ type ApiBalance = {
 
 type ApiMove = {
   id: string; code: string; type: string; status: string; orderId?: string | null;
+  reason?: string | null; supplierId?: string | null; customerId?: string | null; projectId?: string | null;
   warehouseFromId?: string | null; warehouseToId?: string | null; ownerId?: string | null;
   note?: string | null; postedAt?: string | null; createdAt?: string; updatedAt?: string;
   lines?: { id: string; productId: string; productName: string; qty: number | string }[];
@@ -20,8 +21,12 @@ async function mapMove(row: ApiMove): Promise<StockMove> {
     id: row.id,
     code: row.code,
     type: row.type as StockMove["type"],
+    reason: (row.reason ?? "transfer") as StockMove["reason"],
     status: row.status as StockMove["status"],
     orderId: row.orderId ?? undefined,
+    supplierId: row.supplierId ?? undefined,
+    customerId: row.customerId ?? undefined,
+    projectId: row.projectId ?? undefined,
     warehouseFrom: row.warehouseFromId ?? undefined,
     warehouseTo: row.warehouseToId ?? undefined,
     owner: ownerByIdSync(row.ownerId ?? "", owners),
@@ -72,16 +77,17 @@ export const inventoryService = {
     return result.data ?? [];
   },
   async createMove(input: StockMoveInput) {
-    const warehouses = await this.listWarehouses();
-    const defaultWh = warehouses.find((w) => w.isDefault) ?? warehouses[0];
-    const findWh = (nameOrId?: string) =>
-      warehouses.find((w) => w.id === nameOrId || w.name === nameOrId || w.code === nameOrId)?.id ?? defaultWh?.id;
     const result = await apiFetch<ApiMove>("/api/v1/stock-moves", {
       method: "POST",
       body: JSON.stringify({
         type: input.type,
-        warehouseFromId: input.type !== "in" ? findWh(input.warehouseFrom) : undefined,
-        warehouseToId: input.type !== "out" ? findWh(input.warehouseTo) : undefined,
+        reason: input.reason,
+        requestId: input.requestId,
+        warehouseFromId: input.type !== "in" ? input.warehouseFrom : undefined,
+        warehouseToId: input.type !== "out" ? input.warehouseTo : undefined,
+        supplierId: input.supplierId,
+        customerId: input.customerId,
+        projectId: input.projectId,
         note: input.note,
         post: input.status === "posted",
         lines: input.lines.map((l) => ({ productId: l.productId, qty: l.qty })),

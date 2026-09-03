@@ -1,4 +1,5 @@
 import type { PoolClient } from "pg";
+import { createHash } from "node:crypto";
 import { query, transaction } from "@/lib/db";
 import { ApiError } from "@/lib/api";
 import { code } from "@/features/crm/services/crm-service";
@@ -378,13 +379,13 @@ export async function softDeleteDeal(id: string, actorId: string) {
 }
 
 // —— Products ——
-export async function createProduct(input: { sku: string; name: string; category?: string; unit: string; unitPrice: number; vatPercent?: number; minStock?: number; description?: string }, actorId: string) {
+export async function createProduct(input: { sku: string; name: string; category?: string; unit: string; unitPrice: number; costPrice?: number; vatPercent?: number; minStock?: number; description?: string; itemType?: "goods" | "service" }, actorId: string) {
   try {
     const result = await query(
-      `INSERT INTO products(sku,name,category,unit,unit_price,vat_percent,min_stock,description,created_by,updated_by)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
-       RETURNING id, sku, name, category, unit, unit_price AS "unitPrice", vat_percent AS "vatPercent", min_stock AS "minStock", status, description`,
-      [input.sku, input.name, input.category ?? null, input.unit, input.unitPrice, input.vatPercent ?? 0, input.minStock ?? 0, input.description ?? null, actorId],
+      `INSERT INTO products(sku,name,category,unit,unit_price,cost_price,vat_percent,min_stock,item_type,description,created_by,updated_by)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)
+       RETURNING id, sku, name, category, unit, unit_price AS "unitPrice", cost_price AS "costPrice", vat_percent AS "vatPercent", min_stock AS "minStock", item_type AS "itemType", status, description`,
+      [input.sku, input.name, input.category ?? null, input.unit, input.unitPrice, input.costPrice ?? 0, input.vatPercent ?? 0, input.itemType === "service" ? 0 : input.minStock ?? 0, input.itemType ?? "goods", input.description ?? null, actorId],
     );
     return result.rows[0];
   } catch (error) {
@@ -393,14 +394,15 @@ export async function createProduct(input: { sku: string; name: string; category
   }
 }
 
-export async function updateProduct(id: string, input: Partial<{ sku: string; name: string; category: string; unit: string; unitPrice: number; vatPercent: number; minStock: number; status: string; description: string }>, actorId: string) {
+export async function updateProduct(id: string, input: Partial<{ sku: string; name: string; category: string; unit: string; unitPrice: number; costPrice: number; vatPercent: number; minStock: number; status: string; description: string; itemType: "goods" | "service" }>, actorId: string) {
   const result = await query(
     `UPDATE products SET sku=COALESCE($1,sku), name=COALESCE($2,name), category=COALESCE($3,category), unit=COALESCE($4,unit),
-     unit_price=COALESCE($5,unit_price), vat_percent=COALESCE($6,vat_percent), min_stock=COALESCE($7,min_stock),
-     status=COALESCE($8,status), description=COALESCE($9,description), updated_at=now(), updated_by=$10
-     WHERE id=$11 AND deleted_at IS NULL
-     RETURNING id, sku, name, category, unit, unit_price AS "unitPrice", vat_percent AS "vatPercent", min_stock AS "minStock", status, description`,
-    [input.sku ?? null, input.name ?? null, input.category ?? null, input.unit ?? null, input.unitPrice ?? null, input.vatPercent ?? null, input.minStock ?? null, input.status ?? null, input.description ?? null, actorId, id],
+     unit_price=COALESCE($5,unit_price), cost_price=COALESCE($6,cost_price), vat_percent=COALESCE($7,vat_percent), min_stock=COALESCE($8,min_stock),
+     status=COALESCE($9,status), description=COALESCE($10,description), item_type=COALESCE($11,item_type),
+     min_stock=CASE WHEN $11='service' THEN 0 ELSE COALESCE($8,min_stock) END, updated_at=now(), updated_by=$12
+     WHERE id=$13 AND deleted_at IS NULL
+     RETURNING id, sku, name, category, unit, unit_price AS "unitPrice", cost_price AS "costPrice", vat_percent AS "vatPercent", min_stock AS "minStock", item_type AS "itemType", status, description`,
+    [input.sku ?? null, input.name ?? null, input.category ?? null, input.unit ?? null, input.unitPrice ?? null, input.costPrice ?? null, input.vatPercent ?? null, input.minStock ?? null, input.status ?? null, input.description ?? null, input.itemType ?? null, actorId, id],
   );
   if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy sản phẩm");
   return result.rows[0];
@@ -544,13 +546,13 @@ export async function updateDraftOrder(id: string, input: { lines: { productId: 
     await client.query("DELETE FROM order_lines WHERE order_id=$1", [id]);
     let total = 0;
     for (const line of input.lines) {
-      const product = await client.query<{ name: string }>("SELECT name FROM products WHERE id=$1 AND deleted_at IS NULL", [line.productId]);
+      const product = await client.query<{ name: string; costPrice: string; businessType: string | null }>("SELECT name,cost_price AS \"costPrice\",business_type AS \"businessType\" FROM products WHERE id=$1 AND deleted_at IS NULL", [line.productId]);
       if (!product.rows[0]) throw new ApiError(422, "Sản phẩm không tồn tại");
       const lineTotalValue = Math.round(line.qty * line.unitPrice * 100) / 100;
       total += lineTotalValue;
       await client.query(
-        "INSERT INTO order_lines(order_id,product_id,product_name,qty,unit_price,line_total) VALUES($1,$2,$3,$4,$5,$6)",
-        [id, line.productId, product.rows[0].name, line.qty, line.unitPrice, lineTotalValue],
+        "INSERT INTO order_lines(order_id,product_id,product_name,qty,unit_price,line_total,cost_price,business_type) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+        [id, line.productId, product.rows[0].name, line.qty, line.unitPrice, lineTotalValue, product.rows[0].costPrice ?? 0, product.rows[0].businessType ?? "new_construction"],
       );
     }
     await client.query("UPDATE orders SET total=$1, updated_at=now(), updated_by=$2 WHERE id=$3", [total, actorId, id]);
@@ -566,6 +568,200 @@ export async function getContract(id: string) {
   );
   if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy hợp đồng");
   return result.rows[0];
+}
+
+// —— Suppliers ——
+type SupplierInput = {
+  name: string; contactName?: string; phone?: string; email?: string; address?: string;
+  status?: "active" | "inactive"; notes?: string; ownerId?: string;
+};
+
+export async function getSupplier(id: string) {
+  const result = await query(
+    `SELECT id, code, name, contact_name AS "contactName", phone, email, address, status, notes,
+      owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"
+     FROM suppliers WHERE id=$1 AND deleted_at IS NULL`,
+    [id],
+  );
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy nhà cung cấp");
+  return result.rows[0];
+}
+
+export async function createSupplier(input: SupplierInput, actorId: string) {
+  try {
+    const result = await query(
+      `INSERT INTO suppliers(code,name,contact_name,phone,email,address,status,notes,owner_id,created_by,updated_by)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)
+       RETURNING id, code, name, contact_name AS "contactName", phone, email, address, status, notes,
+         owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [code("NCC"), input.name, input.contactName || null, input.phone || null, input.email || null,
+        input.address || null, input.status ?? "active", input.notes || null, input.ownerId ?? actorId, actorId],
+    );
+    await audit(query, actorId, "suppliers", "create", "supplier", result.rows[0].id, result.rows[0]);
+    return result.rows[0];
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Mã nhà cung cấp đã tồn tại");
+    throw error;
+  }
+}
+
+export async function updateSupplier(id: string, input: Partial<SupplierInput>, actorId: string) {
+  const current = await getSupplier(id);
+  const result = await query(
+    `UPDATE suppliers SET name=COALESCE($1,name), contact_name=COALESCE($2,contact_name), phone=COALESCE($3,phone),
+      email=COALESCE($4,email), address=COALESCE($5,address), status=COALESCE($6,status), notes=COALESCE($7,notes),
+      owner_id=COALESCE($8,owner_id), updated_at=now(), updated_by=$9
+     WHERE id=$10 AND deleted_at IS NULL
+     RETURNING id, code, name, contact_name AS "contactName", phone, email, address, status, notes,
+       owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    [input.name ?? null, input.contactName ?? null, input.phone ?? null, input.email ?? null, input.address ?? null,
+      input.status ?? null, input.notes ?? null, input.ownerId ?? null, actorId, id],
+  );
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy nhà cung cấp");
+  await audit(query, actorId, "suppliers", "update", "supplier", id, result.rows[0], current);
+  return result.rows[0];
+}
+
+export async function softDeleteSupplier(id: string, actorId: string) {
+  await getSupplier(id);
+  await query("UPDATE suppliers SET deleted_at=now(), status='inactive', updated_at=now(), updated_by=$1 WHERE id=$2", [actorId, id]);
+  await audit(query, actorId, "suppliers", "delete", "supplier", id, { deleted: true });
+}
+
+// —— Projects / construction sites ——
+type ProjectInput = {
+  name: string; customerId: string; address?: string; status?: "planning" | "active" | "completed" | "cancelled";
+  startDate?: string; endDate?: string; ownerId?: string; notes?: string;
+};
+
+async function assertActiveCustomer(customerId: string) {
+  const customer = await query<{ id: string }>("SELECT id FROM customers WHERE id=$1 AND deleted_at IS NULL AND status='active'", [customerId]);
+  if (!customer.rows[0]) throw new ApiError(422, "Khách hàng không tồn tại hoặc đã ngừng hoạt động");
+}
+
+export async function getProject(id: string) {
+  const result = await query(
+    `SELECT id, code, name, customer_id AS "customerId", address, status, start_date AS "startDate", end_date AS "endDate",
+      owner_id AS "ownerId", notes, created_at AS "createdAt", updated_at AS "updatedAt"
+     FROM projects WHERE id=$1 AND deleted_at IS NULL`,
+    [id],
+  );
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy công trình");
+  return result.rows[0];
+}
+
+export async function createProject(input: ProjectInput, actorId: string) {
+  await assertActiveCustomer(input.customerId);
+  try {
+    const result = await query(
+      `INSERT INTO projects(code,name,customer_id,address,status,start_date,end_date,owner_id,notes,created_by,updated_by)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)
+       RETURNING id, code, name, customer_id AS "customerId", address, status, start_date AS "startDate", end_date AS "endDate",
+         owner_id AS "ownerId", notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [code("CT"), input.name, input.customerId, input.address || null, input.status ?? "planning", input.startDate || null,
+        input.endDate || null, input.ownerId ?? actorId, input.notes || null, actorId],
+    );
+    await audit(query, actorId, "projects", "create", "project", result.rows[0].id, result.rows[0]);
+    return result.rows[0];
+  } catch (error) {
+    if ((error as { code?: string }).code === "23514") throw new ApiError(422, "Khoảng ngày công trình không hợp lệ");
+    throw error;
+  }
+}
+
+export async function updateProject(id: string, input: Partial<ProjectInput>, actorId: string) {
+  const current = await getProject(id);
+  if (input.customerId && input.customerId !== current.customerId) await assertActiveCustomer(input.customerId);
+  const result = await query(
+    `UPDATE projects SET name=COALESCE($1,name), customer_id=COALESCE($2,customer_id), address=COALESCE($3,address),
+      status=COALESCE($4,status), start_date=COALESCE($5,start_date), end_date=COALESCE($6,end_date),
+      owner_id=COALESCE($7,owner_id), notes=COALESCE($8,notes), updated_at=now(), updated_by=$9
+     WHERE id=$10 AND deleted_at IS NULL
+     RETURNING id, code, name, customer_id AS "customerId", address, status, start_date AS "startDate", end_date AS "endDate",
+       owner_id AS "ownerId", notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    [input.name ?? null, input.customerId ?? null, input.address ?? null, input.status ?? null, input.startDate || null,
+      input.endDate || null, input.ownerId ?? null, input.notes ?? null, actorId, id],
+  );
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy công trình");
+  await audit(query, actorId, "projects", "update", "project", id, result.rows[0], current);
+  return result.rows[0];
+}
+
+export async function softDeleteProject(id: string, actorId: string) {
+  await getProject(id);
+  await query("UPDATE projects SET deleted_at=now(), updated_at=now(), updated_by=$1 WHERE id=$2", [actorId, id]);
+  await audit(query, actorId, "projects", "delete", "project", id, { deleted: true });
+}
+
+// —— Warehouses ——
+type WarehouseInput = { code: string; name: string; address?: string; isDefault?: boolean };
+
+export async function getWarehouse(id: string) {
+  const result = await query(
+    `SELECT id, code, name, address, is_default AS "isDefault", created_at AS "createdAt", updated_at AS "updatedAt"
+     FROM warehouses WHERE id=$1 AND deleted_at IS NULL`,
+    [id],
+  );
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy kho");
+  return result.rows[0];
+}
+
+export async function createWarehouse(input: WarehouseInput, actorId: string) {
+  return transaction(async (client) => {
+    const defaults = await client.query<{ id: string }>("SELECT id FROM warehouses WHERE is_default=true AND deleted_at IS NULL FOR UPDATE");
+    const isDefault = input.isDefault ?? defaults.rowCount === 0;
+    if (isDefault) await client.query("UPDATE warehouses SET is_default=false, updated_at=now() WHERE is_default=true AND deleted_at IS NULL");
+    try {
+      const result = await client.query(
+        `INSERT INTO warehouses(code,name,address,is_default)
+         VALUES($1,$2,$3,$4)
+         RETURNING id, code, name, address, is_default AS "isDefault", created_at AS "createdAt", updated_at AS "updatedAt"`,
+        [input.code, input.name, input.address || null, isDefault],
+      );
+      await audit(client, actorId, "inventory", "create_warehouse", "warehouse", result.rows[0].id, result.rows[0]);
+      return result.rows[0];
+    } catch (error) {
+      if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Mã kho đã tồn tại");
+      throw error;
+    }
+  });
+}
+
+export async function updateWarehouse(id: string, input: Partial<WarehouseInput>, actorId: string) {
+  return transaction(async (client) => {
+    const currentResult = await client.query<{ id: string; isDefault: boolean }>(
+      `SELECT id, is_default AS "isDefault" FROM warehouses WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, [id],
+    );
+    const current = currentResult.rows[0];
+    if (!current) throw new ApiError(404, "Không tìm thấy kho");
+    if (input.isDefault === false && current.isDefault) {
+      throw new ApiError(422, "Kho mặc định phải được chuyển sang một kho khác trước");
+    }
+    if (input.isDefault) await client.query("UPDATE warehouses SET is_default=false, updated_at=now() WHERE id<>$1 AND is_default=true AND deleted_at IS NULL", [id]);
+    try {
+      const result = await client.query(
+        `UPDATE warehouses SET code=COALESCE($1,code), name=COALESCE($2,name), address=COALESCE($3,address),
+          is_default=COALESCE($4,is_default), updated_at=now()
+         WHERE id=$5 AND deleted_at IS NULL
+         RETURNING id, code, name, address, is_default AS "isDefault", created_at AS "createdAt", updated_at AS "updatedAt"`,
+        [input.code ?? null, input.name ?? null, input.address ?? null, input.isDefault ?? null, id],
+      );
+      await audit(client, actorId, "inventory", "update_warehouse", "warehouse", id, result.rows[0], current);
+      return result.rows[0];
+    } catch (error) {
+      if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Mã kho đã tồn tại");
+      throw error;
+    }
+  });
+}
+
+export async function softDeleteWarehouse(id: string, actorId: string) {
+  const warehouse = await getWarehouse(id);
+  if (warehouse.isDefault) throw new ApiError(409, "Không thể xóa kho mặc định; hãy chọn kho mặc định khác trước");
+  const balances = await query<{ total: string }>("SELECT count(*)::text AS total FROM inventory_balances WHERE warehouse_id=$1 AND qty<>0", [id]);
+  if (Number(balances.rows[0].total) > 0) throw new ApiError(409, "Không thể xóa kho vẫn còn tồn hàng");
+  await query("UPDATE warehouses SET deleted_at=now(), updated_at=now() WHERE id=$1 AND deleted_at IS NULL", [id]);
+  await audit(query, actorId, "inventory", "delete_warehouse", "warehouse", id, { deleted: true });
 }
 
 type ContractInput = {
@@ -684,9 +880,41 @@ export async function listBalances() {
   return result.rows;
 }
 
+type ProductSupplierInput = { supplierId: string; supplierSku?: string; purchasePrice?: number; leadTimeDays?: number; minOrderQty?: number; isPreferred?: boolean; status?: string; note?: string };
+export async function listProductSuppliers(productId: string) {
+  return (await query(`SELECT ps.id, ps.supplier_id AS "supplierId", s.code AS "supplierCode", s.name AS "supplierName", ps.supplier_sku AS "supplierSku", ps.purchase_price AS "purchasePrice", ps.lead_time_days AS "leadTimeDays", ps.min_order_qty AS "minOrderQty", ps.is_preferred AS "isPreferred", ps.status, ps.note FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.deleted_at IS NULL ORDER BY ps.is_preferred DESC, s.name`, [productId])).rows;
+}
+export async function createProductSupplier(productId: string, input: ProductSupplierInput, actorId: string) {
+  return transaction(async (client) => {
+    const [product, supplier] = await Promise.all([
+      client.query("SELECT id FROM products WHERE id=$1 AND deleted_at IS NULL", [productId]),
+      client.query("SELECT id FROM suppliers WHERE id=$1 AND deleted_at IS NULL", [input.supplierId]),
+    ]);
+    if (!product.rows[0]) throw new ApiError(404, "Không tìm thấy sản phẩm");
+    if (!supplier.rows[0]) throw new ApiError(422, "Nhà cung cấp không tồn tại hoặc đã ngưng sử dụng");
+    if (input.isPreferred) await client.query("UPDATE product_suppliers SET is_preferred=false,updated_at=now(),updated_by=$1 WHERE product_id=$2 AND deleted_at IS NULL", [actorId, productId]);
+    try {
+      const result = await client.query(`INSERT INTO product_suppliers(product_id,supplier_id,supplier_sku,purchase_price,lead_time_days,min_order_qty,is_preferred,status,note,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10) RETURNING id`, [productId, input.supplierId, input.supplierSku || null, input.purchasePrice ?? 0, input.leadTimeDays ?? null, input.minOrderQty ?? 1, input.isPreferred ?? false, input.status ?? "active", input.note || null, actorId]);
+      await audit(client, actorId, "products", "add_supplier", "product_supplier", result.rows[0].id, { productId, supplierId: input.supplierId });
+      return result.rows[0];
+    } catch (error) { if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Nhà cung cấp đã được liên kết với sản phẩm"); throw error; }
+  });
+}
+export async function updateProductSupplier(productId: string, id: string, input: Partial<ProductSupplierInput>, actorId: string) {
+  return transaction(async (client) => {
+    const current = await client.query<{ id: string }>("SELECT id FROM product_suppliers WHERE id=$1 AND product_id=$2 AND deleted_at IS NULL FOR UPDATE", [id, productId]);
+    if (!current.rows[0]) throw new ApiError(404, "Không tìm thấy liên kết nhà cung cấp");
+    if (input.isPreferred) await client.query("UPDATE product_suppliers SET is_preferred=false,updated_at=now(),updated_by=$1 WHERE product_id=$2 AND deleted_at IS NULL", [actorId, productId]);
+    await client.query(`UPDATE product_suppliers SET supplier_sku=COALESCE($1,supplier_sku),purchase_price=COALESCE($2,purchase_price),lead_time_days=COALESCE($3,lead_time_days),min_order_qty=COALESCE($4,min_order_qty),is_preferred=COALESCE($5,is_preferred),status=COALESCE($6,status),note=COALESCE($7,note),updated_at=now(),updated_by=$8 WHERE id=$9`, [input.supplierSku || null, input.purchasePrice ?? null, input.leadTimeDays ?? null, input.minOrderQty ?? null, input.isPreferred ?? null, input.status ?? null, input.note ?? null, actorId, id]);
+    await audit(client, actorId, "products", "update_supplier", "product_supplier", id, input); return { id };
+  });
+}
 export async function createStockMove(input: {
   type: "in" | "out" | "transfer";
+  reason: "purchase_receipt" | "customer_return" | "warranty_receipt" | "installation_issue" | "sales_issue" | "supplier_return" | "transfer";
+  requestId?: string;
   warehouseFromId?: string; warehouseToId?: string; note?: string;
+  supplierId?: string; customerId?: string; projectId?: string;
   lines: { productId: string; qty: number }[];
   post?: boolean;
 }, actorId: string) {
@@ -698,37 +926,82 @@ export async function createStockMove(input: {
     throw new ApiError(422, "Kho nguồn và kho đích phải khác nhau");
   }
 
-  return transaction(async (client) => {
+  const expectedType = input.reason === "transfer" ? "transfer" : input.reason.endsWith("receipt") || input.reason === "customer_return" ? "in" : "out";
+  if (input.type !== expectedType) throw new ApiError(422, "Loại phiếu không khớp nghiệp vụ");
+  if (["purchase_receipt", "supplier_return"].includes(input.reason) && !input.supplierId) throw new ApiError(422, "Chọn nhà cung cấp");
+  if (["customer_return", "warranty_receipt", "sales_issue"].includes(input.reason) && !input.customerId) throw new ApiError(422, "Chọn khách hàng");
+  if (input.reason === "installation_issue" && !input.projectId) throw new ApiError(422, "Chọn công trình");
+
+  const moveId = await transaction(async (client) => {
     const warehouseIds = [...new Set([input.warehouseFromId, input.warehouseToId].filter((id): id is string => !!id))];
     const warehouses = await client.query<{ id: string }>(
       "SELECT id FROM warehouses WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL",
       [warehouseIds],
     );
     if (warehouses.rowCount !== warehouseIds.length) throw new ApiError(422, "Kho không tồn tại hoặc đã ngừng hoạt động");
-    const move = await client.query(
-      `INSERT INTO stock_moves(code,type,status,warehouse_from_id,warehouse_to_id,owner_id,note,created_by,updated_by)
-       VALUES($1,$2,'draft',$3,$4,$5,$6,$5,$5) RETURNING id, code, type, status`,
-      [code(input.type === "in" ? "PN" : input.type === "out" ? "PX" : "CK"), input.type, input.warehouseFromId ?? null, input.warehouseToId ?? null, actorId, input.note ?? null],
+    const references = [
+      ["suppliers", input.supplierId, "Nhà cung cấp"],
+      ["customers", input.customerId, "Khách hàng"],
+      ["projects", input.projectId, "Công trình"],
+    ] as const;
+    for (const [table, id, label] of references) {
+      if (!id) continue;
+      const row = await client.query(`SELECT id FROM ${table} WHERE id=$1 AND deleted_at IS NULL`, [id]);
+      if (!row.rows[0]) throw new ApiError(422, `${label} không tồn tại hoặc đã ngừng hoạt động`);
+    }
+    const requestHash = input.requestId
+      ? createHash("sha256").update(JSON.stringify({
+        type: input.type,
+        reason: input.reason,
+        warehouseFromId: input.warehouseFromId ?? null,
+        warehouseToId: input.warehouseToId ?? null,
+        supplierId: input.supplierId ?? null,
+        customerId: input.customerId ?? null,
+        projectId: input.projectId ?? null,
+        note: input.note ?? null,
+        post: input.post ?? false,
+        lines: input.lines,
+      })).digest("hex")
+      : null;
+    const move = await client.query<{ id: string }>(
+      `INSERT INTO stock_moves(code,type,reason,status,warehouse_from_id,warehouse_to_id,supplier_id,customer_id,project_id,owner_id,note,request_id,request_hash,created_by,updated_by)
+       VALUES($1,$2,$3,'draft',$4,$5,$6,$7,$8,$9,$10,$11,$12,$9,$9)
+       ON CONFLICT (owner_id, request_id) WHERE request_id IS NOT NULL AND deleted_at IS NULL DO NOTHING
+       RETURNING id`,
+      [code(input.type === "in" ? "PN" : input.type === "out" ? "PX" : "CK"), input.type, input.reason, input.warehouseFromId ?? null, input.warehouseToId ?? null, input.supplierId ?? null, input.customerId ?? null, input.projectId ?? null, actorId, input.note ?? null, input.requestId ?? null, requestHash],
     );
+    if (!move.rows[0]) {
+      const existing = await client.query<{ id: string; request_hash: string | null }>(
+        "SELECT id, request_hash FROM stock_moves WHERE owner_id=$1 AND request_id=$2 AND deleted_at IS NULL",
+        [actorId, input.requestId],
+      );
+      if (!existing.rows[0]) throw new ApiError(409, "Yêu cầu tạo phiếu đang được xử lý");
+      if (existing.rows[0].request_hash !== requestHash) {
+        throw new ApiError(422, "Mã yêu cầu đã được dùng với dữ liệu khác");
+      }
+      return existing.rows[0].id;
+    }
     for (const line of input.lines) {
-      const product = await client.query<{ name: string }>("SELECT name FROM products WHERE id=$1 AND deleted_at IS NULL", [line.productId]);
+      const product = await client.query<{ name: string; item_type: "goods" | "service" }>("SELECT name, item_type FROM products WHERE id=$1 AND deleted_at IS NULL", [line.productId]);
       if (!product.rows[0]) throw new ApiError(422, "Sản phẩm không tồn tại");
+      if (product.rows[0].item_type === "service") throw new ApiError(422, "Dịch vụ không thể đưa vào phiếu kho");
       await client.query("INSERT INTO stock_move_lines(stock_move_id,product_id,product_name,qty) VALUES($1,$2,$3,$4)", [move.rows[0].id, line.productId, product.rows[0].name, line.qty]);
     }
     if (input.post) {
       await postStockMoveTx(client, move.rows[0].id, actorId);
     }
-    return getStockMove(move.rows[0].id);
+    return move.rows[0].id;
   });
+  return getStockMove(moveId);
 }
 
 export async function getStockMove(id: string) {
   const move = await query<{
-    id: string; code: string; type: string; status: string; orderId: string | null;
+    id: string; code: string; type: string; reason: string | null; status: string; orderId: string | null;
     warehouseFromId: string | null; warehouseToId: string | null; ownerId: string | null;
-    note: string | null; postedAt: string | null; createdAt: string;
+    supplierId: string | null; customerId: string | null; projectId: string | null; note: string | null; postedAt: string | null; createdAt: string;
   }>(
-    `SELECT id, code, type, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", owner_id AS "ownerId", note, posted_at AS "postedAt", created_at AS "createdAt"
+    `SELECT id, code, type, reason, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", supplier_id AS "supplierId", customer_id AS "customerId", project_id AS "projectId", owner_id AS "ownerId", note, posted_at AS "postedAt", created_at AS "createdAt"
      FROM stock_moves WHERE id=$1 AND deleted_at IS NULL`, [id],
   );
   if (!move.rows[0]) throw new ApiError(404, "Không tìm thấy phiếu kho");
@@ -783,6 +1056,121 @@ export async function deleteDraftStockMove(id: string, actorId: string) {
   const move = await getStockMove(id);
   if (move.status !== "draft") throw new ApiError(409, "Chỉ xóa phiếu nháp");
   await query("UPDATE stock_moves SET deleted_at=now(), updated_by=$1 WHERE id=$2", [actorId, id]);
+}
+
+// —— Serials and stock counts ——
+type SerialInput = { productId: string; serial: string; warehouseId?: string; customerId?: string; projectId?: string; status?: string; warrantyUntil?: string; note?: string };
+export async function getSerialNumber(id: string) {
+  const result = await query(`SELECT id, product_id AS "productId", serial, warehouse_id AS "warehouseId", customer_id AS "customerId", project_id AS "projectId", status, warranty_until AS "warrantyUntil", note, created_at AS "createdAt", updated_at AS "updatedAt" FROM serial_numbers WHERE id=$1 AND deleted_at IS NULL`, [id]);
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy serial");
+  return result.rows[0];
+}
+export async function createSerialNumber(input: SerialInput, actorId: string) {
+  try {
+    const result = await query(`INSERT INTO serial_numbers(product_id,serial,warehouse_id,customer_id,project_id,status,warranty_until,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, product_id AS "productId", serial, warehouse_id AS "warehouseId", customer_id AS "customerId", project_id AS "projectId", status, warranty_until AS "warrantyUntil", note`, [input.productId, input.serial, input.warehouseId ?? null, input.customerId ?? null, input.projectId ?? null, input.status ?? "in_stock", input.warrantyUntil || null, input.note || null]);
+    await audit(query, actorId, "inventory", "create_serial", "serial_number", result.rows[0].id, result.rows[0]); return result.rows[0];
+  } catch (error) { if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Serial đã tồn tại"); throw error; }
+}
+export async function updateSerialNumber(id: string, input: Partial<SerialInput>, actorId: string) {
+  const result = await query(`UPDATE serial_numbers SET warehouse_id=COALESCE($1,warehouse_id), customer_id=COALESCE($2,customer_id), project_id=COALESCE($3,project_id), status=COALESCE($4,status), warranty_until=COALESCE($5,warranty_until), note=COALESCE($6,note), updated_at=now() WHERE id=$7 AND deleted_at IS NULL RETURNING id, product_id AS "productId", serial, warehouse_id AS "warehouseId", customer_id AS "customerId", project_id AS "projectId", status, warranty_until AS "warrantyUntil", note`, [input.warehouseId ?? null, input.customerId ?? null, input.projectId ?? null, input.status ?? null, input.warrantyUntil || null, input.note ?? null, id]);
+  if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy serial"); await audit(query, actorId, "inventory", "update_serial", "serial_number", id, result.rows[0]); return result.rows[0];
+}
+export async function createInventoryCount(input: { warehouseId: string; countedAt?: string; note?: string; lines: { productId: string; countedQty: number }[] }, actorId: string) {
+  return transaction(async (client) => {
+    const warehouse = await client.query("SELECT id FROM warehouses WHERE id=$1 AND deleted_at IS NULL", [input.warehouseId]);
+    if (!warehouse.rows[0]) throw new ApiError(422, "Kho không tồn tại hoặc đã ngưng sử dụng");
+    const productIds = [...new Set(input.lines.map((line) => line.productId))];
+    const products = await client.query<{ id: string }>("SELECT id FROM products WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL", [productIds]);
+    if (products.rows.length !== productIds.length) throw new ApiError(422, "Có sản phẩm không tồn tại hoặc đã ngưng sử dụng");
+    const header = await client.query<{ id: string }>(`INSERT INTO inventory_counts(code,warehouse_id,counted_at,note,owner_id) VALUES($1,$2,COALESCE($3::timestamptz,now()),$4,$5) RETURNING id`, [code("KK"), input.warehouseId, input.countedAt ?? null, input.note ?? null, actorId]);
+    for (const line of input.lines) {
+      const expected = await client.query<{ qty: string }>("SELECT qty FROM inventory_balances WHERE warehouse_id=$1 AND product_id=$2", [input.warehouseId, line.productId]);
+      await client.query("INSERT INTO inventory_count_lines(inventory_count_id,product_id,expected_qty,counted_qty) VALUES($1,$2,$3,$4)", [header.rows[0].id, line.productId, expected.rows[0]?.qty ?? 0, line.countedQty]);
+    }
+    await audit(client, actorId, "inventory", "create_count", "inventory_count", header.rows[0].id, { warehouseId: input.warehouseId });
+    return header.rows[0];
+  });
+}
+export async function getInventoryCount(id: string) {
+  const header = await query<{ id: string; code: string; warehouseId: string; status: string; countedAt: string; note: string | null; ownerId: string | null; postedAt: string | null }>(
+    `SELECT id,code,warehouse_id AS "warehouseId",status,counted_at AS "countedAt",note,owner_id AS "ownerId",posted_at AS "postedAt"
+     FROM inventory_counts WHERE id=$1 AND deleted_at IS NULL`, [id],
+  );
+  if (!header.rows[0]) throw new ApiError(404, "Không tìm thấy phiếu kiểm kê");
+  const lines = await query<{ id: string; productId: string; sku: string; productName: string; expectedQty: string; countedQty: string }>(
+    `SELECT l.id,l.product_id AS "productId",p.sku,p.name AS "productName",l.expected_qty AS "expectedQty",l.counted_qty AS "countedQty"
+     FROM inventory_count_lines l JOIN products p ON p.id=l.product_id
+     WHERE l.inventory_count_id=$1 ORDER BY p.name`, [id],
+  );
+  return { ...header.rows[0], lines: lines.rows };
+}
+export async function postInventoryCount(id: string, actorId: string) {
+  return transaction(async (client) => {
+    const count = await client.query<{ warehouse_id: string; status: string }>("SELECT warehouse_id,status FROM inventory_counts WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", [id]);
+    if (!count.rows[0]) throw new ApiError(404, "Không tìm thấy phiếu kiểm kê"); if (count.rows[0].status !== "draft") throw new ApiError(409, "Chỉ ghi sổ phiếu kiểm kê nháp");
+    const lines = await client.query<{ product_id: string; counted_qty: string }>("SELECT product_id,counted_qty FROM inventory_count_lines WHERE inventory_count_id=$1", [id]);
+    for (const line of lines.rows) await client.query("INSERT INTO inventory_balances(warehouse_id,product_id,qty) VALUES($1,$2,$3) ON CONFLICT(warehouse_id,product_id) DO UPDATE SET qty=EXCLUDED.qty,updated_at=now()", [count.rows[0].warehouse_id, line.product_id, line.counted_qty]);
+    await client.query("UPDATE inventory_counts SET status='posted',posted_at=now(),updated_at=now() WHERE id=$1", [id]);
+    await audit(client, actorId, "inventory", "post_count", "inventory_count", id, { status: "posted" }); return { id, status: "posted" };
+  });
+}
+
+export async function createOperatingExpense(input: { category: string; amount: number; expenseDate: string; note?: string }, actorId: string) {
+  const result = await query(`INSERT INTO operating_expenses(code,expense_category,category,amount,expense_date,period_date,description,notes,created_by) VALUES($1,$2,$2,$3,$4,$4,$5,$5,$6) RETURNING id, COALESCE(code,'') AS code, COALESCE(category,expense_category) AS category, amount, COALESCE(period_date,expense_date) AS "expenseDate", COALESCE(notes,description) AS note, created_at AS "createdAt"`, [code("CP"), input.category, input.amount, input.expenseDate, input.note || null, actorId]);
+  await audit(query, actorId, "finance", "create_expense", "operating_expense", result.rows[0].id, result.rows[0]); return result.rows[0];
+}
+
+export async function createRevenueEntry(input: { occurredAt: string; customerId: string; projectId?: string; productId: string; employeeId?: string; invoiceId?: string; documentCode?: string; businessType: string; qty: number; unitPrice: number; vatPercent: number; costAmount: number; paymentStatus: string; paidAmount: number; note?: string }, actorId: string) {
+  return transaction(async (client) => {
+    const [customer, product, project, employee] = await Promise.all([
+      client.query("SELECT id FROM customers WHERE id=$1 AND deleted_at IS NULL AND status='active'", [input.customerId]),
+      client.query("SELECT id FROM products WHERE id=$1 AND deleted_at IS NULL AND status='active'", [input.productId]),
+      input.projectId ? client.query("SELECT id FROM projects WHERE id=$1 AND customer_id=$2 AND deleted_at IS NULL", [input.projectId, input.customerId]) : Promise.resolve({ rows: [{ id: null }] }),
+      input.employeeId ? client.query("SELECT id FROM users WHERE id=$1 AND deleted_at IS NULL AND status='active'", [input.employeeId]) : Promise.resolve({ rows: [{ id: actorId }] }),
+    ]);
+    if (!customer.rows[0]) throw new ApiError(422, "Khách hàng không hợp lệ");
+    if (!product.rows[0]) throw new ApiError(422, "Hàng hóa/dịch vụ không hợp lệ");
+    if (!project.rows[0]) throw new ApiError(422, "Công trình không thuộc khách hàng đã chọn");
+    if (!employee.rows[0]) throw new ApiError(422, "Nhân viên không hợp lệ hoặc đã ngưng hoạt động");
+    const subtotal = Math.round(input.qty * input.unitPrice * 100) / 100;
+    const vatAmount = Math.round(subtotal * input.vatPercent) / 100;
+    const totalAmount = subtotal + vatAmount;
+    if (input.paidAmount > totalAmount) throw new ApiError(422, "Số đã thanh toán không vượt tổng thu");
+    const row = await client.query(`INSERT INTO revenue_entries(code,occurred_at,customer_id,project_id,product_id,employee_id,invoice_id,document_code,business_type,qty,unit_price,vat_percent,subtotal,vat_amount,total_amount,cost_amount,payment_status,paid_amount,note,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$20) RETURNING id,code`, [code("DT"), input.occurredAt, input.customerId, input.projectId ?? null, input.productId, input.employeeId ?? actorId, input.invoiceId ?? null, input.documentCode || null, input.businessType, input.qty, input.unitPrice, input.vatPercent, subtotal, vatAmount, totalAmount, input.costAmount, input.paymentStatus, input.paidAmount, input.note || null, actorId]);
+    await audit(client, actorId, "finance", "create_revenue_entry", "revenue_entry", row.rows[0].id, { totalAmount });
+    return row.rows[0];
+  });
+}
+
+export async function createRevenueReduction(input: { occurredAt: string; customerId?: string; revenueEntryId?: string; type: string; amount: number; note?: string }, actorId: string) {
+  return transaction(async (client) => {
+    let customerId = input.customerId;
+    if (input.revenueEntryId) {
+      const entry = await client.query<{ customer_id: string }>("SELECT customer_id FROM revenue_entries WHERE id=$1 AND deleted_at IS NULL", [input.revenueEntryId]);
+      if (!entry.rows[0]) throw new ApiError(422, "Chi tiết doanh thu không hợp lệ");
+      if (customerId && customerId !== entry.rows[0].customer_id) throw new ApiError(422, "Khách hàng không khớp với chi tiết doanh thu");
+      customerId = entry.rows[0].customer_id;
+    }
+    if (!customerId) throw new ApiError(422, "Chọn khách hàng cho khoản giảm trừ");
+    const customer = await client.query("SELECT id FROM customers WHERE id=$1 AND deleted_at IS NULL", [customerId]);
+    if (!customer.rows[0]) throw new ApiError(422, "Khách hàng không hợp lệ");
+    const row = await client.query("INSERT INTO revenue_reductions(code,occurred_at,customer_id,revenue_entry_id,type,amount,note,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8) RETURNING id,code", [code("GDT"), input.occurredAt, customerId, input.revenueEntryId ?? null, input.type, input.amount, input.note || null, actorId]);
+    await audit(client, actorId, "finance", "create_revenue_reduction", "revenue_reduction", row.rows[0].id, { amount: input.amount, type: input.type });
+    return row.rows[0];
+  });
+}
+
+export async function updateRevenueEntryPayment(id: string, paidAmount: number, actorId: string) {
+  return transaction(async (client) => {
+    const entry = await client.query<{ total_amount: string }>("SELECT total_amount FROM revenue_entries WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", [id]);
+    if (!entry.rows[0]) throw new ApiError(404, "Không tìm thấy chi tiết doanh thu");
+    const total = Number(entry.rows[0].total_amount);
+    if (paidAmount > total) throw new ApiError(422, "Số đã thanh toán không vượt tổng thu");
+    const paymentStatus = paidAmount === 0 ? "unpaid" : paidAmount === total ? "paid" : "partial";
+    await client.query("UPDATE revenue_entries SET paid_amount=$1,payment_status=$2,updated_at=now(),updated_by=$3 WHERE id=$4", [paidAmount, paymentStatus, actorId, id]);
+    await audit(client, actorId, "finance", "update_revenue_payment", "revenue_entry", id, { paidAmount, paymentStatus });
+    return { id, paidAmount, paymentStatus };
+  });
 }
 
 // —— Finance ——
@@ -850,21 +1238,23 @@ export async function getFinancialMatrixAnalytics(selectedYear?: number) {
   const year = selectedYear || 2025;
 
   const revRes = await query<{ m: number; business_type: string; total: string }>(
-    `SELECT EXTRACT(MONTH FROM created_at)::int as m, COALESCE(business_type, 'new_construction') as business_type, COALESCE(sum(total),0)::text as total 
-     FROM orders 
-     WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM created_at) = $1 
-     GROUP BY m, business_type`,
+    `SELECT m,business_type,COALESCE(sum(total),0)::text AS total FROM (
+       SELECT EXTRACT(MONTH FROM created_at)::int AS m,COALESCE(business_type,'new_construction') AS business_type,total FROM orders WHERE deleted_at IS NULL AND status IN ('confirmed','fulfilled') AND EXTRACT(YEAR FROM created_at)=$1
+       UNION ALL SELECT EXTRACT(MONTH FROM occurred_at)::int,business_type,total_amount FROM revenue_entries WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM occurred_at)=$1
+     ) revenue GROUP BY m,business_type`,
     [year]
+  );
+  const reductionRes = await query<{ m: number; business_type: string; total: string }>(
+    `SELECT EXTRACT(MONTH FROM rr.occurred_at)::int AS m,COALESCE(re.business_type,'retail') AS business_type,COALESCE(sum(rr.amount),0)::text AS total FROM revenue_reductions rr LEFT JOIN revenue_entries re ON re.id=rr.revenue_entry_id WHERE rr.deleted_at IS NULL AND EXTRACT(YEAR FROM rr.occurred_at)=$1 GROUP BY m,business_type`, [year],
   );
 
   const cogsRes = await query<{ m: number; btype: string; cogs: string }>(
-    `SELECT EXTRACT(MONTH FROM o.created_at)::int as m, 
-            COALESCE(ol.business_type, o.business_type, 'new_construction') as btype, 
-            COALESCE(sum(ol.qty * ol.cost_price), sum(o.total * 0.65))::text as cogs 
-     FROM orders o 
-     LEFT JOIN order_lines ol ON ol.order_id=o.id 
-     WHERE o.deleted_at IS NULL AND EXTRACT(YEAR FROM o.created_at) = $1 
-     GROUP BY m, btype`,
+    `SELECT m,btype,COALESCE(sum(cogs),0)::text AS cogs FROM (
+       SELECT EXTRACT(MONTH FROM o.created_at)::int AS m, COALESCE(ol.business_type,o.business_type,'new_construction') AS btype, (ol.qty * ol.cost_price) AS cogs
+       FROM orders o LEFT JOIN order_lines ol ON ol.order_id=o.id
+       WHERE o.deleted_at IS NULL AND o.status IN ('confirmed','fulfilled') AND EXTRACT(YEAR FROM o.created_at)=$1
+       UNION ALL SELECT EXTRACT(MONTH FROM occurred_at)::int,business_type,cost_amount FROM revenue_entries WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM occurred_at)=$1
+     ) costs GROUP BY m,btype`,
     [year]
   );
 
@@ -909,6 +1299,15 @@ export async function getFinancialMatrixAnalytics(selectedYear?: number) {
       const btype = r.business_type || "retail";
       if (revMap[btype]) revMap[btype][mIdx] += Number(r.total);
       else revMap["retail"][mIdx] += Number(r.total);
+    }
+  }
+
+  for (const r of reductionRes.rows) {
+    const mIdx = r.m - 1;
+    if (mIdx >= 0 && mIdx < 12) {
+      const btype = r.business_type || "retail";
+      if (revMap[btype]) revMap[btype][mIdx] -= Number(r.total);
+      else revMap.retail[mIdx] -= Number(r.total);
     }
   }
 
@@ -1050,5 +1449,47 @@ export async function getFinancialMatrixAnalytics(selectedYear?: number) {
     revenueBreakdown,
     expenseBreakdown,
   };
+}
+
+export type FinanceReportFilters = { from?: string; to?: string; customerId?: string; employeeId?: string; projectId?: string };
+
+/** Summary reports are computed by PostgreSQL, so filtering is not limited by list-page size. */
+export async function getFinanceReport(filters: FinanceReportFilters) {
+  const manualValues: unknown[] = [];
+  const orderValues: unknown[] = [];
+  const manualWhere = ["re.deleted_at IS NULL"];
+  const orderWhere = ["o.deleted_at IS NULL", "o.status IN ('confirmed','fulfilled')"];
+  const add = (value: string, manualColumn: string, orderColumn?: string) => {
+    manualValues.push(value); manualWhere.push(`${manualColumn}$${manualValues.length}`);
+    if (orderColumn) { orderValues.push(value); orderWhere.push(`${orderColumn}$${orderValues.length}`); }
+    else orderWhere.push("FALSE");
+  };
+  if (filters.from) add(filters.from, "re.occurred_at >=", "o.created_at::date >=");
+  if (filters.to) add(filters.to, "re.occurred_at <=", "o.created_at::date <=");
+  if (filters.customerId) add(filters.customerId, "re.customer_id=", "o.customer_id=");
+  if (filters.employeeId) add(filters.employeeId, "re.employee_id=", "o.owner_id=");
+  if (filters.projectId) add(filters.projectId, "re.project_id=");
+
+  // Normalise data from manual revenue and confirmed orders into one reporting shape.
+  const manualSql = `SELECT re.customer_id AS "customerId", re.employee_id AS "employeeId", re.project_id AS "projectId", re.total_amount AS revenue, re.cost_amount AS cogs, re.paid_amount AS paid FROM revenue_entries re WHERE ${manualWhere.join(" AND ")}`;
+  const orderSql = `SELECT o.customer_id AS "customerId", o.owner_id AS "employeeId", NULL::uuid AS "projectId", o.total AS revenue, COALESCE(sum(ol.qty*ol.cost_price),0) AS cogs, 0::numeric AS paid FROM orders o LEFT JOIN order_lines ol ON ol.order_id=o.id WHERE ${orderWhere.join(" AND ")} GROUP BY o.id`;
+  const allValues = [...manualValues, ...orderValues];
+  const offsetOrder = manualValues.length;
+  const shiftedOrderSql = orderSql.replace(/\$(\d+)/g, (_, index) => `$${Number(index) + offsetOrder}`);
+  const revenue = await query<{ customerId: string; employeeId: string | null; projectId: string | null; revenue: string; cogs: string; paid: string }>(`SELECT * FROM (${manualSql} UNION ALL ${shiftedOrderSql}) report_rows`, allValues);
+
+  const reductions = await query<{ total: string }>(`SELECT COALESCE(sum(rr.amount),0)::text AS total FROM revenue_reductions rr JOIN revenue_entries re ON re.id=rr.revenue_entry_id WHERE rr.deleted_at IS NULL AND ${manualWhere.join(" AND ")}`, manualValues);
+  const expenseValues: unknown[] = []; const expenseWhere = ["deleted_at IS NULL"];
+  if (filters.from) { expenseValues.push(filters.from); expenseWhere.push(`COALESCE(period_date,expense_date) >= $${expenseValues.length}`); }
+  if (filters.to) { expenseValues.push(filters.to); expenseWhere.push(`COALESCE(period_date,expense_date) <= $${expenseValues.length}`); }
+  const expenses = await query<{ category: string; total: string }>(`SELECT COALESCE(category,expense_category,'other') AS category,COALESCE(sum(amount),0)::text AS total FROM operating_expenses WHERE ${expenseWhere.join(" AND ")} GROUP BY COALESCE(category,expense_category,'other')`, expenseValues);
+  const customerTotals = new Map<string, { revenue: number; cogs: number; paid: number }>();
+  for (const row of revenue.rows) { const current = customerTotals.get(row.customerId) ?? { revenue: 0, cogs: 0, paid: 0 }; current.revenue += Number(row.revenue); current.cogs += Number(row.cogs); current.paid += Number(row.paid); customerTotals.set(row.customerId, current); }
+  const grossRevenue = revenue.rows.reduce((sum, row) => sum + Number(row.revenue), 0);
+  const cogs = revenue.rows.reduce((sum, row) => sum + Number(row.cogs), 0);
+  const reductionsTotal = Number(reductions.rows[0]?.total ?? 0);
+  const laborCost = expenses.rows.filter((row) => row.category === "salary").reduce((sum, row) => sum + Number(row.total), 0);
+  const otherExpenses = expenses.rows.filter((row) => row.category !== "salary").reduce((sum, row) => sum + Number(row.total), 0);
+  return { summary: { grossRevenue, reductions: reductionsTotal, netRevenue: grossRevenue - reductionsTotal, cogs, laborCost, otherExpenses, profit: grossRevenue - reductionsTotal - cogs - laborCost - otherExpenses, receivable: Math.max(0, grossRevenue - reductionsTotal - revenue.rows.reduce((sum, row) => sum + Number(row.paid), 0)) }, customers: [...customerTotals.entries()].map(([customerId, value]) => ({ customerId, ...value, receivable: Math.max(0, value.revenue - value.paid) })) };
 }
 

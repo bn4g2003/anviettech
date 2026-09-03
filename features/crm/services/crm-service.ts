@@ -48,7 +48,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   products: {
     module: "products",
     table: "products",
-    select: `id, sku, name, category, unit, unit_price AS "unitPrice", vat_percent AS "vatPercent", min_stock AS "minStock", status, description, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, sku, name, category, unit, unit_price AS "unitPrice", cost_price AS "costPrice", vat_percent AS "vatPercent", min_stock AS "minStock", item_type AS "itemType", status, description, created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["name", "sku", "category"],
     sort: ["name", "sku", "created_at", "updated_at"],
     ownerColumn: null,
@@ -133,12 +133,51 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
     sort: ["name", "code", "created_at"],
     ownerColumn: null,
   },
+  suppliers: {
+    module: "suppliers",
+    table: "suppliers",
+    select: `id, code, name, contact_name AS "contactName", phone, email, address, status, notes, owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    search: ["name", "code", "contact_name", "phone", "email"],
+    sort: ["name", "code", "created_at", "updated_at"],
+  },
+  projects: {
+    module: "projects",
+    table: "projects",
+    select: `id, code, name, customer_id AS "customerId", address, status, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    search: ["name", "code", "address"],
+    sort: ["name", "code", "start_date", "created_at", "updated_at"],
+  },
   stock_moves: {
     module: "inventory",
     table: "stock_moves",
-    select: `id, code, type, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", owner_id AS "ownerId", note, posted_at AS "postedAt", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, type, reason, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", supplier_id AS "supplierId", customer_id AS "customerId", project_id AS "projectId", owner_id AS "ownerId", note, posted_at AS "postedAt", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code", "note"],
     sort: ["code", "created_at", "updated_at"],
+  },
+  serial_numbers: {
+    module: "inventory", table: "serial_numbers",
+    select: `id, product_id AS "productId", serial, warehouse_id AS "warehouseId", customer_id AS "customerId", project_id AS "projectId", status, warranty_until AS "warrantyUntil", note, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    search: ["serial"], sort: ["serial", "created_at", "updated_at"], ownerColumn: null,
+  },
+  inventory_counts: {
+    module: "inventory", table: "inventory_counts",
+    select: `id, code, warehouse_id AS "warehouseId", status, counted_at AS "countedAt", note, owner_id AS "ownerId", posted_at AS "postedAt", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    search: ["code", "note"], sort: ["counted_at", "created_at", "updated_at"],
+  },
+  operating_expenses: {
+    module: "finance", table: "operating_expenses",
+    select: `id, COALESCE(code,'') AS code, COALESCE(category,expense_category) AS category, amount, COALESCE(period_date,expense_date) AS "expenseDate", COALESCE(notes,description) AS note, created_at AS "createdAt"`,
+    search: ["code", "description", "notes"], sort: ["expense_date", "period_date", "created_at"], ownerColumn: null,
+  },
+  revenue_entries: {
+    module: "finance", table: "revenue_entries",
+    select: `id,code,occurred_at AS "occurredAt",customer_id AS "customerId",project_id AS "projectId",product_id AS "productId",employee_id AS "employeeId",invoice_id AS "invoiceId",document_code AS "documentCode",business_type AS "businessType",qty,unit_price AS "unitPrice",vat_percent AS "vatPercent",subtotal,vat_amount AS "vatAmount",total_amount AS "totalAmount",cost_amount AS "costAmount",payment_status AS "paymentStatus",paid_amount AS "paidAmount",note,created_at AS "createdAt"`,
+    search: ["code", "document_code", "note"], sort: ["occurred_at", "total_amount", "created_at"], ownerColumn: null,
+  },
+  revenue_reductions: {
+    module: "finance", table: "revenue_reductions",
+    select: `id,code,occurred_at AS "occurredAt",customer_id AS "customerId",revenue_entry_id AS "revenueEntryId",type,amount,note,created_at AS "createdAt"`,
+    search: ["code", "note"], sort: ["occurred_at", "amount", "created_at"], ownerColumn: null,
   },
 };
 
@@ -195,7 +234,7 @@ export async function listResource(name: ResourceName, options: ListOptions) {
     values.push(options.ownerId);
     where.push(`${ownerCol}=$${values.length}`);
   }
-  if (options.customerId && (name === "contacts" || name === "activities" || name === "tasks" || name === "deals" || name === "quotes" || name === "orders" || name === "contracts" || name === "invoices" || name === "payments")) {
+  if (options.customerId && (name === "contacts" || name === "activities" || name === "tasks" || name === "deals" || name === "quotes" || name === "orders" || name === "contracts" || name === "invoices" || name === "payments" || name === "revenue_entries" || name === "revenue_reductions")) {
     values.push(options.customerId);
     where.push(`customer_id=$${values.length}`);
   }

@@ -61,6 +61,11 @@ export function ProductsTable() {
       cell: (r) => <span className="text-muted">{r.category}</span>,
     },
     {
+      id: "itemType",
+      header: "Loại",
+      cell: (r) => <span className="text-muted">{r.itemType === "service" ? "Dịch vụ" : "Hàng hóa"}</span>,
+    },
+    {
       id: "unit",
       header: "Đơn vị",
       cell: (r) => r.unit,
@@ -80,6 +85,7 @@ export function ProductsTable() {
       id: "stock",
       header: "Tồn kho",
       cell: (r) => {
+        if (r.itemType === "service") return <span className="text-muted">—</span>;
         const qty = getStock(r.id);
         const low = qty <= r.minStock;
         return (

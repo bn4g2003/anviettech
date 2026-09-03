@@ -14,6 +14,9 @@ type ApiPayment = {
   createdAt?: string; updatedAt?: string;
 };
 
+export type RevenueDebtEntry = { id: string; customerId: string; totalAmount: number | string; paidAmount: number | string };
+export type RevenueReductionDebt = { id: string; customerId: string; amount: number | string };
+
 async function mapInvoice(row: ApiInvoice): Promise<Invoice> {
   const owners = await loadOwners();
   return {
@@ -59,6 +62,14 @@ export const financeService = {
     const result = await apiFetch<ApiPayment[]>(`/api/v1/payments${toQuery({ ...params, pageSize: 100 })}`);
     return Promise.all((result.data ?? []).map(mapPayment));
   },
+  async listRevenueEntries(params?: { customerId?: string }) {
+    const result = await apiFetch<RevenueDebtEntry[]>(`/api/v1/revenue-entries${toQuery({ ...params, pageSize: 100 })}`);
+    return result.data ?? [];
+  },
+  async listRevenueReductions(params?: { customerId?: string }) {
+    const result = await apiFetch<RevenueReductionDebt[]>(`/api/v1/revenue-reductions${toQuery({ ...params, pageSize: 100 })}`);
+    return result.data ?? [];
+  },
   async recordPayment(input: PaymentInput) {
     const method = input.method === "bank" ? "transfer" : input.method;
     await apiFetch("/api/v1/payments", {
@@ -73,7 +84,11 @@ export const financeService = {
     });
   },
   async getCustomerDebt(customerId: string) {
-    const invoices = await this.listInvoices({ customerId });
-    return invoices.reduce((sum, inv) => sum + (inv.amount - inv.paidAmount), 0);
+    const [invoices, entries, reductions] = await Promise.all([
+      this.listInvoices({ customerId }), this.listRevenueEntries({ customerId }), this.listRevenueReductions({ customerId }),
+    ]);
+    const invoiceDebt = invoices.filter((invoice) => invoice.status !== "cancelled").reduce((sum, invoice) => sum + (invoice.amount - invoice.paidAmount), 0);
+    const revenueDebt = entries.reduce((sum, entry) => sum + Number(entry.totalAmount) - Number(entry.paidAmount), 0);
+    return Math.max(0, invoiceDebt + revenueDebt - reductions.reduce((sum, item) => sum + Number(item.amount), 0));
   },
 };

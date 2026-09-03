@@ -4,11 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { quotesService } from "@/features/quotes/services/quotes-service";
 import type { Quote, QuoteInput } from "@/features/quotes/types";
 
-export function useQuotes(filters?: { query?: string; status?: string; customerId?: string }) {
+export function useQuotes(filters?: { query?: string; status?: string; customerId?: string; enabled?: boolean }) {
   const [rows, setRows] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    if (filters?.enabled === false) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await quotesService.list({ search: filters?.query, status: filters?.status, customerId: filters?.customerId });
@@ -19,7 +24,7 @@ export function useQuotes(filters?: { query?: string; status?: string; customerI
     } finally {
       setLoading(false);
     }
-  }, [filters?.query, filters?.status, filters?.customerId]);
+  }, [filters?.query, filters?.status, filters?.customerId, filters?.enabled]);
 
   useEffect(() => {
     void reload();

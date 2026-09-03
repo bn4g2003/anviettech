@@ -48,7 +48,7 @@ WHERE module IN ('products','inventory','orders') AND scope = 'all';
 -- Kế toán
 INSERT INTO role_permissions(role_id, permission_id)
 SELECT '00000000-0000-0000-0000-000000000007', id FROM permissions
-WHERE module IN ('finance','orders','contracts','quotes','customers','analytics') AND scope = 'all';
+WHERE module IN ('finance','orders','contracts','quotes','customers','products','projects','analytics') AND scope = 'all';
 
 -- Viewer: view all
 INSERT INTO role_permissions(role_id, permission_id)

@@ -17,6 +17,11 @@ type Props = {
   moveType: StockMoveType;
 };
 
+const REASON_LABEL: Record<StockMove["reason"], string> = {
+  purchase_receipt: "Nhập hàng mới", customer_return: "Khách trả lại", warranty_receipt: "Bảo hành nhập về",
+  installation_issue: "Xuất lắp đặt", sales_issue: "Xuất bán", supplier_return: "Trả nhà cung cấp", transfer: "Điều chuyển",
+};
+
 function warehouseLabel(r: StockMove) {
   if (r.type === "in") return r.warehouseTo ?? "—";
   if (r.type === "out") return r.warehouseFrom ?? "—";
@@ -30,24 +35,31 @@ function linesSummary(r: StockMove) {
   return `${first.productName} ×${first.qty} +${r.lines.length - 1}`;
 }
 
+export function filterStockMoves(
+  moves: StockMove[],
+  moveType: StockMoveType,
+  filters: Record<string, string>,
+  query: string,
+) {
+  const term = query.trim().toLowerCase();
+  return moves.filter((move) => {
+    if (move.type !== moveType) return false;
+    if (filters.status && move.status !== filters.status) return false;
+    if (filters.ownerId && move.owner.id !== filters.ownerId) return false;
+    if (filters.supplierId && move.supplierId !== filters.supplierId) return false;
+    if (filters.customerId && move.customerId !== filters.customerId) return false;
+    if (filters.projectId && move.projectId !== filters.projectId) return false;
+    if (!term) return true;
+    return move.code.toLowerCase().includes(term) || move.lines.some((line) => line.productName.toLowerCase().includes(term));
+  });
+}
+
 export function StockMovesTable({ moveType }: Props) {
   const list = useListPage();
   const { moves, loading, postMove } = useInventory();
   const { toast } = useToast();
 
-  const filtered = useMemo(() => {
-    const q = list.query.trim().toLowerCase();
-    return moves.filter((m) => {
-      if (m.type !== moveType) return false;
-      if (list.filters.status && m.status !== list.filters.status) return false;
-      if (list.filters.ownerId && m.owner.id !== list.filters.ownerId) return false;
-      if (!q) return true;
-      return (
-        m.code.toLowerCase().includes(q) ||
-        m.lines.some((l) => l.productName.toLowerCase().includes(q))
-      );
-    });
-  }, [moves, moveType, list.query, list.filters.status, list.filters.ownerId]);
+  const filtered = useMemo(() => filterStockMoves(moves, moveType, list.filters, list.query), [moves, moveType, list.filters, list.query]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;
@@ -73,6 +85,11 @@ export function StockMovesTable({ moveType }: Props) {
       id: "status",
       header: "Trạng thái",
       cell: (r) => <StockMoveStatusBadge status={r.status} />,
+    },
+    {
+      id: "reason",
+      header: "Nghiệp vụ",
+      cell: (r) => <span className="text-muted">{REASON_LABEL[r.reason] ?? "—"}</span>,
     },
     {
       id: "warehouse",

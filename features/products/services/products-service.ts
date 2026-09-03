@@ -3,8 +3,8 @@ import type { Product, ProductInput } from "@/features/products/types";
 
 type ApiProduct = {
   id: string; sku: string; name: string; category?: string | null; unit: string;
-  unitPrice: number | string; vatPercent: number | string; minStock: number | string;
-  status: string; description?: string | null; createdAt?: string; updatedAt?: string;
+  unitPrice: number | string; costPrice?: number | string; vatPercent: number | string; minStock: number | string;
+  itemType?: string; status: string; description?: string | null; createdAt?: string; updatedAt?: string;
 };
 
 function mapProduct(row: ApiProduct): Product {
@@ -15,8 +15,10 @@ function mapProduct(row: ApiProduct): Product {
     category: row.category ?? "",
     unit: row.unit,
     unitPrice: Number(row.unitPrice),
+    costPrice: Number(row.costPrice ?? 0),
     vatPercent: Number(row.vatPercent),
     minStock: Number(row.minStock),
+    itemType: row.itemType === "service" ? "service" : "goods",
     status: (row.status as Product["status"]) || "active",
     description: row.description ?? undefined,
     createdAt: row.createdAt ?? new Date().toISOString(),

@@ -13,6 +13,8 @@ import {
   Shield,
   Target,
   Users,
+  Truck,
+  HardHat,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +40,8 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/co-hoi", label: "Cơ hội", icon: Briefcase, module: "deals" },
   { href: "/cong-viec", label: "Công việc", icon: CalendarDays, module: "tasks" },
   { href: "/san-pham", label: "Sản phẩm", icon: Package, module: "products" },
+  { href: "/nha-cung-cap", label: "Nhà cung cấp", icon: Truck, module: "suppliers" },
+  { href: "/cong-trinh", label: "Công trình", icon: HardHat, module: "projects" },
   { href: "/bao-gia", label: "Báo giá", icon: FileText, module: "quotes" },
   { href: "/hop-dong", label: "Hợp đồng", icon: Handshake, module: "contracts" },
   { href: "/kho", label: "Kho", icon: Boxes, module: "inventory" },
@@ -58,9 +62,11 @@ export function getRoleQuickViews(user?: CurrentUser | null): PublicView[] {
 
   if (isKho) {
     return [
-      { href: "/kho", label: "Tồn kho thực tế" },
-      { href: "/kho", label: "Phiếu xuất / nhập" },
-      { href: "/san-pham", label: "Danh mục sản phẩm" },
+      { href: "/san-pham", label: "Hàng hóa" },
+      { href: "/nha-cung-cap", label: "Nhà cung cấp" },
+      { href: "/khach-hang", label: "Khách hàng" },
+      { href: "/kho/danh-muc", label: "Kho bãi" },
+      { href: "/cong-trinh", label: "Công trình" },
     ];
   }
 

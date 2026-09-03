@@ -7,11 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
+import { apiFetch, toQuery } from "@/lib/api-client";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
+import { useEffect, useState } from "react";
+
+type Reference = { id: string; code: string; name: string };
 
 const COLUMN_DEFS = [
   { id: "code", label: "Mã" },
   { id: "status", label: "Trạng thái" },
+  { id: "reason", label: "Nghiệp vụ" },
   { id: "warehouse", label: "Kho" },
   { id: "orderId", label: "Đơn hàng" },
   { id: "lines", label: "Dòng hàng" },
@@ -29,6 +34,17 @@ export function StockMovesFilterBar() {
     setVisibleColumns,
     toggleSort,
   } = useListPage();
+  const [references, setReferences] = useState<{ suppliers: Reference[]; customers: Reference[]; projects: Reference[] }>({ suppliers: [], customers: [], projects: [] });
+
+  useEffect(() => {
+    void Promise.all([
+      apiFetch<Reference[]>(`/api/v1/suppliers${toQuery({ pageSize: 100, status: "active" })}`),
+      apiFetch<Reference[]>(`/api/v1/customers${toQuery({ pageSize: 100, status: "active" })}`),
+      apiFetch<Reference[]>(`/api/v1/projects${toQuery({ pageSize: 100 })}`),
+    ]).then(([suppliers, customers, projects]) => setReferences({
+      suppliers: suppliers.data ?? [], customers: customers.data ?? [], projects: projects.data ?? [],
+    })).catch(() => setReferences({ suppliers: [], customers: [], projects: [] }));
+  }, []);
 
   return (
     <FilterBar
@@ -47,6 +63,9 @@ export function StockMovesFilterBar() {
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
           />
+          <ReferenceFilter label="Nhà cung cấp" value={filters.supplierId ?? ""} rows={references.suppliers} onChange={(value) => setFilter("supplierId", value)} />
+          <ReferenceFilter label="Khách hàng" value={filters.customerId ?? ""} rows={references.customers} onChange={(value) => setFilter("customerId", value)} />
+          <ReferenceFilter label="Công trình" value={filters.projectId ?? ""} rows={references.projects} onChange={(value) => setFilter("projectId", value)} />
           <Input
             className="w-44"
             placeholder="Mã phiếu..."
@@ -77,4 +96,8 @@ export function StockMovesFilterBar() {
       }
     />
   );
+}
+
+function ReferenceFilter({ label, value, rows, onChange }: { label: string; value: string; rows: Reference[]; onChange: (value: string) => void }) {
+  return <Select value={value} onChange={(event) => onChange(event.target.value)}><option value="">{label}</option>{rows.map((row) => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select>;
 }

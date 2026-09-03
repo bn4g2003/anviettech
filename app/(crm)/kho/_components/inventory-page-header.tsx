@@ -2,6 +2,7 @@
 
 import { AppHeader } from "@/components/shell/app-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 
@@ -28,6 +29,7 @@ export function InventoryPageHeader({ tab, onTabChange }: Props) {
       moduleLabel="Kho"
       onCreate={canCreate ? () => setCreateOpen(true) : undefined}
       createLabel={canCreate ? CREATE_LABEL[tab] : undefined}
+      secondaryAction={<div className="flex items-center gap-1"><Link href="/kho/danh-muc" className="inline-flex h-7 items-center rounded-md border border-border bg-white px-2.5 text-xs font-medium text-foreground hover:bg-muted-bg">Kho bãi</Link><Link href="/kho/serials" className="inline-flex h-7 items-center rounded-md border border-border bg-white px-2.5 text-xs font-medium text-foreground hover:bg-muted-bg">Serial</Link><Link href="/kho/kiem-ke" className="inline-flex h-7 items-center rounded-md border border-border bg-white px-2.5 text-xs font-medium text-foreground hover:bg-muted-bg">Kiểm kê</Link><Link href="/kho/bao-cao" className="inline-flex h-7 items-center rounded-md border border-border bg-white px-2.5 text-xs font-medium text-foreground hover:bg-muted-bg">Báo cáo</Link></div>}
       viewModes={
         <Tabs value={tab} onValueChange={(v) => onTabChange(v as InventoryTab)}>
           <TabsList>

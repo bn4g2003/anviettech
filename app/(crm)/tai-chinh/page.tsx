@@ -12,6 +12,9 @@ import { DebtsFilterBar } from "./_components/debts-filter-bar";
 import { DebtsTable } from "./_components/debts-table";
 import { PaymentFormDialog } from "./_components/payment-form-dialog";
 import { InvoiceDetailDrawer } from "./_components/invoice-detail-drawer";
+import { OperatingExpensesPanel } from "./_components/operating-expenses-panel";
+import { RevenueEntriesPanel } from "./_components/revenue-entries-panel";
+import { FinanceReportsPanel } from "./_components/finance-reports-panel";
 
 const INVOICE_COLUMNS = [
   "code",
@@ -62,6 +65,25 @@ export default function TaiChinhPage() {
         </div>
       </ListPageProvider>
     );
+  }
+
+  if (tab === "expenses") {
+    return (
+      <ListPageProvider key="expenses" defaultColumns={[]}>
+        <div className="flex h-full min-h-0 flex-col">
+          <FinancePageHeader tab={tab} onTabChange={setTab} />
+          <OperatingExpensesPanel />
+        </div>
+      </ListPageProvider>
+    );
+  }
+
+  if (tab === "revenue") {
+    return <ListPageProvider key="revenue" defaultColumns={[]}><div className="flex h-full min-h-0 flex-col"><FinancePageHeader tab={tab} onTabChange={setTab} /><RevenueEntriesPanel /></div></ListPageProvider>;
+  }
+
+  if (tab === "reports") {
+    return <ListPageProvider key="reports" defaultColumns={[]}><div className="flex h-full min-h-0 flex-col"><FinancePageHeader tab={tab} onTabChange={setTab} /><FinanceReportsPanel /></div></ListPageProvider>;
   }
 
   return (
