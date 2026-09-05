@@ -65,6 +65,7 @@ export function QuoteFormDialog() {
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
   const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (editing) {
@@ -119,7 +120,7 @@ export function QuoteFormDialog() {
     });
   }
 
-  function save() {
+  async function save() {
     if (!form.customerId) {
       toast("Vui lòng chọn khách hàng", "error");
       return;
@@ -143,14 +144,21 @@ export function QuoteFormDialog() {
         vatPercent: Number(l.vatPercent) || 0,
       })),
     };
-    if (editing) {
-      update(editing.id, payload);
-      toast("Đã cập nhật báo giá", "success");
-    } else {
-      create(payload);
-      toast("Đã tạo báo giá", "success");
+    setSaving(true);
+    try {
+      if (editing) {
+        await update(editing.id, payload, editing.status);
+        toast(form.status === "approved" ? "Đã duyệt — đã tạo hợp đồng & đơn nháp" : "Đã cập nhật báo giá", "success");
+      } else {
+        await create(payload);
+        toast("Đã tạo báo giá", "success");
+      }
+      close();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Không thể lưu báo giá", "error");
+    } finally {
+      setSaving(false);
     }
-    close();
   }
 
   return (
@@ -167,8 +175,8 @@ export function QuoteFormDialog() {
           <Button variant="outline" onClick={close}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={save}>
-            Lưu
+          <Button variant="primary" disabled={saving} onClick={() => void save()}>
+            {saving ? "Đang lưu..." : "Lưu"}
           </Button>
         </>
       }
@@ -214,7 +222,7 @@ export function QuoteFormDialog() {
             >
               <option value="draft">Nháp</option>
               <option value="sent">Đã gửi</option>
-              {editing && editing.status === "draft" && canDirectlyApprove ? <option value="approved">Đã duyệt</option> : null}
+              {editing && (editing.status === "draft" || editing.status === "sent") && canDirectlyApprove ? <option value="approved">Đã duyệt</option> : null}
             </Select>
           </label>
           <label className="space-y-1 text-xs">

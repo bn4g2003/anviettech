@@ -76,7 +76,11 @@ export const quotesService = {
     if (input.status === "sent") await apiFetch(`/api/v1/quotes/${result.data.id}/send`, { method: "POST" });
     return this.getById(result.data.id);
   },
-  async update(id: string, patch: Partial<QuoteInput>) {
+  async update(id: string, patch: Partial<QuoteInput>, currentStatus?: QuoteStatus) {
+    if (patch.status === "approved" && currentStatus === "sent") {
+      await apiFetch(`/api/v1/quotes/${id}/approve`, { method: "POST" });
+      return this.getById(id);
+    }
     if (patch.lines || patch.terms !== undefined || patch.validUntil !== undefined || patch.dealId !== undefined) {
       await apiFetch(`/api/v1/quotes/${id}`, {
         method: "PATCH",

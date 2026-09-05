@@ -43,8 +43,8 @@ export function useQuotes(filters?: { query?: string; status?: string; customerI
       await reload();
       return row;
     },
-    update: async (id: string, patch: Partial<QuoteInput>) => {
-      const row = await quotesService.update(id, patch);
+    update: async (id: string, patch: Partial<QuoteInput>, currentStatus?: Quote["status"]) => {
+      const row = await quotesService.update(id, patch, currentStatus);
       await reload();
       return row;
     },

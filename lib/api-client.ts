@@ -15,6 +15,18 @@ type ApiSuccess<T> = { success: true; data: T; meta?: ApiMeta };
 type ApiFailure = { success: false; error: { code: string; message: string; fields?: Record<string, string> } };
 
 const inFlightMutations = new Map<string, Promise<unknown>>();
+export const API_MUTATION_SUCCEEDED_EVENT = "anviet:api-mutation-succeeded";
+
+function isMutation(init?: RequestInit) {
+  const method = (init?.method ?? "GET").toUpperCase();
+  return method !== "GET" && method !== "HEAD";
+}
+
+function announceSuccessfulMutation() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(API_MUTATION_SUCCEEDED_EVENT));
+  }
+}
 
 function mutationKey(path: string, init?: RequestInit) {
   const method = (init?.method ?? "GET").toUpperCase();
@@ -54,13 +66,17 @@ async function sendRequest<T>(path: string, init?: RequestInit): Promise<{ data:
 }
 
 export function apiFetch<T>(path: string, init?: RequestInit): Promise<{ data: T; meta?: ApiMeta }> {
+  const requestOnce = () => sendRequest<T>(path, init).then((result) => {
+    if (isMutation(init)) announceSuccessfulMutation();
+    return result;
+  });
   const key = mutationKey(path, init);
-  if (!key) return sendRequest<T>(path, init);
+  if (!key) return requestOnce();
 
   const existing = inFlightMutations.get(key) as Promise<{ data: T; meta?: ApiMeta }> | undefined;
   if (existing) return existing;
 
-  const request = sendRequest<T>(path, init).finally(() => inFlightMutations.delete(key));
+  const request = requestOnce().finally(() => inFlightMutations.delete(key));
   inFlightMutations.set(key, request);
   return request;
 }
