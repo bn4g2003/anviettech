@@ -93,6 +93,10 @@ describe("1. Role-Based Access Control (RBAC) across All Non-Admin Roles", () =>
     { module: "contracts", action: "view", scope: "all" },
     { module: "quotes", action: "view", scope: "all" },
     { module: "customers", action: "view", scope: "all" },
+    { module: "tasks", action: "view", scope: "own" },
+    { module: "tasks", action: "create", scope: "own" },
+    { module: "tasks", action: "update", scope: "own" },
+    { module: "tasks", action: "delete", scope: "own" },
     { module: "analytics", action: "view", scope: "all" },
   ]);
 
@@ -151,6 +155,8 @@ describe("1. Role-Based Access Control (RBAC) across All Non-Admin Roles", () =>
   it("Accountant (Kế toán) can manage finance, view orders, but cannot manage campaigns or warehouse moves", () => {
     expect(() => ensurePermission(accountantUser, "finance", "create")).not.toThrow();
     expect(() => ensurePermission(accountantUser, "orders", "view")).not.toThrow();
+    expect(() => ensurePermission(accountantUser, "tasks", "create", accountantUser.id)).not.toThrow();
+    expect(() => ensurePermission(accountantUser, "tasks", "update", "another-user")).toThrow();
     expect(permissionMatches(accountantUser, "campaigns", "create")).toHaveLength(0);
     expect(permissionMatches(accountantUser, "inventory", "create")).toHaveLength(0);
   });
