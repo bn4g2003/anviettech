@@ -295,7 +295,7 @@ export async function convertLead(
 ) {
   return transaction(async (client: PoolClient) => {
     const lead = await client.query<{
-      id: string; name: string; company_name: string | null; email: string | null; phone: string | null;
+      id: string; name: string; company_name: string | null; email: string | null; phone: string | null; source: string | null;
       owner_id: string | null; status: string; campaign_id: string | null;
     }>("SELECT * FROM leads WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", [leadId]);
     if (!lead.rows[0]) throw new ApiError(404, "Không tìm thấy lead");
@@ -303,8 +303,8 @@ export async function convertLead(
     const row = lead.rows[0];
     const customer = await client.query<{ id: string }>(
       `INSERT INTO customers(code,name,type,email,phone,source,owner_id,campaign_id,created_by,updated_by)
-       VALUES($1,$2,'company',$3,$4,'Lead',$5,$6,$7,$7) RETURNING id`,
-      [code("KH"), input.customerName, row.email, row.phone, row.owner_id ?? actorId, row.campaign_id, actorId],
+       VALUES($1,$2,'company',$3,$4,$5,$6,$7,$8,$8) RETURNING id`,
+      [code("KH"), input.customerName, row.email, row.phone, row.source, row.owner_id ?? actorId, row.campaign_id, actorId],
     );
     if (input.contactName || row.name) {
       await client.query(

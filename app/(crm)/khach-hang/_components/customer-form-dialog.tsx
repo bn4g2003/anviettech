@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import type { CustomerType, CustomerStatus } from "@/features/customers/types";
 import type { OwnerRef } from "@/features/shared/types/ids";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { LEAD_SOURCE_OPTIONS } from "@/features/leads/source-options";
 
 const empty = {
   name: "",
@@ -197,9 +198,7 @@ export function CustomerFormDialog() {
             value={form.source}
             onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}
           >
-            <option value="Marketing">Marketing</option>
-            <option value="Giới thiệu">Giới thiệu</option>
-            <option value="Cold call">Cold call</option>
+            {LEAD_SOURCE_OPTIONS.map((source) => <option key={source} value={source}>{source}</option>)}
           </Select>
         </label>
         <label className="col-span-2 space-y-1 text-xs">
