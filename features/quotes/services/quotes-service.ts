@@ -47,9 +47,9 @@ async function mapQuote(row: ApiQuote): Promise<Quote> {
 }
 
 export const quotesService = {
-  async list(params?: { search?: string; status?: string; customerId?: string }) {
-    const result = await apiFetch<ApiQuote[]>(`/api/v1/quotes${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all((result.data ?? []).map(mapQuote));
+  async list(params?: { search?: string; status?: string; customerId?: string; page?: number; pageSize?: number }) {
+    const result = await apiFetch<ApiQuote[]>(`/api/v1/quotes${toQuery({ ...params, pageSize: params?.pageSize ?? 100 })}`);
+    return { rows: await Promise.all((result.data ?? []).map(mapQuote)), total: result.meta?.total ?? result.data?.length ?? 0 };
   },
   async getById(id: string) {
     const result = await apiFetch<ApiQuote>(`/api/v1/quotes/${id}`);

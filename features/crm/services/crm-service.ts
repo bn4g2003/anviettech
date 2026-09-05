@@ -257,6 +257,21 @@ export async function listResource(name: ResourceName, options: ListOptions) {
     query<{ total: string }>(`SELECT count(*)::text total FROM ${config.table} WHERE ${filter}`, values.slice(0, -2)),
   ]);
   const total = Number(count.rows[0].total);
+  if (name === "quotes" && rows.rows.length) {
+    const quoteIds = rows.rows.map((row) => String(row.id));
+    const lines = await query<{
+      id: string; quoteId: string; productId: string; productName: string; qty: string;
+      unitPrice: string; discountPercent: string; vatPercent: string; lineTotal: string;
+    }>(
+      `SELECT id, quote_id AS "quoteId", product_id AS "productId", product_name AS "productName", qty,
+              unit_price AS "unitPrice", discount_percent AS "discountPercent", vat_percent AS "vatPercent", line_total AS "lineTotal"
+       FROM quote_lines WHERE quote_id = ANY($1::uuid[])`,
+      [quoteIds],
+    );
+    const linesByQuote = new Map<string, typeof lines.rows>();
+    for (const line of lines.rows) linesByQuote.set(line.quoteId, [...(linesByQuote.get(line.quoteId) ?? []), line]);
+    return { rows: rows.rows.map((row) => ({ ...row, lines: linesByQuote.get(String(row.id)) ?? [] })), meta: { page: options.page, pageSize: options.pageSize, total, totalPages: Math.ceil(total / options.pageSize) || 1 } };
+  }
   return { rows: rows.rows, meta: { page: options.page, pageSize: options.pageSize, total, totalPages: Math.ceil(total / options.pageSize) || 1 } };
 }
 

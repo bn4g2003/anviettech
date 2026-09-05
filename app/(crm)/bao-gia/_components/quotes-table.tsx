@@ -21,10 +21,12 @@ export function QuotesTable() {
   const list = useListPage();
   const router = useRouter();
   const { canEdit, canDelete } = useCurrentUser();
-  const { rows, loading, removeMany } = useQuotes({
+  const { rows, total, loading, removeMany } = useQuotes({
     query: list.query,
     status: list.filters.status,
     customerId: list.filters.customerId,
+    page: list.page,
+    pageSize: list.pageSize,
   });
   const { getById: getCustomer } = useCustomers();
   const { all: deals } = useDeals();
@@ -47,7 +49,7 @@ export function QuotesTable() {
     });
   }, [filtered, list.sortKey, list.sortDir]);
 
-  const pageRows = list.paginate(sorted);
+  const pageRows = sorted;
 
   const allColumns: DataGridColumn<Quote>[] = [
     {
@@ -160,7 +162,7 @@ export function QuotesTable() {
       <Pagination
         page={list.page}
         pageSize={list.pageSize}
-        total={sorted.length}
+        total={list.filters.ownerId || list.sortKey ? sorted.length : total}
         onPageChange={list.setPage}
         onPageSizeChange={list.setPageSize}
       />
