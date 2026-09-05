@@ -5,7 +5,7 @@ import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type ApiDeal = {
   id: string; code: string; title: string; customerId: string; stage: DealStage; value: number | string;
-  probability: number; expectedCloseDate?: string | null; ownerId?: string | null; notes?: string | null;
+  probability: number; expectedCloseDate?: string | null; ownerId?: string | null; notes?: string | null; closedReason?: string | null;
   createdAt?: string; updatedAt?: string;
 };
 
@@ -24,6 +24,7 @@ async function mapDeal(row: ApiDeal): Promise<Deal> {
     owner: ownerByIdSync(row.ownerId ?? "", owners),
     productIds: [],
     notes: row.notes ?? undefined,
+    closedReason: row.closedReason ?? undefined,
     createdAt: row.createdAt ?? new Date().toISOString(),
     updatedAt: row.updatedAt ?? new Date().toISOString(),
   };
@@ -70,6 +71,9 @@ export const dealsService = {
         probability: patch.probability,
       }),
     });
+    if (patch.stage && patch.stage !== result.data.stage) {
+      return this.setStage(id, patch.stage, patch.reason);
+    }
     return mapDeal(result.data);
   },
   async setStage(id: string, stage: DealStage, reason?: string) {

@@ -365,9 +365,10 @@ export async function changeDealStage(id: string, stage: string, reason: string 
   const current = await getDeal(id);
   assertDealStageTransition(current.stage as string, stage);
   if ((stage === "won" || stage === "lost") && !reason?.trim()) throw new ApiError(422, "Cần nhập lý do khi thắng/thua", { closedReason: "Bắt buộc" });
+  const probability = stage === "won" ? 100 : stage === "lost" ? 0 : null;
   await query(
-    "UPDATE deals SET stage=$1, closed_reason=$2, probability=CASE WHEN $1='won' THEN 100 WHEN $1='lost' THEN 0 ELSE probability END, updated_at=now(), updated_by=$3 WHERE id=$4",
-    [stage, reason ?? null, actorId, id],
+    "UPDATE deals SET stage=$1, closed_reason=$2, probability=COALESCE($3,probability), updated_at=now(), updated_by=$4 WHERE id=$5",
+    [stage, reason ?? null, probability, actorId, id],
   );
   await audit(query, actorId, "deals", "stage", "deal", id, { from: current.stage, to: stage, reason });
   return getDeal(id);

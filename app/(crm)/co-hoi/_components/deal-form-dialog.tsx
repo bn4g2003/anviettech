@@ -34,6 +34,7 @@ const empty = {
   ownerId: "",
   productIds: [] as string[],
   notes: "",
+  reason: "",
 };
 
 export function DealFormDialog() {
@@ -58,6 +59,7 @@ export function DealFormDialog() {
         ownerId: editing.owner.id,
         productIds: [...editing.productIds],
         notes: editing.notes ?? "",
+        reason: editing.closedReason ?? "",
       });
     } else if (list.createOpen) {
       setForm({
@@ -83,13 +85,17 @@ export function DealFormDialog() {
     }));
   }
 
-  function save() {
+  async function save() {
     if (!form.title.trim()) {
       toast("Vui lòng nhập tiêu đề", "error");
       return;
     }
     if (!form.customerId) {
       toast("Vui lòng chọn khách hàng", "error");
+      return;
+    }
+    if ((form.stage === "won" || form.stage === "lost") && !form.reason.trim()) {
+      toast("Vui lòng nhập lý do khi thắng hoặc thua", "error");
       return;
     }
     const value = Number(form.value) || 0;
@@ -102,15 +108,20 @@ export function DealFormDialog() {
       expectedCloseDate: fromDateInput(form.expectedCloseDate),
       productIds: form.productIds,
       notes: form.notes,
+      reason: form.reason.trim() || undefined,
     };
-    if (editing) {
-      update(editing.id, payload);
-      toast("Đã cập nhật cơ hội", "success");
-    } else {
-      create(payload);
-      toast("Đã tạo cơ hội", "success");
+    try {
+      if (editing) {
+        await update(editing.id, payload);
+        toast("Đã cập nhật cơ hội", "success");
+      } else {
+        await create(payload);
+        toast("Đã tạo cơ hội", "success");
+      }
+      close();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Không thể lưu cơ hội", "error");
     }
-    close();
   }
 
   const activeProducts = products.filter((p) => p.status === "active");
@@ -126,7 +137,7 @@ export function DealFormDialog() {
           <Button variant="outline" onClick={close}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={save}>
+          <Button variant="primary" onClick={() => void save()}>
             Lưu
           </Button>
         </>
@@ -226,6 +237,17 @@ export function DealFormDialog() {
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           />
         </label>
+        {form.stage === "won" || form.stage === "lost" ? (
+          <label className="col-span-2 space-y-1 text-xs">
+            <span className="text-muted">Lý do *</span>
+            <Input
+              value={form.reason}
+              maxLength={1000}
+              placeholder={form.stage === "won" ? "Lý do cơ hội thắng" : "Lý do cơ hội thua"}
+              onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+            />
+          </label>
+        ) : null}
       </div>
     </Modal>
   );

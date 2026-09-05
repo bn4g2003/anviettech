@@ -32,9 +32,11 @@ export type Deal = Timestamps & {
   expectedCloseDate: string;
   productIds: EntityId[];
   notes?: string;
+  closedReason?: string;
 };
 
 export type DealInput = Omit<Deal, "id" | "createdAt" | "updatedAt" | "code" | "probability"> & {
   code?: string;
   probability?: number;
+  reason?: string;
 };
