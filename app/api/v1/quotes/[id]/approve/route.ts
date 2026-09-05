@@ -12,6 +12,6 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     if (!canApproveQuoteByRole(user.roles)) {
       throw new ApiError(403, "Chỉ Admin hoặc Trưởng kinh doanh được duyệt báo giá");
     }
-    return ok(await approveQuote(id, user.id));
+    return ok(await approveQuote(id, user.id, { allowDraft: true }));
   } catch (error) { return errorResponse(error); }
 }

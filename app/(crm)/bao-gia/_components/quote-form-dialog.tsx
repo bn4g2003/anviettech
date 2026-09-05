@@ -13,6 +13,7 @@ import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { canApproveQuoteByRole } from "@/features/quotes/quote-approval-policy";
 import { calcLineTotal, formatVnd, sumAmounts } from "@/features/shared/utils/money";
 import { daysFromNow } from "@/features/shared/utils/date";
 import type { QuoteStatus } from "@/features/quotes/types";
@@ -57,8 +58,9 @@ export function QuoteFormDialog() {
   const list = useListPage();
   const { create, update, getById } = useQuotes();
   const { all: products } = useProducts();
-  const { user, canAssignOthers } = useCurrentUser();
+  const { user, canAssignOthers, canApprove } = useCurrentUser();
   const canAssign = canAssignOthers("quotes", "create");
+  const canDirectlyApprove = Boolean(user && canApprove("quotes") && canApproveQuoteByRole(user.roles));
   const { toast } = useToast();
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
@@ -212,9 +214,7 @@ export function QuoteFormDialog() {
             >
               <option value="draft">Nháp</option>
               <option value="sent">Đã gửi</option>
-              <option value="approved">Đã duyệt</option>
-              <option value="rejected">Từ chối</option>
-              <option value="expired">Hết hạn</option>
+              {editing && editing.status === "draft" && canDirectlyApprove ? <option value="approved">Đã duyệt</option> : null}
             </Select>
           </label>
           <label className="space-y-1 text-xs">

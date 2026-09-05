@@ -3,14 +3,16 @@ import { transaction } from "@/lib/db";
 import { ApiError } from "@/lib/api";
 import { code } from "@/features/crm/services/crm-service";
 
-export async function approveQuote(quoteId: string, actorId: string) {
+export async function approveQuote(quoteId: string, actorId: string, options?: { allowDraft?: boolean }) {
   return transaction(async (client: PoolClient) => {
     const quote = await client.query<{
       id: string; customer_id: string; deal_id: string | null; owner_id: string | null; total: string; status: string; terms: string | null;
     }>("SELECT * FROM quotes WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", [quoteId]);
     const row = quote.rows[0];
     if (!row) throw new ApiError(404, "Không tìm thấy báo giá");
-    if (row.status !== "sent") throw new ApiError(409, "Chỉ duyệt báo giá đã gửi");
+    if (row.status !== "sent" && !(options?.allowDraft && row.status === "draft")) {
+      throw new ApiError(409, "Chỉ duyệt báo giá đã gửi");
+    }
 
     await client.query("UPDATE quotes SET status='approved', approved_at=now(), updated_at=now(), updated_by=$1 WHERE id=$2", [actorId, quoteId]);
 

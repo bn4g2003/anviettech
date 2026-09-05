@@ -95,6 +95,7 @@ export const quotesService = {
       });
     }
     if (patch.status === "sent") await apiFetch(`/api/v1/quotes/${id}/send`, { method: "POST" });
+    if (patch.status === "approved") await apiFetch(`/api/v1/quotes/${id}/approve`, { method: "POST" });
     if (patch.status === "rejected") await apiFetch(`/api/v1/quotes/${id}/reject`, { method: "POST" });
     return this.getById(id);
   },

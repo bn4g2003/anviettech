@@ -396,14 +396,15 @@ export async function createProduct(input: { sku: string; name: string; category
 }
 
 export async function updateProduct(id: string, input: Partial<{ sku: string; name: string; category: string; unit: string; unitPrice: number; costPrice: number; vatPercent: number; minStock: number; status: string; description: string; itemType: "goods" | "service" }>, actorId: string) {
+  const minStock = input.itemType === "service" ? 0 : input.minStock ?? null;
   const result = await query(
     `UPDATE products SET sku=COALESCE($1,sku), name=COALESCE($2,name), category=COALESCE($3,category), unit=COALESCE($4,unit),
      unit_price=COALESCE($5,unit_price), cost_price=COALESCE($6,cost_price), vat_percent=COALESCE($7,vat_percent), min_stock=COALESCE($8,min_stock),
      status=COALESCE($9,status), description=COALESCE($10,description), item_type=COALESCE($11,item_type),
-     min_stock=CASE WHEN $11='service' THEN 0 ELSE COALESCE($8,min_stock) END, updated_at=now(), updated_by=$12
+     updated_at=now(), updated_by=$12
      WHERE id=$13 AND deleted_at IS NULL
      RETURNING id, sku, name, category, unit, unit_price AS "unitPrice", cost_price AS "costPrice", vat_percent AS "vatPercent", min_stock AS "minStock", item_type AS "itemType", status, description`,
-    [input.sku ?? null, input.name ?? null, input.category ?? null, input.unit ?? null, input.unitPrice ?? null, input.costPrice ?? null, input.vatPercent ?? null, input.minStock ?? null, input.status ?? null, input.description ?? null, input.itemType ?? null, actorId, id],
+    [input.sku ?? null, input.name ?? null, input.category ?? null, input.unit ?? null, input.unitPrice ?? null, input.costPrice ?? null, input.vatPercent ?? null, minStock, input.status ?? null, input.description ?? null, input.itemType ?? null, actorId, id],
   );
   if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy sản phẩm");
   return result.rows[0];
