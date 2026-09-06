@@ -1,6 +1,17 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({ email: z.string().trim().email("Email không hợp lệ"), password: z.string().min(1, "Nhập mật khẩu") });
+export const adminSetupSchema = z
+  .object({
+    fullName: z.string().trim().min(2, "Họ tên cần ít nhất 2 ký tự").max(160),
+    email: z.string().trim().email("Email không hợp lệ"),
+    password: z.string().min(10, "Mật khẩu cần ít nhất 10 ký tự"),
+    confirmPassword: z.string().min(1, "Nhập lại mật khẩu"),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: "Xác nhận mật khẩu không khớp",
+    path: ["confirmPassword"],
+  });
 export const passwordSchema = z.object({ currentPassword: z.string().min(1), nextPassword: z.string().min(10, "Mật khẩu cần ít nhất 10 ký tự") });
 const databaseUuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "ID không hợp lệ");
 export const userSchema = z.object({ fullName: z.string().trim().min(2).max(160), email: z.string().trim().email(), temporaryPassword: z.string().min(10), roleIds: z.array(databaseUuid).min(1) });

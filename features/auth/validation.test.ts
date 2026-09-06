@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, passwordSchema, userSchema } from "./validation";
+import { adminSetupSchema, loginSchema, passwordSchema, userSchema } from "./validation";
 
 describe("auth validation", () => {
   it("rejects malformed login credentials", () => {
@@ -13,5 +13,24 @@ describe("auth validation", () => {
 
   it("requires at least ten characters for a changed password", () => {
     expect(() => passwordSchema.parse({ currentPassword: "old", nextPassword: "short" })).toThrow();
+  });
+
+  it("requires matching passwords for first admin bootstrap", () => {
+    expect(() =>
+      adminSetupSchema.parse({
+        fullName: "Quản trị",
+        email: "admin@anviet.local",
+        password: "SafePassword1",
+        confirmPassword: "Different1",
+      }),
+    ).toThrow();
+    expect(
+      adminSetupSchema.parse({
+        fullName: "Quản trị AnViet",
+        email: "admin@anviet.local",
+        password: "SafePassword1",
+        confirmPassword: "SafePassword1",
+      }).email,
+    ).toBe("admin@anviet.local");
   });
 });

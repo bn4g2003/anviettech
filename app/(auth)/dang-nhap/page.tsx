@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { brandAssets, companyProfile } from "@/lib/company";
@@ -13,6 +13,22 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [setupAvailable, setSetupAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/v1/admin-setup")
+      .then((response) => response.json())
+      .then((payload: { data?: { available?: boolean } }) => {
+        if (!cancelled) setSetupAvailable(Boolean(payload.data?.available));
+      })
+      .catch(() => {
+        if (!cancelled) setSetupAvailable(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -180,9 +196,16 @@ export default function LoginPage() {
           </form>
 
           {/* Security Badge */}
-          <div className="mt-6 flex items-center justify-center gap-1.5 border-t border-border/70 pt-4 text-[11px] text-muted">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Kết nối bảo mật mã hóa SSL nội bộ</span>
+          <div className="mt-6 flex flex-col items-center gap-2 border-t border-border/70 pt-4 text-[11px] text-muted">
+            <div className="flex items-center justify-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Kết nối bảo mật mã hóa SSL nội bộ</span>
+            </div>
+            {setupAvailable ? (
+              <a href="/admin-setup" className="font-medium text-neutral-700 underline decoration-neutral-400 underline-offset-2 hover:text-neutral-900">
+                Chưa có quản trị viên? Khởi tạo hệ thống
+              </a>
+            ) : null}
           </div>
         </div>
 
