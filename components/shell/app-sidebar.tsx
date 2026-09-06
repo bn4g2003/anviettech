@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { brandAssets, companyProfile } from "@/lib/company";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   CheckCircle2,
@@ -17,7 +19,7 @@ import {
 } from "lucide-react";
 import type { CurrentUser } from "@/features/auth/services/auth-types";
 import { setCurrentUserCache } from "@/features/auth/hooks/use-current-user";
-import { HELP_ITEM, MAIN_NAV, getRoleQuickViews } from "./nav-config";
+import { NAV_SECTIONS, getRoleQuickViews } from "./nav-config";
 import { NavLink } from "./nav-link";
 
 type AppSidebarProps = {
@@ -86,7 +88,10 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
     userRoles.some((r) => r.toLowerCase().includes("admin")) ||
     user?.permissions?.some((p) => p.module === "users" || p.module === "roles");
 
-  const renderDropdownContent = (side: "bottom" | "right", align: "start" | "end") => (
+  const renderDropdownContent = (
+    side: "top" | "bottom" | "right" | "left",
+    align: "start" | "end" | "center" = "start",
+  ) => (
     <DropdownMenu.Portal>
       <DropdownMenu.Content
         side={side}
@@ -164,49 +169,37 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
         collapsed ? "w-16" : "w-[var(--sidebar-width)]",
       )}
     >
-      <div className="flex h-13 items-center border-b border-border px-3">
-        {!collapsed ? (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button
-                type="button"
-                className="group flex w-full min-w-0 items-center gap-2 rounded-lg p-1 text-left transition-colors hover:bg-surface focus:outline-none cursor-pointer"
-              >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-white">
-                  {initials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-foreground group-hover:text-primary">
-                    {displayName}
-                  </p>
-                  <p className="truncate text-[11px] text-muted">
-                    {displayRole}
-                  </p>
-                </div>
-                <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted group-hover:text-foreground" />
-              </button>
-            </DropdownMenu.Trigger>
-            {renderDropdownContent("bottom", "start")}
-          </DropdownMenu.Root>
-        ) : (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button
-                type="button"
-                title={displayName}
-                className="mx-auto flex h-7 w-7 items-center justify-center rounded bg-primary text-xs font-bold text-white transition-opacity hover:opacity-90 focus:outline-none cursor-pointer"
-              >
-                {initials}
-              </button>
-            </DropdownMenu.Trigger>
-            {renderDropdownContent("right", "start")}
-          </DropdownMenu.Root>
-        )}
+      {/* Brand Header */}
+      <div className="flex h-12 shrink-0 items-center border-b border-border px-3">
+        <div className={cn("flex w-full items-center gap-2.5 overflow-hidden", collapsed && "justify-center")}>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-white p-0.5 shadow-2xs">
+            <Image
+              src={brandAssets.mark}
+              alt={companyProfile.displayName}
+              width={28}
+              height={28}
+              priority
+              unoptimized
+              className="h-5.5 w-5.5 object-contain"
+            />
+          </div>
+          {!collapsed ? (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold leading-none tracking-tight text-foreground">
+                {companyProfile.appName}
+              </p>
+              <p className="mt-0.5 truncate text-[10px] font-medium text-muted">
+                {companyProfile.website}
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
+      {/* Grouped Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-2">
-        <ul className="space-y-0.5">
-          {MAIN_NAV.filter((item) => {
+        {NAV_SECTIONS.map((section, sIdx) => {
+          const visibleItems = section.items.filter((item) => {
             if (!user) return true;
             if (item.adminOnly) return canAccessAuth;
             if (!item.module) return true;
@@ -214,33 +207,50 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
             return user.permissions.some(
               (p) => p.module === "*" || p.module === item.module,
             );
-          }).map((item) => {
-            const active = isNavActive(pathname, item.href);
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
-                <NavLink
-                  href={item.href}
-                  title={item.label}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                    active
-                      ? "bg-muted-bg font-medium text-foreground"
-                      : "text-foreground/80 hover:bg-surface",
-                    collapsed && "justify-center",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {!collapsed ? <span className="truncate">{item.label}</span> : null}
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
+          });
+
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={section.title} className={cn(sIdx > 0 && "mt-3")}>
+              {!collapsed ? (
+                <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-muted/70">
+                  {section.title}
+                </p>
+              ) : sIdx > 0 ? (
+                <div className="my-1.5 mx-2 h-px bg-border/60" />
+              ) : null}
+              <ul className="space-y-0.5">
+                {visibleItems.map((item) => {
+                  const active = isNavActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <NavLink
+                        href={item.href}
+                        title={item.label}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                          active
+                            ? "bg-muted-bg font-semibold text-foreground"
+                            : "text-foreground/80 hover:bg-surface",
+                          collapsed && "justify-center",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
 
         {!collapsed ? (
-          <div className="mt-4">
-            <p className="mb-1 px-2 text-[11px] font-medium uppercase tracking-wide text-muted">
+          <div className="mt-3">
+            <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-muted/70">
               Góc nhìn nhanh
             </p>
             <ul className="space-y-0.5">
@@ -249,7 +259,7 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
                   <NavLink
                     href={view.href}
                     showPendingHint={false}
-                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground/80 hover:bg-surface"
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-foreground/80 hover:bg-surface"
                   >
                     {view.tone === "success" ? (
                       <CheckCircle2 className="h-3.5 w-3.5 text-success" />
@@ -265,51 +275,87 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
         ) : null}
       </nav>
 
-      <div className="space-y-1 border-t border-border p-2">
-        <a
-          href={HELP_ITEM.href}
-          className={cn(
-            "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-surface transition-colors",
-            collapsed && "justify-center",
-          )}
-          title={collapsed ? HELP_ITEM.label : undefined}
-        >
-          <HELP_ITEM.icon className="h-4 w-4 shrink-0" />
-          {!collapsed ? <span>{HELP_ITEM.label}</span> : null}
-        </a>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn("w-full text-muted hover:text-foreground", collapsed ? "justify-center" : "justify-start")}
-          onClick={onToggle}
-          title={collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="h-4 w-4" />
-          ) : (
-            <>
-              <PanelLeftClose className="h-4 w-4" />
-              <span>Thu gọn</span>
-            </>
-          )}
-        </Button>
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={loggingOut}
-          title="Đăng xuất"
-          className={cn(
-            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-danger hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer",
-            collapsed ? "justify-center" : "justify-start",
-          )}
-        >
-          {loggingOut ? (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-          ) : (
-            <LogOut className="h-4 w-4 shrink-0" />
-          )}
-          {!collapsed ? <span>{loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span> : null}
-        </button>
+      {/* Footer: User Profile & Actions */}
+      <div className="shrink-0 space-y-1 border-t border-border p-2 bg-white">
+        {/* User Card with Dropdown */}
+        {!collapsed ? (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button
+                type="button"
+                className="group flex w-full min-w-0 items-center gap-2 rounded-lg p-1.5 text-left transition-colors hover:bg-surface focus:outline-none cursor-pointer"
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-white shadow-xs">
+                  {initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-foreground group-hover:text-primary">
+                    {displayName}
+                  </p>
+                  <p className="truncate text-[10px] text-muted font-medium">
+                    {displayRole}
+                  </p>
+                </div>
+                <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted group-hover:text-foreground" />
+              </button>
+            </DropdownMenu.Trigger>
+            {renderDropdownContent("top", "start")}
+          </DropdownMenu.Root>
+        ) : (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button
+                type="button"
+                title={displayName}
+                className="mx-auto flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-white transition-opacity hover:opacity-90 focus:outline-none cursor-pointer"
+              >
+                {initials}
+              </button>
+            </DropdownMenu.Trigger>
+            {renderDropdownContent("right", "end")}
+          </DropdownMenu.Root>
+        )}
+
+        {/* Action Row: Collapse & Logout */}
+        <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-between")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "text-muted hover:text-foreground",
+              collapsed ? "h-7 w-7 p-0 justify-center" : "flex-1 justify-start gap-2 text-xs",
+            )}
+            onClick={onToggle}
+            title={collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <>
+                <PanelLeftClose className="h-4 w-4" />
+                <span>Thu gọn</span>
+              </>
+            )}
+          </Button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            title="Đăng xuất"
+            className={cn(
+              "flex items-center gap-1.5 rounded-md text-xs font-medium text-danger hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer",
+              collapsed ? "h-7 w-7 justify-center p-0" : "px-2.5 py-1.5",
+            )}
+          >
+            {loggingOut ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4 shrink-0" />
+            )}
+            {!collapsed ? <span>Đăng xuất</span> : null}
+          </button>
+        </div>
       </div>
     </aside>
   );

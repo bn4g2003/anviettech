@@ -37,7 +37,16 @@ const PAYMENT_COLUMNS = [
   "owner",
 ];
 
-const DEBT_COLUMNS = ["customer", "debt", "invoiceCount"];
+const DEBT_COLUMNS = [
+  "code",
+  "customer",
+  "phone",
+  "owner",
+  "invoiceCount",
+  "debt",
+  "status",
+  "actions",
+];
 
 export default function TaiChinhPage() {
   const [tab, setTab] = useState<FinanceTab>("invoices");
@@ -62,6 +71,7 @@ export default function TaiChinhPage() {
           <FinancePageHeader tab={tab} onTabChange={setTab} />
           <DebtsFilterBar />
           <DebtsTable />
+          <PaymentFormDialog />
         </div>
       </ListPageProvider>
     );

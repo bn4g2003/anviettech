@@ -28,6 +28,7 @@ export function InvoiceDetailDrawer() {
   }
 
   const customer = getCustomer(invoice.customerId);
+  const customerName = invoice.customerName || customer?.name || "";
   const relatedPayments = payments.filter((p) => p.invoiceId === invoice.id);
   const canPay = invoice.status === "unpaid" || invoice.status === "partial";
 
@@ -36,7 +37,7 @@ export function InvoiceDetailDrawer() {
       open={!!list.viewId}
       onOpenChange={(v) => !v && list.setViewId(null)}
       title={invoice.code}
-      description={`${customer?.name ?? ""} · ${relativeTime(invoice.updatedAt)}`}
+      description={`${customerName ? `${customerName} · ` : ""}${relativeTime(invoice.updatedAt)}`}
       width="max-w-lg"
       footer={
         <>
@@ -65,7 +66,7 @@ export function InvoiceDetailDrawer() {
         </div>
         <div>
           <p className="text-xs text-muted">Khách hàng</p>
-          <p>{customer?.name ?? "—"}</p>
+          <p>{customerName || "—"}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Số tiền</p>

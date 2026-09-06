@@ -144,7 +144,7 @@ export function PaymentFormDialog() {
             <option value="">Chọn hóa đơn chưa TT đủ</option>
             {unpaidInvoices.map((i) => (
               <option key={i.id} value={i.id}>
-                {i.code} — {getCustomer(i.customerId)?.name ?? i.customerId} (
+                {i.code} — {i.customerName || getCustomer(i.customerId)?.name || "Khách hàng"} (
                 {formatVnd(i.amount - i.paidAmount)} còn lại)
               </option>
             ))}

@@ -12,10 +12,14 @@ import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
 const COLUMN_DEFS = [
   { id: "sku", label: "SKU" },
   { id: "name", label: "Sản phẩm" },
-  { id: "qty", label: "Tồn" },
-  { id: "minStock", label: "Tối thiểu" },
-  { id: "status", label: "Cảnh báo" },
   { id: "category", label: "Danh mục" },
+  { id: "unit", label: "ĐVT" },
+  { id: "qty", label: "Tồn kho" },
+  { id: "minStock", label: "Tối thiểu" },
+  { id: "costPrice", label: "Giá vốn" },
+  { id: "totalValue", label: "Tổng giá trị" },
+  { id: "status", label: "Cảnh báo" },
+  { id: "actions", label: "Thao tác" },
 ];
 
 export function StockLevelsFilterBar() {

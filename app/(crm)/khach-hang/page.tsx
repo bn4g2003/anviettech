@@ -13,12 +13,15 @@ import { CustomerDeleteDialog } from "./_components/customer-delete-dialog";
 const COLUMNS = [
   "code",
   "name",
-  "status",
-  "email",
+  "type",
+  "contactName",
   "phone",
+  "email",
+  "address",
   "owner",
-  "updatedAt",
   "debt",
+  "status",
+  "updatedAt",
   "actions",
 ];
 

@@ -12,7 +12,7 @@ const database = vi.hoisted(() => {
       return { rows: [] };
     }),
   };
-  return { calls, setQuoteStatus: (status: string) => { quoteStatus = status; }, transaction: vi.fn(async (callback: (client: typeof client) => unknown) => callback(client)) };
+  return { calls, setQuoteStatus: (status: string) => { quoteStatus = status; }, transaction: vi.fn(async (callback: (cl: typeof client) => unknown) => callback(client)) };
 });
 
 vi.mock("@/lib/db", () => ({ transaction: database.transaction }));

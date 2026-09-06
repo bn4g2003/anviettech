@@ -67,7 +67,8 @@ export function DataGrid<T extends { id: string }>({
                 className={cn(
                   "px-2 py-1.5 text-xs font-medium text-muted whitespace-nowrap",
                   col.width,
-                  col.sticky === "right" && "sticky right-0 bg-surface shadow-[-4px_0_8px_rgba(0,0,0,0.04)]",
+                  col.sticky === "right" &&
+                    "sticky right-0 z-20 border-l border-border bg-surface shadow-[-4px_0_8px_rgba(0,0,0,0.04)]",
                 )}
               >
                 {col.sortable && onSort ? (
@@ -103,7 +104,7 @@ export function DataGrid<T extends { id: string }>({
             rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-border hover:bg-surface/80"
+                className="group border-b border-border hover:bg-surface/80"
                 onClick={() => onRowClick?.(row)}
               >
                 {onToggleSelect ? (
@@ -122,8 +123,9 @@ export function DataGrid<T extends { id: string }>({
                     key={col.id}
                     className={cn(
                       "px-2 py-1.5 align-middle",
+                      col.width,
                       col.sticky === "right" &&
-                        "sticky right-0 bg-white shadow-[-4px_0_8px_rgba(0,0,0,0.04)]",
+                        "sticky right-0 z-10 border-l border-border bg-white group-hover:bg-neutral-50 shadow-[-4px_0_8px_rgba(0,0,0,0.04)]",
                     )}
                     onClick={
                       col.sticky === "right" ? (e) => e.stopPropagation() : undefined

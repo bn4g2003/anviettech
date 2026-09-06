@@ -56,7 +56,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   deals: {
     module: "deals",
     table: "deals",
-    select: `id, code, title, customer_id AS "customerId", contact_id AS "contactId", stage, value, probability, expected_close_date AS "expectedCloseDate", owner_id AS "ownerId", notes, closed_reason AS "closedReason", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, title, customer_id AS "customerId", (SELECT name FROM customers WHERE id = deals.customer_id) AS "customerName", contact_id AS "contactId", stage, value, probability, expected_close_date AS "expectedCloseDate", owner_id AS "ownerId", notes, closed_reason AS "closedReason", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["title", "code"],
     sort: ["title", "code", "value", "created_at", "updated_at"],
     statusColumn: "stage",
@@ -64,7 +64,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   tasks: {
     module: "tasks",
     table: "tasks",
-    select: `id, title, type, status, due_at AS "dueAt", owner_id AS "ownerId", customer_id AS "customerId", lead_id AS "leadId", deal_id AS "dealId", notes, completed_at AS "completedAt", completed_by AS "completedBy", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, title, type, status, due_at AS "dueAt", owner_id AS "ownerId", customer_id AS "customerId", (SELECT name FROM customers WHERE id = tasks.customer_id) AS "customerName", lead_id AS "leadId", deal_id AS "dealId", notes, completed_at AS "completedAt", completed_by AS "completedBy", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["title"],
     sort: ["title", "due_at", "created_at", "updated_at"],
   },
@@ -78,35 +78,35 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   quotes: {
     module: "quotes",
     table: "quotes",
-    select: `id, code, customer_id AS "customerId", deal_id AS "dealId", status, valid_until AS "validUntil", owner_id AS "ownerId", terms, subtotal, total, approved_at AS "approvedAt", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = quotes.customer_id) AS "customerName", deal_id AS "dealId", status, valid_until AS "validUntil", owner_id AS "ownerId", terms, subtotal, total, approved_at AS "approvedAt", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code"],
     sort: ["code", "total", "created_at", "updated_at"],
   },
   orders: {
     module: "orders",
     table: "orders",
-    select: `id, code, customer_id AS "customerId", contract_id AS "contractId", quote_id AS "quoteId", status, owner_id AS "ownerId", total, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = orders.customer_id) AS "customerName", contract_id AS "contractId", quote_id AS "quoteId", status, owner_id AS "ownerId", total, created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code"],
     sort: ["code", "total", "created_at", "updated_at"],
   },
   contracts: {
     module: "contracts",
     table: "contracts",
-    select: `id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = contracts.customer_id) AS "customerName", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code"],
     sort: ["code", "value", "created_at", "updated_at"],
   },
   invoices: {
     module: "finance",
     table: "invoices",
-    select: `id, code, customer_id AS "customerId", order_id AS "orderId", contract_id AS "contractId", status, amount, paid_amount AS "paidAmount", due_date AS "dueDate", owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = invoices.customer_id) AS "customerName", order_id AS "orderId", contract_id AS "contractId", status, amount, paid_amount AS "paidAmount", due_date AS "dueDate", owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code"],
     sort: ["code", "amount", "due_date", "created_at", "updated_at"],
   },
   payments: {
     module: "finance",
     table: "payments",
-    select: `id, code, invoice_id AS "invoiceId", customer_id AS "customerId", amount, method, paid_at AS "paidAt", owner_id AS "ownerId", note, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, invoice_id AS "invoiceId", customer_id AS "customerId", (SELECT name FROM customers WHERE id = payments.customer_id) AS "customerName", amount, method, paid_at AS "paidAt", owner_id AS "ownerId", note, created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code"],
     sort: ["code", "amount", "paid_at", "created_at"],
   },
@@ -171,12 +171,12 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   },
   revenue_entries: {
     module: "finance", table: "revenue_entries",
-    select: `id,code,occurred_at AS "occurredAt",customer_id AS "customerId",project_id AS "projectId",product_id AS "productId",employee_id AS "employeeId",invoice_id AS "invoiceId",document_code AS "documentCode",business_type AS "businessType",qty,unit_price AS "unitPrice",vat_percent AS "vatPercent",subtotal,vat_amount AS "vatAmount",total_amount AS "totalAmount",cost_amount AS "costAmount",payment_status AS "paymentStatus",paid_amount AS "paidAmount",note,created_at AS "createdAt"`,
+    select: `id,code,occurred_at AS "occurredAt",customer_id AS "customerId",(SELECT name FROM customers WHERE id = revenue_entries.customer_id) AS "customerName",project_id AS "projectId",product_id AS "productId",employee_id AS "employeeId",invoice_id AS "invoiceId",document_code AS "documentCode",business_type AS "businessType",qty,unit_price AS "unitPrice",vat_percent AS "vatPercent",subtotal,vat_amount AS "vatAmount",total_amount AS "totalAmount",cost_amount AS "costAmount",payment_status AS "paymentStatus",paid_amount AS "paidAmount",note,created_at AS "createdAt"`,
     search: ["code", "document_code", "note"], sort: ["occurred_at", "total_amount", "created_at"], ownerColumn: null,
   },
   revenue_reductions: {
     module: "finance", table: "revenue_reductions",
-    select: `id,code,occurred_at AS "occurredAt",customer_id AS "customerId",revenue_entry_id AS "revenueEntryId",type,amount,note,created_at AS "createdAt"`,
+    select: `id,code,occurred_at AS "occurredAt",customer_id AS "customerId",(SELECT name FROM customers WHERE id = revenue_reductions.customer_id) AS "customerName",revenue_entry_id AS "revenueEntryId",type,amount,note,created_at AS "createdAt"`,
     search: ["code", "note"], sort: ["occurred_at", "amount", "created_at"], ownerColumn: null,
   },
 };
@@ -244,7 +244,11 @@ export async function listResource(name: ResourceName, options: ListOptions) {
   }
   if (options.search) {
     values.push(`%${options.search}%`);
-    where.push(`(${config.search.map((field) => `${field} ILIKE $${values.length}`).join(" OR ")})`);
+    const searchConditions = config.search.map((field) => `${field} ILIKE $${values.length}`);
+    if (["invoices", "payments", "deals", "orders", "contracts", "quotes", "revenue_entries"].includes(name)) {
+      searchConditions.push(`EXISTS (SELECT 1 FROM customers c WHERE c.id = ${config.table}.customer_id AND (c.name ILIKE $${values.length} OR c.phone ILIKE $${values.length}))`);
+    }
+    where.push(`(${searchConditions.join(" OR ")})`);
   }
 
   const filter = where.length ? where.join(" AND ") : "TRUE";

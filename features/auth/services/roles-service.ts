@@ -63,11 +63,13 @@ export async function createRole(input: { name: string; description?: string; pe
       if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Tên vai trò đã tồn tại");
       throw error;
     }
-    for (const permissionId of input.permissionIds) {
-      await client.query("INSERT INTO role_permissions(role_id, permission_id) VALUES($1,$2) ON CONFLICT DO NOTHING", [
-        role.rows[0].id,
-        permissionId,
-      ]);
+    if (input.permissionIds && input.permissionIds.length > 0) {
+      await client.query(
+        `INSERT INTO role_permissions(role_id, permission_id)
+         SELECT $1, unnest($2::uuid[])
+         ON CONFLICT DO NOTHING`,
+        [role.rows[0].id, input.permissionIds],
+      );
     }
     await client.query(
       "INSERT INTO audit_logs(actor_id,module,action,entity_type,entity_id,after_data) VALUES($1,'roles','create','role',$2,$3)",
@@ -97,11 +99,13 @@ export async function updateRole(
     );
     if (input.permissionIds) {
       await client.query("DELETE FROM role_permissions WHERE role_id=$1", [id]);
-      for (const permissionId of input.permissionIds) {
-        await client.query("INSERT INTO role_permissions(role_id, permission_id) VALUES($1,$2) ON CONFLICT DO NOTHING", [
-          id,
-          permissionId,
-        ]);
+      if (input.permissionIds.length > 0) {
+        await client.query(
+          `INSERT INTO role_permissions(role_id, permission_id)
+           SELECT $1, unnest($2::uuid[])
+           ON CONFLICT DO NOTHING`,
+          [id, input.permissionIds],
+        );
       }
     }
     await client.query(

@@ -17,24 +17,27 @@ type ApiFailure = { success: false; error: { code: string; message: string; fiel
 const inFlightMutations = new Map<string, Promise<unknown>>();
 export const API_MUTATION_SUCCEEDED_EVENT = "anviet:api-mutation-succeeded";
 
-function isMutation(init?: RequestInit) {
+export type ApiFetchInit = RequestInit & { skipMutationBroadcast?: boolean };
+
+function isMutation(init?: ApiFetchInit) {
+  if (init?.skipMutationBroadcast) return false;
   const method = (init?.method ?? "GET").toUpperCase();
   return method !== "GET" && method !== "HEAD";
 }
 
-function announceSuccessfulMutation() {
+export function announceSuccessfulMutation() {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(API_MUTATION_SUCCEEDED_EVENT));
   }
 }
 
-function mutationKey(path: string, init?: RequestInit) {
+function mutationKey(path: string, init?: ApiFetchInit) {
   const method = (init?.method ?? "GET").toUpperCase();
   if (method === "GET" || method === "HEAD" || typeof init?.body !== "string") return undefined;
   return `${method}:${path}:${init.body}`;
 }
 
-async function sendRequest<T>(path: string, init?: RequestInit): Promise<{ data: T; meta?: ApiMeta }> {
+async function sendRequest<T>(path: string, init?: ApiFetchInit): Promise<{ data: T; meta?: ApiMeta }> {
   const response = await fetch(path, {
     ...init,
     headers: {
@@ -65,7 +68,7 @@ async function sendRequest<T>(path: string, init?: RequestInit): Promise<{ data:
   return { data: body.data, meta: body.meta };
 }
 
-export function apiFetch<T>(path: string, init?: RequestInit): Promise<{ data: T; meta?: ApiMeta }> {
+export function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<{ data: T; meta?: ApiMeta }> {
   const requestOnce = () => sendRequest<T>(path, init).then((result) => {
     if (isMutation(init)) announceSuccessfulMutation();
     return result;

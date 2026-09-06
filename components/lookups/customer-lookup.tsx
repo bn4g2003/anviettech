@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/cn";
 import { Select } from "@/components/ui/select";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 
@@ -21,12 +22,15 @@ export function CustomerLookup({
   disabled,
 }: Props) {
   const { all } = useCustomers();
+  const selected = all.find((c) => c.id === value);
+
   return (
     <Select
-      className={className}
+      className={cn("w-36 max-w-[150px] truncate text-xs", className)}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
+      title={selected ? `${selected.code} — ${selected.name}` : undefined}
     >
       <option value="" disabled={!allowEmpty}>
         {emptyLabel}

@@ -68,8 +68,13 @@ export async function createUser(
       if ((error as { code?: string }).code === "23505") throw new ApiError(409, "Email đã tồn tại");
       throw error;
     }
-    for (const roleId of input.roleIds) {
-      await client.query("INSERT INTO user_roles(user_id,role_id) VALUES($1,$2)", [user.rows[0].id, roleId]);
+    if (input.roleIds && input.roleIds.length > 0) {
+      await client.query(
+        `INSERT INTO user_roles(user_id, role_id)
+         SELECT $1, unnest($2::uuid[])
+         ON CONFLICT DO NOTHING`,
+        [user.rows[0].id, input.roleIds],
+      );
     }
     await client.query(
       "INSERT INTO audit_logs(actor_id,module,action,entity_type,entity_id,after_data) VALUES($1,'users','create','user',$2,$3)",
@@ -92,11 +97,11 @@ async function countActiveSuperAdmins(excludeUserId?: string) {
 
 export async function updateUser(
   id: string,
-  input: { fullName?: string; roleIds?: string[] },
+  input: { fullName?: string; roleIds?: string[]; temporaryPassword?: string; status?: "active" | "inactive" },
   actorId: string,
 ) {
   return transaction(async (client) => {
-    const current = await client.query<{ id: string }>("SELECT id FROM users WHERE id=$1 AND deleted_at IS NULL", [id]);
+    const current = await client.query<{ id: string; status: string }>("SELECT id, status FROM users WHERE id=$1 AND deleted_at IS NULL", [id]);
     if (!current.rows[0]) throw new ApiError(404, "Không tìm thấy tài khoản");
 
     if (input.roleIds) {
@@ -117,9 +122,37 @@ export async function updateUser(
       }
 
       await client.query("DELETE FROM user_roles WHERE user_id=$1", [id]);
-      for (const roleId of input.roleIds) {
-        await client.query("INSERT INTO user_roles(user_id,role_id) VALUES($1,$2)", [id, roleId]);
+      if (input.roleIds && input.roleIds.length > 0) {
+        await client.query(
+          `INSERT INTO user_roles(user_id, role_id)
+           SELECT $1, unnest($2::uuid[])
+           ON CONFLICT DO NOTHING`,
+          [id, input.roleIds],
+        );
       }
+    }
+
+    if (input.status && input.status !== current.rows[0].status) {
+      if (input.status === "inactive") {
+        const isSuper = await client.query(
+          "SELECT 1 FROM user_roles WHERE user_id=$1 AND role_id=$2",
+          [id, SUPER_ADMIN_ROLE_ID],
+        );
+        if (isSuper.rowCount) {
+          const remaining = await countActiveSuperAdmins(id);
+          if (remaining < 1) throw new ApiError(409, "Không thể vô hiệu hóa Super admin cuối cùng");
+        }
+      }
+      await client.query("UPDATE users SET status=$1, updated_at=now() WHERE id=$2", [input.status, id]);
+      if (input.status === "inactive") {
+        await client.query("UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL", [id]);
+      }
+    }
+
+    if (input.temporaryPassword && input.temporaryPassword.trim().length >= 10) {
+      const hash = await argon2.hash(input.temporaryPassword.trim(), { type: argon2.argon2id });
+      await client.query("UPDATE users SET password_hash=$1, must_change_password=true, updated_at=now() WHERE id=$2", [hash, id]);
+      await client.query("UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL", [id]);
     }
 
     if (input.fullName) {
@@ -130,7 +163,7 @@ export async function updateUser(
 
     await client.query(
       "INSERT INTO audit_logs(actor_id,module,action,entity_type,entity_id,after_data) VALUES($1,'users','update','user',$2,$3)",
-      [actorId, id, JSON.stringify(input)],
+      [actorId, id, JSON.stringify({ ...input, temporaryPassword: input.temporaryPassword ? "[REDACTED]" : undefined })],
     );
     return { id };
   });

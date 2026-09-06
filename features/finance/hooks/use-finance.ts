@@ -85,10 +85,18 @@ export function useFinance(filters?: {
       cur.debt = Math.max(0, cur.debt - Number(reduction.amount));
       map.set(reduction.customerId, cur);
     }
+    const customerNames = new Map<string, string>();
+    for (const c of customers) customerNames.set(c.id, c.name);
+    for (const inv of invoices) {
+      if (inv.customerName) customerNames.set(inv.customerId, inv.customerName);
+    }
+    for (const entry of revenueEntries) {
+      if (entry.customerName) customerNames.set(entry.customerId, entry.customerName);
+    }
     return [...map.entries()].map(([customerId, v]) => ({
       id: customerId,
       customerId,
-      customerName: customers.find((c) => c.id === customerId)?.name ?? customerId,
+      customerName: customerNames.get(customerId) || "Khách hàng",
       debt: v.debt,
       amount: v.debt,
       invoiceCount: v.invoiceCount,

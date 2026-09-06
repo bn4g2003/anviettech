@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 
+import { CctvSyncButton } from "@/features/integrations/components/cctv-sync-button";
+
 export function CustomersPageHeader() {
   const { setCreateOpen, selectedIds, clearSelection } = useListPage();
   const { canCreate } = useCurrentUser();
@@ -16,11 +18,14 @@ export function CustomersPageHeader() {
       onCreate={allowed ? () => setCreateOpen(true) : undefined}
       createLabel="Tạo"
       secondaryAction={
-        selectedIds.length > 0 ? (
-          <Button variant="outline" size="sm" onClick={clearSelection}>
-            Bỏ chọn ({selectedIds.length})
-          </Button>
-        ) : null
+        <div className="flex items-center gap-2">
+          {selectedIds.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={clearSelection}>
+              Bỏ chọn ({selectedIds.length})
+            </Button>
+          ) : null}
+          <CctvSyncButton onSuccess={() => window.location.reload()} />
+        </div>
       }
     />
   );

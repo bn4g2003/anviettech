@@ -5,7 +5,7 @@ const optionalDbUuid = dbUuid.optional().nullable().or(z.literal("")).transform(
 
 export const pageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  pageSize: z.coerce.number().int().min(1).max(1000).default(25),
   search: z.string().trim().max(120).optional(),
   status: z.string().trim().max(40).optional(),
   ownerId: optionalDbUuid,

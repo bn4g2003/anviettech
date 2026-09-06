@@ -27,10 +27,10 @@ export function useCustomers(filters?: {
           status: filters?.status,
           ownerId: filters?.ownerId,
           scope: filters?.scope,
-          pageSize: 100,
+          pageSize: 1000,
         }),
         apiFetch<{ customerId: string; amount: number | string; paidAmount: number | string }[]>(
-          `/api/v1/invoices${toQuery({ pageSize: 100 })}`,
+          `/api/v1/invoices${toQuery({ pageSize: 1000 })}`,
         ).catch(() => ({
           data: [] as { customerId: string; amount: number | string; paidAmount: number | string }[],
         })),

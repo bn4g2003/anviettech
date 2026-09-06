@@ -10,14 +10,19 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
 
 const COLUMN_DEFS = [
-  { id: "code", label: "Mã" },
-  { id: "name", label: "Tổ chức" },
-  { id: "status", label: "Trạng thái" },
+  { id: "code", label: "Mã KH" },
+  { id: "name", label: "Tổ chức / Tên KH" },
+  { id: "type", label: "Phân loại" },
+  { id: "contactName", label: "Người liên hệ" },
+  { id: "phone", label: "Số điện thoại" },
   { id: "email", label: "Email" },
-  { id: "phone", label: "SĐT" },
+  { id: "address", label: "Địa chỉ" },
+  { id: "source", label: "Nguồn khách" },
   { id: "owner", label: "Phụ trách" },
-  { id: "updatedAt", label: "Cập nhật" },
   { id: "debt", label: "Công nợ" },
+  { id: "status", label: "Trạng thái" },
+  { id: "updatedAt", label: "Cập nhật" },
+  { id: "createdAt", label: "Ngày tạo" },
   { id: "actions", label: "Thao tác" },
 ];
 

@@ -3,19 +3,19 @@ import type { Invoice, Payment, PaymentInput, PaymentMethod } from "@/features/f
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type ApiInvoice = {
-  id: string; code: string; customerId: string; orderId?: string | null; contractId?: string | null;
+  id: string; code: string; customerId: string; customerName?: string | null; orderId?: string | null; contractId?: string | null;
   status: string; amount: number | string; paidAmount: number | string; dueDate?: string | null;
   ownerId?: string | null; createdAt?: string; updatedAt?: string;
 };
 
 type ApiPayment = {
-  id: string; code: string; invoiceId: string; customerId: string; amount: number | string;
+  id: string; code: string; invoiceId: string; customerId: string; customerName?: string | null; amount: number | string;
   method: string; paidAt: string; ownerId?: string | null; note?: string | null;
   createdAt?: string; updatedAt?: string;
 };
 
-export type RevenueDebtEntry = { id: string; customerId: string; invoiceId?: string | null; totalAmount: number | string; paidAmount: number | string };
-export type RevenueReductionDebt = { id: string; customerId: string; amount: number | string };
+export type RevenueDebtEntry = { id: string; customerId: string; customerName?: string | null; invoiceId?: string | null; totalAmount: number | string; paidAmount: number | string };
+export type RevenueReductionDebt = { id: string; customerId: string; customerName?: string | null; amount: number | string };
 
 async function mapInvoice(row: ApiInvoice): Promise<Invoice> {
   const owners = await loadOwners();
@@ -23,6 +23,7 @@ async function mapInvoice(row: ApiInvoice): Promise<Invoice> {
     id: row.id,
     code: row.code,
     customerId: row.customerId,
+    customerName: row.customerName ?? undefined,
     orderId: row.orderId ?? undefined,
     contractId: row.contractId ?? undefined,
     status: row.status as Invoice["status"],
@@ -43,6 +44,7 @@ async function mapPayment(row: ApiPayment): Promise<Payment> {
     code: row.code,
     invoiceId: row.invoiceId,
     customerId: row.customerId,
+    customerName: row.customerName ?? undefined,
     amount: Number(row.amount),
     method: method as PaymentMethod,
     paidAt: row.paidAt,
@@ -54,20 +56,20 @@ async function mapPayment(row: ApiPayment): Promise<Payment> {
 }
 
 export const financeService = {
-  async listInvoices(params?: { search?: string; status?: string; customerId?: string }) {
-    const result = await apiFetch<ApiInvoice[]>(`/api/v1/invoices${toQuery({ ...params, pageSize: 100 })}`);
+  async listInvoices(params?: { search?: string; status?: string; customerId?: string; pageSize?: number }) {
+    const result = await apiFetch<ApiInvoice[]>(`/api/v1/invoices${toQuery({ pageSize: 1000, ...params })}`);
     return Promise.all((result.data ?? []).map(mapInvoice));
   },
-  async listPayments(params?: { search?: string; customerId?: string }) {
-    const result = await apiFetch<ApiPayment[]>(`/api/v1/payments${toQuery({ ...params, pageSize: 100 })}`);
+  async listPayments(params?: { search?: string; customerId?: string; pageSize?: number }) {
+    const result = await apiFetch<ApiPayment[]>(`/api/v1/payments${toQuery({ pageSize: 1000, ...params })}`);
     return Promise.all((result.data ?? []).map(mapPayment));
   },
-  async listRevenueEntries(params?: { customerId?: string }) {
-    const result = await apiFetch<RevenueDebtEntry[]>(`/api/v1/revenue-entries${toQuery({ ...params, pageSize: 100 })}`);
+  async listRevenueEntries(params?: { customerId?: string; pageSize?: number }) {
+    const result = await apiFetch<RevenueDebtEntry[]>(`/api/v1/revenue-entries${toQuery({ pageSize: 1000, ...params })}`);
     return result.data ?? [];
   },
-  async listRevenueReductions(params?: { customerId?: string }) {
-    const result = await apiFetch<RevenueReductionDebt[]>(`/api/v1/revenue-reductions${toQuery({ ...params, pageSize: 100 })}`);
+  async listRevenueReductions(params?: { customerId?: string; pageSize?: number }) {
+    const result = await apiFetch<RevenueReductionDebt[]>(`/api/v1/revenue-reductions${toQuery({ pageSize: 1000, ...params })}`);
     return result.data ?? [];
   },
   async recordPayment(input: PaymentInput) {

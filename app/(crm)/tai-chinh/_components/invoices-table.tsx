@@ -20,13 +20,21 @@ export function InvoicesTable() {
   const { invoices, loading } = useFinance({
     query: list.query,
     invoiceStatus: list.filters.invoiceStatus,
+    customerId: list.filters.customerId,
   });
   const { getById: getCustomer } = useCustomers();
 
   const sorted = useMemo(() => {
-    if (!list.sortKey) return invoices;
+    let result = invoices;
+    if (list.filters.customerId) {
+      result = result.filter((i) => i.customerId === list.filters.customerId);
+    }
+    if (list.filters.invoiceStatus) {
+      result = result.filter((i) => i.status === list.filters.invoiceStatus);
+    }
+    if (!list.sortKey) return result;
     const dir = list.sortDir === "asc" ? 1 : -1;
-    return [...invoices].sort((a, b) => {
+    return [...result].sort((a, b) => {
       if (list.sortKey === "amount" || list.sortKey === "paidAmount") {
         return (
           ((a[list.sortKey as "amount" | "paidAmount"] as number) -
@@ -34,11 +42,21 @@ export function InvoicesTable() {
           dir
         );
       }
+      if (list.sortKey === "remaining") {
+        const aRem = a.amount - a.paidAmount;
+        const bRem = b.amount - b.paidAmount;
+        return (aRem - bRem) * dir;
+      }
+      if (list.sortKey === "customer") {
+        const aName = a.customerName || getCustomer(a.customerId)?.name || "";
+        const bName = b.customerName || getCustomer(b.customerId)?.name || "";
+        return aName.localeCompare(bName, "vi") * dir;
+      }
       const av = String((a as Record<string, unknown>)[list.sortKey] ?? "");
       const bv = String((b as Record<string, unknown>)[list.sortKey] ?? "");
       return av.localeCompare(bv, "vi") * dir;
     });
-  }, [invoices, list.sortKey, list.sortDir]);
+  }, [invoices, list.sortKey, list.sortDir, list.filters.customerId, list.filters.invoiceStatus, getCustomer]);
 
   const pageRows = list.paginate(sorted);
 
@@ -46,26 +64,44 @@ export function InvoicesTable() {
     {
       id: "code",
       header: "Mã",
-      width: "w-28",
+      width: "w-40 min-w-[150px]",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.code}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-medium leading-tight line-clamp-2 break-all"
+          title={r.code}
+        >
+          {r.code}
+        </span>
+      ),
     },
     {
       id: "customer",
       header: "Khách hàng",
-      cell: (r) => getCustomer(r.customerId)?.name ?? r.customerId,
+      width: "w-52 max-w-[220px]",
+      sortable: true,
+      cell: (r) => {
+        const name = r.customerName || getCustomer(r.customerId)?.name || "—";
+        return (
+          <span className="block max-w-[210px] truncate text-sm" title={name}>
+            {name}
+          </span>
+        );
+      },
     },
     {
       id: "amount",
       header: "Số tiền",
+      width: "w-32",
       sortable: true,
-      cell: (r) => <span className="font-medium">{formatVnd(r.amount)}</span>,
+      cell: (r) => <span className="font-medium whitespace-nowrap">{formatVnd(r.amount)}</span>,
     },
     {
       id: "paidAmount",
       header: "Đã TT",
+      width: "w-32",
       sortable: true,
-      cell: (r) => <span className="text-muted">{formatVnd(r.paidAmount)}</span>,
+      cell: (r) => <span className="text-muted whitespace-nowrap">{formatVnd(r.paidAmount)}</span>,
     },
     {
       id: "status",

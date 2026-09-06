@@ -5,7 +5,6 @@ import {
   CalendarDays,
   FileText,
   Handshake,
-  HelpCircle,
   LayoutDashboard,
   Megaphone,
   Package,
@@ -20,6 +19,12 @@ import {
 
 import type { CurrentUser } from "@/features/auth/services/auth-types";
 
+export type PublicView = {
+  href: string;
+  label: string;
+  tone?: "success" | "default";
+};
+
 export type NavItem = {
   href: string;
   label: string;
@@ -28,28 +33,49 @@ export type NavItem = {
   adminOnly?: boolean;
 };
 
-export type PublicView = {
-  href: string;
-  label: string;
-  tone?: "success" | "default";
+export type NavSection = {
+  title: string;
+  items: NavItem[];
 };
 
-export const MAIN_NAV: NavItem[] = [
-  { href: "/tiem-nang", label: "Tiềm năng", icon: Target, module: "leads" },
-  { href: "/khach-hang", label: "Khách hàng", icon: Users, module: "customers" },
-  { href: "/co-hoi", label: "Cơ hội", icon: Briefcase, module: "deals" },
-  { href: "/cong-viec", label: "Công việc", icon: CalendarDays, module: "tasks" },
-  { href: "/san-pham", label: "Sản phẩm", icon: Package, module: "products" },
-  { href: "/nha-cung-cap", label: "Nhà cung cấp", icon: Truck, module: "suppliers" },
-  { href: "/cong-trinh", label: "Công trình", icon: HardHat, module: "projects" },
-  { href: "/bao-gia", label: "Báo giá", icon: FileText, module: "quotes" },
-  { href: "/hop-dong", label: "Hợp đồng", icon: Handshake, module: "contracts" },
-  { href: "/kho", label: "Kho", icon: Boxes, module: "inventory" },
-  { href: "/tai-chinh", label: "Tài chính", icon: Receipt, module: "finance" },
-  { href: "/marketing", label: "Marketing", icon: Megaphone, module: "campaigns" },
-  { href: "/phan-tich", label: "Phân tích HĐKD", icon: BarChart3, module: "analytics" },
-  { href: "/cai-dat/nguoi-dung", label: "AUTH", icon: Shield, module: "users", adminOnly: true },
+export const NAV_SECTIONS: NavSection[] = [
+  {
+    title: "Kinh doanh",
+    items: [
+      { href: "/tiem-nang", label: "Tiềm năng", icon: Target, module: "leads" },
+      { href: "/khach-hang", label: "Khách hàng", icon: Users, module: "customers" },
+      { href: "/co-hoi", label: "Cơ hội", icon: Briefcase, module: "deals" },
+      { href: "/bao-gia", label: "Báo giá", icon: FileText, module: "quotes" },
+      { href: "/hop-dong", label: "Hợp đồng", icon: Handshake, module: "contracts" },
+    ],
+  },
+  {
+    title: "Vận hành",
+    items: [
+      { href: "/cong-viec", label: "Công việc", icon: CalendarDays, module: "tasks" },
+      { href: "/cong-trinh", label: "Công trình", icon: HardHat, module: "projects" },
+      { href: "/kho", label: "Kho", icon: Boxes, module: "inventory" },
+      { href: "/san-pham", label: "Sản phẩm", icon: Package, module: "products" },
+      { href: "/nha-cung-cap", label: "Nhà cung cấp", icon: Truck, module: "suppliers" },
+    ],
+  },
+  {
+    title: "Tài chính & Báo cáo",
+    items: [
+      { href: "/tai-chinh", label: "Tài chính", icon: Receipt, module: "finance" },
+      { href: "/marketing", label: "Marketing", icon: Megaphone, module: "campaigns" },
+      { href: "/phan-tich", label: "Phân tích HĐKD", icon: BarChart3, module: "analytics" },
+    ],
+  },
+  {
+    title: "Hệ thống",
+    items: [
+      { href: "/cai-dat/nguoi-dung", label: "Quản trị người dùng", icon: Shield, module: "users", adminOnly: true },
+    ],
+  },
 ];
+
+export const MAIN_NAV: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items);
 
 export function getRoleQuickViews(user?: CurrentUser | null): PublicView[] {
   if (!user) return [];
@@ -111,10 +137,5 @@ export const PUBLIC_VIEWS: PublicView[] = [
   { href: "/co-hoi?stage=won", label: "Đã thắng", tone: "success" },
 ];
 
-export const HELP_ITEM = {
-  href: "#",
-  label: "Trợ giúp",
-  icon: HelpCircle,
-};
-
 export const DASHBOARD_ICON = LayoutDashboard;
+

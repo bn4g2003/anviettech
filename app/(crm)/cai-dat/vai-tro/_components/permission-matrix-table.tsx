@@ -166,6 +166,11 @@ const MODULE_DEFINITIONS: Record<string, Omit<ModuleMeta, "key">> = {
     icon: <ShieldCheck className="h-3.5 w-3.5 text-muted" />,
     note: "Danh mục mã quyền chi tiết hệ thống",
   },
+  integrations: {
+    title: "Tích hợp & Đồng bộ CCTV",
+    icon: <Sparkles className="h-3.5 w-3.5 text-muted" />,
+    note: "Đồng bộ dữ liệu khách hàng, phiếu việc và doanh thu từ hệ thống CCTV",
+  },
 };
 
 function Building2Icon(props: { className?: string }) {

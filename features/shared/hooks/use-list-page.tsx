@@ -35,6 +35,7 @@ type ListPageState = {
   sortKey: string;
   sortDir: "asc" | "desc";
   toggleSort: (key: string) => void;
+  setSort: (key: string, dir: "asc" | "desc") => void;
   paginate: <T>(rows: T[]) => T[];
 };
 
@@ -92,6 +93,11 @@ export function ListPageProvider({
     });
   }, []);
 
+  const setSort = useCallback((key: string, dir: "asc" | "desc") => {
+    setSortKey(key);
+    setSortDir(dir);
+  }, []);
+
   const paginate = useCallback(
     <T,>(rows: T[]) => {
       const start = (page - 1) * pageSize;
@@ -133,6 +139,7 @@ export function ListPageProvider({
       sortKey,
       sortDir,
       toggleSort,
+      setSort,
       paginate,
     }),
     [
@@ -153,6 +160,7 @@ export function ListPageProvider({
       sortKey,
       sortDir,
       toggleSort,
+      setSort,
       paginate,
     ],
   );

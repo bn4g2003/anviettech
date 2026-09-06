@@ -13,7 +13,18 @@ import { StockMoveDeleteDialog } from "./_components/stock-move-delete-dialog";
 import type { InventoryTab } from "./_components/inventory-page-header";
 import type { StockMoveType } from "@/features/inventory/types";
 
-const STOCK_COLUMNS = ["sku", "name", "qty", "minStock", "status", "category"];
+const STOCK_COLUMNS = [
+  "sku",
+  "name",
+  "category",
+  "unit",
+  "qty",
+  "minStock",
+  "costPrice",
+  "totalValue",
+  "status",
+  "actions",
+];
 
 const MOVE_COLUMNS = [
   "code",

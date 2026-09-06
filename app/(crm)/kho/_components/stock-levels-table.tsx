@@ -9,6 +9,11 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { Boxes } from "lucide-react";
 import { useMemo } from "react";
 
+import { useRouter } from "next/navigation";
+import { formatVnd } from "@/features/shared/utils/money";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+
 type StockRow = {
   id: string;
   productId: string;
@@ -18,16 +23,19 @@ type StockRow = {
     name: string;
     minStock: number;
     category: string;
+    unit?: string;
+    costPrice?: number;
   };
 };
 
 export function StockLevelsTable() {
+  const router = useRouter();
   const list = useListPage();
   const { levels, loading } = useInventory();
 
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
-    return levels.filter((row) => {
+    return (levels as unknown as StockRow[]).filter((row) => {
       const p = row.product;
       if (!p) return false;
       if (list.filters.category && p.category !== list.filters.category) return false;
@@ -48,6 +56,11 @@ export function StockLevelsTable() {
     const dir = list.sortDir === "asc" ? 1 : -1;
     return [...filtered].sort((a, b) => {
       if (list.sortKey === "qty") return (a.qty - b.qty) * dir;
+      if (list.sortKey === "totalValue") {
+        const valA = (a.product?.costPrice ?? 0) * a.qty;
+        const valB = (b.product?.costPrice ?? 0) * b.qty;
+        return (valA - valB) * dir;
+      }
       if (list.sortKey === "sku") {
         return (a.product?.sku ?? "").localeCompare(b.product?.sku ?? "", "vi") * dir;
       }
@@ -66,28 +79,63 @@ export function StockLevelsTable() {
       header: "SKU",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.product?.sku}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground/90">{r.product?.sku}</span>,
     },
     {
       id: "name",
       header: "Sản phẩm",
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.product?.name}</span>,
+      cell: (r) => <span className="font-medium text-foreground">{r.product?.name}</span>,
+    },
+    {
+      id: "category",
+      header: "Danh mục",
+      cell: (r) => <span className="text-muted">{r.product?.category || "—"}</span>,
+    },
+    {
+      id: "unit",
+      header: "ĐVT",
+      width: "w-20",
+      cell: (r) => <span className="text-muted">{r.product?.unit || "—"}</span>,
     },
     {
       id: "qty",
-      header: "Tồn",
+      header: "Tồn kho",
+      width: "w-24",
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.qty}</span>,
+      cell: (r) => <span className="font-bold text-foreground">{r.qty}</span>,
     },
     {
       id: "minStock",
       header: "Tối thiểu",
-      cell: (r) => r.product?.minStock ?? 0,
+      width: "w-24",
+      cell: (r) => <span className="text-muted">{r.product?.minStock ?? 0}</span>,
+    },
+    {
+      id: "costPrice",
+      header: "Giá vốn",
+      width: "w-32",
+      cell: (r) => (
+        <span className="text-muted whitespace-nowrap">
+          {formatVnd(r.product?.costPrice ?? 0)}
+        </span>
+      ),
+    },
+    {
+      id: "totalValue",
+      header: "Tổng giá trị",
+      width: "w-36",
+      sortable: true,
+      cell: (r) => (
+        <span className="font-semibold text-primary whitespace-nowrap">
+          {formatVnd((r.product?.costPrice ?? 0) * r.qty)}
+        </span>
+      ),
     },
     {
       id: "status",
       header: "Cảnh báo",
+      width: "w-28",
       cell: (r) => {
         const min = r.product?.minStock ?? 0;
         const isLow = min > 0 && r.qty < min;
@@ -99,9 +147,26 @@ export function StockLevelsTable() {
       },
     },
     {
-      id: "category",
-      header: "Danh mục",
-      cell: (r) => <span className="text-muted">{r.product?.category}</span>,
+      id: "actions",
+      header: "Thao tác",
+      sticky: "right",
+      width: "w-24",
+      cell: (r) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted hover:text-foreground"
+            title="Xem chi tiết sản phẩm"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/san-pham?search=${r.product?.sku || ""}`);
+            }}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
     },
   ];
 

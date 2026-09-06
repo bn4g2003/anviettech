@@ -45,6 +45,7 @@ $preflight$;
 -- RESTRICT dừng nếu có bảng ngoài danh sách tham chiếu vào đây; không tự xóa lan.
 -- Nếu thiếu bảng do chưa chạy migration, toàn bộ transaction sẽ thất bại.
 TRUNCATE TABLE
+  public.cctv_sync_logs,
   public.revenue_reductions,
   public.revenue_entries,
   public.payments,

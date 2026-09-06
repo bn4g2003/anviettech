@@ -64,7 +64,7 @@ export function TasksFilterBar() {
             value={filters.view ?? ""}
             onChange={(e) => setFilter("view", e.target.value)}
           >
-            <option value="">Tất cả</option>
+            <option value="">Góc nhìn</option>
             <option value="my">Việc của tôi</option>
             <option value="today">Hôm nay</option>
             <option value="overdue">Quá hạn</option>

@@ -41,7 +41,7 @@ async function mapCustomer(row: ApiCustomer): Promise<Customer> {
 
 export const customersService = {
   async list(params?: { search?: string; status?: string; ownerId?: string; scope?: "my"; page?: number; pageSize?: number }) {
-    const result = await apiFetch<ApiCustomer[]>(`/api/v1/customers${toQuery({ ...params, page: params?.page ?? 1, pageSize: params?.pageSize ?? 100 })}`);
+    const result = await apiFetch<ApiCustomer[]>(`/api/v1/customers${toQuery({ ...params, page: params?.page ?? 1, pageSize: params?.pageSize ?? 1000 })}`);
     return Promise.all((result.data ?? []).map(mapCustomer));
   },
 

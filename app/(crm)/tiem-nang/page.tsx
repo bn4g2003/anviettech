@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/shell/app-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,13 @@ import { apiFetch, toQuery, ApiClientError } from "@/lib/api-client";
 import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { LEAD_SOURCE_OPTIONS } from "@/features/leads/source-options";
-import { useRouter } from "next/navigation";
+import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
+import { FilterBar } from "@/components/datagrid/filter-bar";
+import { ColumnToggle } from "@/components/datagrid/column-toggle";
+import { Pagination } from "@/components/datagrid/pagination";
+import { StatusDot } from "@/components/ui/status-dot";
+import { CheckCircle2, XCircle, UserCheck, RefreshCw, Target } from "lucide-react";
+import { relativeTime } from "@/features/shared/utils/date";
 
 type Lead = {
   id: string;
@@ -29,13 +36,24 @@ type Lead = {
   notes?: string | null;
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  new: "Mới",
-  contacted: "Đã liên hệ",
-  qualified: "Đủ điều kiện",
-  lost: "Không phù hợp",
-  converted: "Đã chuyển đổi",
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  new: { label: "Mới", color: "blue" },
+  contacted: { label: "Đã liên hệ", color: "yellow" },
+  qualified: { label: "Đủ điều kiện", color: "green" },
+  converted: { label: "Đã chuyển đổi", color: "purple" },
+  lost: { label: "Không phù hợp", color: "red" },
 };
+
+const COLUMN_DEFS = [
+  { id: "code", label: "Mã" },
+  { id: "name", label: "Liên hệ" },
+  { id: "companyName", label: "Công ty" },
+  { id: "source", label: "Nguồn" },
+  { id: "owner", label: "Phụ trách" },
+  { id: "status", label: "Trạng thái" },
+  { id: "createdAt", label: "Ngày tạo" },
+  { id: "actions", label: "Thao tác" },
+];
 
 export default function TiemNangPage() {
   const router = useRouter();
@@ -44,14 +62,26 @@ export default function TiemNangPage() {
   const canAssign = canAssignOthers("leads", "create");
   const allowedCreate = canCreate("leads");
   const { toast } = useToast();
+
   const [rows, setRows] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
   const [error, setError] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortKey, setSortKey] = useState<string>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(COLUMN_DEFS.map((c) => c.id));
+
   const [createOpen, setCreateOpen] = useState(false);
   const [convertLead, setConvertLead] = useState<Lead | null>(null);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [lostReason, setLostReason] = useState("");
+
   const [form, setForm] = useState({
     name: "",
     companyName: "",
@@ -61,6 +91,7 @@ export default function TiemNangPage() {
     ownerId: "",
     notes: "",
   });
+
   const [convertForm, setConvertForm] = useState({
     customerName: "",
     contactName: "",
@@ -70,21 +101,33 @@ export default function TiemNangPage() {
   });
 
   const reload = useCallback(async () => {
+    setLoading(true);
     try {
-      const result = await apiFetch<Lead[]>(`/api/v1/leads${toQuery({ search: query, status, pageSize: 100 })}`);
+      const result = await apiFetch<Lead[]>(
+        `/api/v1/leads${toQuery({
+          search: query,
+          status: status || undefined,
+          ownerId: ownerFilter || undefined,
+          pageSize: 200,
+        })}`
+      );
       setRows(result.data);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải lead");
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách tiềm năng");
+    } finally {
+      setLoading(false);
     }
-  }, [query, status]);
+  }, [query, status, ownerFilter]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
   useEffect(() => {
-    if (user?.id && !form.ownerId) setForm((f) => ({ ...f, ownerId: user.id }));
+    if (user?.id && !form.ownerId) {
+      setForm((f) => ({ ...f, ownerId: user.id }));
+    }
   }, [user?.id, form.ownerId]);
 
   async function create() {
@@ -97,8 +140,16 @@ export default function TiemNangPage() {
         }),
       });
       setCreateOpen(false);
-      setForm({ name: "", companyName: "", email: "", phone: "", source: "Website", ownerId: user?.id ?? "", notes: "" });
-      toast("Đã tạo lead", "success");
+      setForm({
+        name: "",
+        companyName: "",
+        email: "",
+        phone: "",
+        source: "Website",
+        ownerId: user?.id ?? "",
+        notes: "",
+      });
+      toast("Đã tạo lead thành công", "success");
       await reload();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Lỗi tạo lead", "error");
@@ -108,16 +159,16 @@ export default function TiemNangPage() {
   async function qualify(id: string) {
     try {
       await apiFetch(`/api/v1/leads/${id}/qualify`, { method: "POST" });
-      toast("Đã đánh dấu đủ điều kiện", "success");
+      toast("Đã đánh dấu lead đủ điều kiện", "success");
       await reload();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Lỗi", "error");
+      toast(err instanceof Error ? err.message : "Lỗi thao tác", "error");
     }
   }
 
   async function disqualify() {
     if (!lostLead || lostReason.trim().length < 2) {
-      toast("Nhập lý do", "error");
+      toast("Vui lòng nhập lý do không phù hợp", "error");
       return;
     }
     try {
@@ -130,7 +181,7 @@ export default function TiemNangPage() {
       toast("Đã đánh dấu không phù hợp", "success");
       await reload();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Lỗi", "error");
+      toast(err instanceof Error ? err.message : "Lỗi thao tác", "error");
     }
   }
 
@@ -148,122 +199,314 @@ export default function TiemNangPage() {
         }),
       });
       setConvertLead(null);
-      toast("Đã chuyển đổi lead", "success");
+      toast("Đã chuyển đổi lead thành khách hàng", "success");
       router.push(`/khach-hang/${result.data.customerId}`);
     } catch (err) {
-      toast(err instanceof ApiClientError ? err.message : "Lỗi chuyển đổi", "error");
+      toast(err instanceof ApiClientError ? err.message : "Lỗi chuyển đổi lead", "error");
     }
   }
 
-  const filtered = useMemo(() => rows, [rows]);
+  const toggleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const filtered = useMemo(() => {
+    let list = rows;
+    if (sourceFilter) {
+      list = list.filter((r) => r.source === sourceFilter);
+    }
+    return list;
+  }, [rows, sourceFilter]);
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const av = String((a as Record<string, unknown>)[sortKey] ?? "");
+      const bv = String((b as Record<string, unknown>)[sortKey] ?? "");
+      return av.localeCompare(bv, "vi") * dir;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return sorted.slice(start, start + pageSize);
+  }, [sorted, page, pageSize]);
+
+  const allColumns: DataGridColumn<Lead>[] = [
+    {
+      id: "code",
+      header: "Mã",
+      width: "w-28",
+      sortable: true,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground/90">{r.code}</span>,
+    },
+    {
+      id: "name",
+      header: "Liên hệ",
+      sortable: true,
+      cell: (r) => (
+        <div>
+          <div className="font-medium text-foreground">{r.name}</div>
+          <div className="text-xs text-muted">{r.email || r.phone || "—"}</div>
+        </div>
+      ),
+    },
+    {
+      id: "companyName",
+      header: "Công ty / Tổ chức",
+      sortable: true,
+      cell: (r) => <span className="text-foreground/90">{r.companyName || "—"}</span>,
+    },
+    {
+      id: "source",
+      header: "Nguồn",
+      cell: (r) =>
+        r.source ? (
+          <span className="inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-muted">
+            {r.source}
+          </span>
+        ) : (
+          <span className="text-muted">—</span>
+        ),
+    },
+    {
+      id: "owner",
+      header: "Phụ trách",
+      cell: (r) => {
+        const ownerName = ownerByIdSync(r.ownerId ?? "", owners).name;
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+              {ownerName.slice(0, 1)}
+            </span>
+            <span>{ownerName}</span>
+          </span>
+        );
+      },
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      cell: (r) => {
+        const config = STATUS_CONFIG[r.status] ?? { label: r.status, color: "gray" };
+        return <StatusDot color={config.color} label={config.label} />;
+      },
+    },
+    {
+      id: "createdAt",
+      header: "Ngày tạo",
+      sortable: true,
+      cell: (r) => <span className="text-xs text-muted">{relativeTime(r.createdAt)}</span>,
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      sticky: "right",
+      width: "w-36",
+      cell: (r) => {
+        if (r.status === "converted") {
+          return <span className="text-xs italic text-muted">Đã chuyển đổi</span>;
+        }
+        if (r.status === "lost") {
+          return <span className="text-xs italic text-muted">Không phù hợp</span>;
+        }
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Đánh dấu đủ điều kiện"
+              className="h-7 w-7 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+              onClick={() => void qualify(r.id)}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Không phù hợp"
+              className="h-7 w-7 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+              onClick={() => {
+                setLostLead(r);
+                setLostReason("");
+              }}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Chuyển đổi thành khách hàng"
+              className="h-7 w-7 text-primary hover:bg-primary/10"
+              onClick={() => {
+                setConvertLead(r);
+                setConvertForm({
+                  customerName: r.companyName || r.name,
+                  contactName: r.name,
+                  createDeal: true,
+                  dealTitle: `Cơ hội từ ${r.companyName || r.name}`,
+                  dealValue: "0",
+                });
+              }}
+            >
+              <UserCheck className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const columns = allColumns.filter((c) => visibleColumns.includes(c.id));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <AppHeader moduleLabel="Tiềm năng" onCreate={allowedCreate ? () => setCreateOpen(true) : undefined} createLabel="Tạo lead" />
-      <div className="flex items-center gap-2 border-b border-border px-5 py-3">
-        <Input className="max-w-xs" placeholder="Tìm lead..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        <Select className="w-44" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(STATUS_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </Select>
-      </div>
-      {error ? <p className="px-5 py-3 text-sm text-danger">{error}</p> : null}
-      <div className="flex-1 overflow-auto p-5">
-        <div className="overflow-auto rounded-lg border border-border bg-white">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted">
-                <th className="p-3">Mã</th>
-                <th>Liên hệ</th>
-                <th>Công ty</th>
-                <th>Nguồn</th>
-                <th>Phụ trách</th>
-                <th>Trạng thái</th>
-                <th className="p-3">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((lead) => (
-                <tr key={lead.id} className="border-b border-border last:border-0">
-                  <td className="p-3 font-mono text-xs">{lead.code}</td>
-                  <td>
-                    <div className="font-medium">{lead.name}</div>
-                    <div className="text-xs text-muted">{lead.email || lead.phone || "—"}</div>
-                  </td>
-                  <td>{lead.companyName || "—"}</td>
-                  <td>{lead.source || "—"}</td>
-                  <td>{ownerByIdSync(lead.ownerId ?? "", owners).name}</td>
-                  <td>{STATUS_LABEL[lead.status] ?? lead.status}</td>
-                  <td className="space-x-1 p-3">
-                    {lead.status !== "converted" && lead.status !== "lost" ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => void qualify(lead.id)}>
-                          Đủ ĐK
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setLostLead(lead);
-                            setLostReason("");
-                          }}
-                        >
-                          Không phù hợp
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setConvertLead(lead);
-                            setConvertForm({
-                              customerName: lead.companyName || lead.name,
-                              contactName: lead.name,
-                              createDeal: true,
-                              dealTitle: `Cơ hội từ ${lead.companyName || lead.name}`,
-                              dealValue: "0",
-                            });
-                          }}
-                        >
-                          Chuyển đổi
-                        </Button>
-                      </>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!filtered.length ? <EmptyState title="Chưa có lead" description="Tạo lead để bắt đầu pipeline." /> : null}
-        </div>
-      </div>
+      <AppHeader
+        moduleLabel="Tiềm năng"
+        onCreate={allowedCreate ? () => setCreateOpen(true) : undefined}
+        createLabel="Tạo lead"
+      />
 
+      <FilterBar
+        filters={
+          <>
+            <Input
+              className="w-56"
+              placeholder="Tìm kiếm lead..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+            <Select
+              className="w-40"
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Trạng thái</option>
+              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              className="w-36"
+              value={sourceFilter}
+              onChange={(e) => {
+                setSourceFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Nguồn</option>
+              {LEAD_SOURCE_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </Select>
+            <OwnerLookup
+              className="w-44"
+              value={ownerFilter}
+              onChange={(v) => {
+                setOwnerFilter(v);
+                setPage(1);
+              }}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              title="Làm mới"
+              onClick={() => void reload()}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+            <ColumnToggle
+              columns={COLUMN_DEFS}
+              visibleIds={visibleColumns}
+              onChange={setVisibleColumns}
+            />
+          </>
+        }
+      />
+
+      {error ? <p className="px-5 py-2 text-sm text-danger">{error}</p> : null}
+
+      <DataGrid
+        columns={columns}
+        rows={paginated}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={toggleSort}
+        loading={loading}
+        empty={
+          <EmptyState
+            icon={Target}
+            title="Chưa có lead"
+            description="Tạo lead mới để bắt đầu tiếp cận khách hàng tiềm năng."
+          />
+        }
+      />
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={sorted.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
+
+      {/* Modal Tạo Lead */}
       <Modal
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="Tạo lead"
+        title="Tạo lead mới"
+        size="md"
         footer={
           <>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={() => void create()}>Lưu</Button>
+            <Button onClick={() => void create()}>Lưu lead</Button>
           </>
         }
       >
         <div className="grid grid-cols-2 gap-3">
-          <label className="col-span-2 text-xs">
+          <label className="col-span-2 text-xs font-medium text-foreground">
             Tên liên hệ *
-            <Input className="mt-1 w-full" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input
+              className="mt-1 w-full"
+              placeholder="Ví dụ: Nguyễn Văn A"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
           </label>
-          <label className="text-xs">
-            Công ty
-            <Input className="mt-1 w-full" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} />
+          <label className="text-xs font-medium text-foreground">
+            Công ty / Tổ chức
+            <Input
+              className="mt-1 w-full"
+              placeholder="Tên công ty"
+              value={form.companyName}
+              onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+            />
           </label>
-          <label className="text-xs">
-            Nguồn
+          <label className="text-xs font-medium text-foreground">
+            Nguồn lead
             <Select
               className="mt-1 w-full"
               value={form.source}
@@ -276,16 +519,27 @@ export default function TiemNangPage() {
               ))}
             </Select>
           </label>
-          <label className="text-xs">
+          <label className="text-xs font-medium text-foreground">
             Email
-            <Input className="mt-1 w-full" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input
+              className="mt-1 w-full"
+              type="email"
+              placeholder="email@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
           </label>
-          <label className="text-xs">
+          <label className="text-xs font-medium text-foreground">
             Điện thoại
-            <Input className="mt-1 w-full" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <Input
+              className="mt-1 w-full"
+              placeholder="0912..."
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
           </label>
-          <label className="col-span-2 text-xs">
-            Phụ trách
+          <label className="col-span-2 text-xs font-medium text-foreground">
+            Người phụ trách
             <OwnerLookup
               className="mt-1 w-full"
               allowEmpty={false}
@@ -299,36 +553,50 @@ export default function TiemNangPage() {
               </span>
             ) : null}
           </label>
-          <label className="col-span-2 text-xs">
-            Ghi chú
-            <Input className="mt-1 w-full" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          <label className="col-span-2 text-xs font-medium text-foreground">
+            Ghi chú nhu cầu
+            <Input
+              className="mt-1 w-full"
+              placeholder="Mô tả nhu cầu ban đầu..."
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
           </label>
         </div>
       </Modal>
 
+      {/* Modal Đánh dấu Không phù hợp */}
       <Modal
         open={!!lostLead}
         onOpenChange={(v) => !v && setLostLead(null)}
-        title="Không phù hợp"
+        title="Đánh dấu không phù hợp"
         footer={
           <>
             <Button variant="outline" onClick={() => setLostLead(null)}>
               Hủy
             </Button>
-            <Button onClick={() => void disqualify()}>Xác nhận</Button>
+            <Button variant="danger" onClick={() => void disqualify()}>
+              Xác nhận
+            </Button>
           </>
         }
       >
-        <label className="block text-sm">
-          Lý do *
-          <Input className="mt-1 w-full" value={lostReason} onChange={(e) => setLostReason(e.target.value)} />
+        <label className="block text-sm font-medium text-foreground">
+          Lý do không phù hợp *
+          <Input
+            className="mt-1 w-full"
+            placeholder="Ví dụ: Sai số, không có nhu cầu, ngoài tầm ngân sách..."
+            value={lostReason}
+            onChange={(e) => setLostReason(e.target.value)}
+          />
         </label>
       </Modal>
 
+      {/* Modal Chuyển đổi Lead */}
       <Modal
         open={!!convertLead}
         onOpenChange={(v) => !v && setConvertLead(null)}
-        title="Chuyển đổi lead"
+        title="Chuyển đổi lead thành khách hàng"
         size="lg"
         footer={
           <>
@@ -340,7 +608,7 @@ export default function TiemNangPage() {
         }
       >
         <div className="space-y-3">
-          <label className="block text-sm">
+          <label className="block text-sm font-medium text-foreground">
             Tên khách hàng *
             <Input
               className="mt-1 w-full"
@@ -348,25 +616,26 @@ export default function TiemNangPage() {
               onChange={(e) => setConvertForm({ ...convertForm, customerName: e.target.value })}
             />
           </label>
-          <label className="block text-sm">
-            Liên hệ chính
+          <label className="block text-sm font-medium text-foreground">
+            Người liên hệ chính
             <Input
               className="mt-1 w-full"
               value={convertForm.contactName}
               onChange={(e) => setConvertForm({ ...convertForm, contactName: e.target.value })}
             />
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
             <input
               type="checkbox"
+              className="rounded border-border"
               checked={convertForm.createDeal}
               onChange={(e) => setConvertForm({ ...convertForm, createDeal: e.target.checked })}
             />
-            Tạo cơ hội
+            Đồng thời tạo cơ hội bán hàng (Deal)
           </label>
           {convertForm.createDeal ? (
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm">
+            <div className="grid grid-cols-2 gap-3 rounded-md border border-border bg-surface-raised/40 p-3">
+              <label className="block text-sm font-medium text-foreground">
                 Tên cơ hội
                 <Input
                   className="mt-1 w-full"
@@ -374,8 +643,8 @@ export default function TiemNangPage() {
                   onChange={(e) => setConvertForm({ ...convertForm, dealTitle: e.target.value })}
                 />
               </label>
-              <label className="block text-sm">
-                Giá trị dự kiến
+              <label className="block text-sm font-medium text-foreground">
+                Giá trị dự kiến (VNĐ)
                 <Input
                   className="mt-1 w-full"
                   value={convertForm.dealValue}
@@ -389,3 +658,4 @@ export default function TiemNangPage() {
     </div>
   );
 }
+

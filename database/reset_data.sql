@@ -12,6 +12,7 @@ BEGIN;
 -- 1. XÓA TOÀN BỘ DỮ LIỆU NGHIỆP VỤ & GIAO DỊCH (TRANSACTIONAL & BUSINESS DATA)
 -- Sử dụng TRUNCATE ... CASCADE để dọn sạch dữ liệu nhanh chóng và an toàn về quan hệ khóa ngoại
 TRUNCATE TABLE 
+  cctv_sync_logs,
   payments,
   invoices,
   stock_move_lines,

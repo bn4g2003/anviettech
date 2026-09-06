@@ -6,6 +6,7 @@ export type Invoice = Timestamps & {
   id: EntityId;
   code: string;
   customerId: EntityId;
+  customerName?: string;
   orderId?: EntityId;
   contractId?: EntityId;
   status: InvoiceStatus;
@@ -22,6 +23,7 @@ export type Payment = Timestamps & {
   code: string;
   invoiceId: EntityId;
   customerId: EntityId;
+  customerName?: string;
   amount: number;
   method: PaymentMethod;
   paidAt: string;

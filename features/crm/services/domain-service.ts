@@ -1192,10 +1192,10 @@ export async function getRevenueEntryPaymentTarget(id: string) {
 // —— Finance ——
 export async function getInvoice(id: string) {
   const result = await query<{
-    id: string; code: string; customerId: string; orderId: string | null; contractId: string | null;
+    id: string; code: string; customerId: string; customerName?: string | null; orderId: string | null; contractId: string | null;
     status: string; amount: string; paidAmount: string; dueDate: string | null; ownerId: string | null; createdAt: string;
   }>(
-    `SELECT id, code, customer_id AS "customerId", order_id AS "orderId", contract_id AS "contractId", status, amount, paid_amount AS "paidAmount", due_date AS "dueDate", owner_id AS "ownerId", created_at AS "createdAt"
+    `SELECT id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = invoices.customer_id) AS "customerName", order_id AS "orderId", contract_id AS "contractId", status, amount, paid_amount AS "paidAmount", due_date AS "dueDate", owner_id AS "ownerId", created_at AS "createdAt"
      FROM invoices WHERE id=$1 AND deleted_at IS NULL`, [id],
   );
   if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy hóa đơn");
@@ -1501,11 +1501,27 @@ export async function getFinanceReport(filters: FinanceReportFilters) {
   const expenses = await query<{ category: string; total: string }>(`SELECT COALESCE(category,expense_category,'other') AS category,COALESCE(sum(amount),0)::text AS total FROM operating_expenses WHERE ${expenseWhere.join(" AND ")} GROUP BY COALESCE(category,expense_category,'other')`, expenseValues);
   const customerTotals = new Map<string, { revenue: number; cogs: number; paid: number }>();
   for (const row of revenue.rows) { const current = customerTotals.get(row.customerId) ?? { revenue: 0, cogs: 0, paid: 0 }; current.revenue += Number(row.revenue); current.cogs += Number(row.cogs); current.paid += Number(row.paid); customerTotals.set(row.customerId, current); }
+  const customerNames = new Map<string, string>();
+  if (customerTotals.size > 0) {
+    const custRes = await query<{ id: string; name: string }>(
+      `SELECT id, name FROM customers WHERE id = ANY($1::uuid[])`,
+      [[...customerTotals.keys()]],
+    );
+    for (const c of custRes.rows) customerNames.set(c.id, c.name);
+  }
   const grossRevenue = revenue.rows.reduce((sum, row) => sum + Number(row.revenue), 0);
   const cogs = revenue.rows.reduce((sum, row) => sum + Number(row.cogs), 0);
   const reductionsTotal = Number(reductions.rows[0]?.total ?? 0);
   const laborCost = expenses.rows.filter((row) => row.category === "salary").reduce((sum, row) => sum + Number(row.total), 0);
   const otherExpenses = expenses.rows.filter((row) => row.category !== "salary").reduce((sum, row) => sum + Number(row.total), 0);
-  return { summary: { grossRevenue, reductions: reductionsTotal, netRevenue: grossRevenue - reductionsTotal, cogs, laborCost, otherExpenses, profit: grossRevenue - reductionsTotal - cogs - laborCost - otherExpenses, receivable: Math.max(0, grossRevenue - reductionsTotal - revenue.rows.reduce((sum, row) => sum + Number(row.paid), 0)) }, customers: [...customerTotals.entries()].map(([customerId, value]) => ({ customerId, ...value, receivable: Math.max(0, value.revenue - value.paid) })) };
+  return {
+    summary: { grossRevenue, reductions: reductionsTotal, netRevenue: grossRevenue - reductionsTotal, cogs, laborCost, otherExpenses, profit: grossRevenue - reductionsTotal - cogs - laborCost - otherExpenses, receivable: Math.max(0, grossRevenue - reductionsTotal - revenue.rows.reduce((sum, row) => sum + Number(row.paid), 0)) },
+    customers: [...customerTotals.entries()].map(([customerId, value]) => ({
+      customerId,
+      customerName: customerNames.get(customerId) || "Khách hàng",
+      ...value,
+      receivable: Math.max(0, value.revenue - value.paid),
+    })),
+  };
 }
 
