@@ -15,9 +15,20 @@ type ApiSuccess<T> = { success: true; data: T; meta?: ApiMeta };
 type ApiFailure = { success: false; error: { code: string; message: string; fields?: Record<string, string> } };
 
 const inFlightMutations = new Map<string, Promise<unknown>>();
+const inFlightGets = new Map<string, Promise<unknown>>();
+const getCache = new Map<string, { data: unknown; meta?: ApiMeta; timestamp: number }>();
+const GET_CACHE_TTL_MS = 15_000;
+
 export const API_MUTATION_SUCCEEDED_EVENT = "anviet:api-mutation-succeeded";
 
-export type ApiFetchInit = RequestInit & { skipMutationBroadcast?: boolean };
+export function clearApiGetCache() {
+  getCache.clear();
+}
+
+export type ApiFetchInit = RequestInit & {
+  skipMutationBroadcast?: boolean;
+  skipCache?: boolean;
+};
 
 function isMutation(init?: ApiFetchInit) {
   if (init?.skipMutationBroadcast) return false;
@@ -26,9 +37,16 @@ function isMutation(init?: ApiFetchInit) {
 }
 
 export function announceSuccessfulMutation() {
+  clearApiGetCache();
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(API_MUTATION_SUCCEEDED_EVENT));
   }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener(API_MUTATION_SUCCEEDED_EVENT, () => {
+    clearApiGetCache();
+  });
 }
 
 function mutationKey(path: string, init?: ApiFetchInit) {
@@ -69,6 +87,32 @@ async function sendRequest<T>(path: string, init?: ApiFetchInit): Promise<{ data
 }
 
 export function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<{ data: T; meta?: ApiMeta }> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const isGet = method === "GET" || method === "HEAD";
+
+  if (isGet && !init?.skipCache) {
+    const now = Date.now();
+    const cached = getCache.get(path);
+    if (cached && now - cached.timestamp < GET_CACHE_TTL_MS) {
+      return Promise.resolve({ data: cached.data as T, meta: cached.meta });
+    }
+
+    const inFlight = inFlightGets.get(path) as Promise<{ data: T; meta?: ApiMeta }> | undefined;
+    if (inFlight) return inFlight;
+
+    const request = sendRequest<T>(path, init)
+      .then((result) => {
+        getCache.set(path, { data: result.data, meta: result.meta, timestamp: Date.now() });
+        return result;
+      })
+      .finally(() => {
+        inFlightGets.delete(path);
+      });
+
+    inFlightGets.set(path, request);
+    return request;
+  }
+
   const requestOnce = () => sendRequest<T>(path, init).then((result) => {
     if (isMutation(init)) announceSuccessfulMutation();
     return result;

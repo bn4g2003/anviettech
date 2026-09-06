@@ -34,7 +34,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   customers: {
     module: "customers",
     table: "customers",
-    select: `id, code, name, type, status, email, phone, address, source, owner_id AS "ownerId", campaign_id AS "campaignId", notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, name, type, status, email, phone, address, source, owner_id AS "ownerId", campaign_id AS "campaignId", notes, COALESCE((SELECT SUM(amount - paid_amount) FROM invoices WHERE customer_id = customers.id AND deleted_at IS NULL AND status <> 'cancelled'), 0) AS debt, created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["name", "code", "email", "phone"],
     sort: ["name", "code", "created_at", "updated_at"],
   },

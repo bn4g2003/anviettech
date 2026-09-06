@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { financeService, type RevenueDebtEntry, type RevenueReductionDebt } from "@/features/finance/services/finance-service";
-import { useCustomers } from "@/features/customers/hooks/use-customers";
 import type { Invoice, Payment, PaymentInput } from "@/features/finance/types";
 
 export type DebtRow = {
@@ -25,7 +24,6 @@ export function useFinance(filters?: {
   const [revenueEntries, setRevenueEntries] = useState<RevenueDebtEntry[]>([]);
   const [revenueReductions, setRevenueReductions] = useState<RevenueReductionDebt[]>([]);
   const [loading, setLoading] = useState(true);
-  const { all: customers } = useCustomers();
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -86,7 +84,6 @@ export function useFinance(filters?: {
       map.set(reduction.customerId, cur);
     }
     const customerNames = new Map<string, string>();
-    for (const c of customers) customerNames.set(c.id, c.name);
     for (const inv of invoices) {
       if (inv.customerName) customerNames.set(inv.customerId, inv.customerName);
     }
@@ -101,7 +98,7 @@ export function useFinance(filters?: {
       amount: v.debt,
       invoiceCount: v.invoiceCount,
     }));
-  }, [invoices, revenueEntries, revenueReductions, customers]);
+  }, [invoices, revenueEntries, revenueReductions]);
 
   const byId = useMemo(() => new Map(invoices.map((i) => [i.id, i])), [invoices]);
 

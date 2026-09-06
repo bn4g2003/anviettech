@@ -780,20 +780,6 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
             ],
           );
         }
-
-        // F. Lịch sử công việc kỹ thuật (tasks)
-        const taskTitle = `[CCTV ${wo.code}] ${wo.description ? wo.description.slice(0, 100) : "Dịch vụ hiện trường"}`;
-        const taskNotes = `${wo.description || ""}${wo.completionNote ? `\nNghiệm thu: ${wo.completionNote}` : ""}`.trim();
-
-        await client.query(
-          `INSERT INTO tasks (
-             title, type, status, customer_id, notes, completed_at,
-             cctv_work_order_id, created_by, updated_by
-           ) VALUES ($1, 'service', 'completed', $2, $3, $4, $5, $6, $6)
-           ON CONFLICT (cctv_work_order_id) DO UPDATE
-             SET notes = EXCLUDED.notes, completed_at = EXCLUDED.completed_at, updated_at = now()`,
-          [taskTitle, crmCustomerId, taskNotes || null, wo.occurredAt, wo.cctvId, actorId],
-        );
       }
     });
 

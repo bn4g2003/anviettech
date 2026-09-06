@@ -1,6 +1,6 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL?.trim();
 
 if (!connectionString) {
   throw new Error("DATABASE_URL is required to run AnViet CRM.");
@@ -12,8 +12,11 @@ export const db =
   globalForDb.pgPool ??
   new Pool({
     connectionString,
-    max: 10,
-    idleTimeoutMillis: 30_000,
+    max: 20,
+    idleTimeoutMillis: 300_000,
+    connectionTimeoutMillis: 10_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
   });
 
 if (process.env.NODE_ENV !== "production") globalForDb.pgPool = db;

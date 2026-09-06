@@ -17,11 +17,40 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+type CachedSession = {
+  user: CurrentUser | null;
+  cachedAt: number;
+  lastSeenUpdated: number;
+};
+
+const sessionCache = new Map<string, CachedSession>();
+const CACHE_TTL_MS = 60_000;
+const LAST_SEEN_THROTTLE_MS = 300_000;
+
+export function invalidateSessionCache(tokenHashKey?: string) {
+  if (tokenHashKey) {
+    sessionCache.delete(tokenHashKey);
+  } else {
+    sessionCache.clear();
+  }
+}
+
 /** Deduped per request — layout + page/API helpers share one session lookup. */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (!token) return null;
   const hash = tokenHash(token);
+  const now = Date.now();
+  const cached = sessionCache.get(hash);
+
+  if (cached && now - cached.cachedAt < CACHE_TTL_MS) {
+    if (now - cached.lastSeenUpdated >= LAST_SEEN_THROTTLE_MS) {
+      cached.lastSeenUpdated = now;
+      void query("UPDATE sessions SET last_seen_at=now() WHERE token_hash=$1", [hash]);
+    }
+    return cached.user;
+  }
+
   const result = await query<{
     id: string;
     full_name: string;
@@ -41,9 +70,20 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     [hash],
   );
   const row = result.rows[0];
-  if (!row) return null;
-  void query("UPDATE sessions SET last_seen_at=now() WHERE token_hash=$1", [hash]);
-  return {
+  if (!row) {
+    sessionCache.set(hash, { user: null, cachedAt: now, lastSeenUpdated: now });
+    return null;
+  }
+
+  const lastSeenUpdated = cached?.lastSeenUpdated && now - cached.lastSeenUpdated < LAST_SEEN_THROTTLE_MS
+    ? cached.lastSeenUpdated
+    : now;
+
+  if (lastSeenUpdated === now) {
+    void query("UPDATE sessions SET last_seen_at=now() WHERE token_hash=$1", [hash]);
+  }
+
+  const user: CurrentUser = {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
@@ -51,6 +91,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     roles: row.roles,
     permissions: row.permissions,
   };
+
+  sessionCache.set(hash, { user, cachedAt: now, lastSeenUpdated });
+  return user;
 });
 
 export async function requireUser() {
@@ -133,7 +176,11 @@ export async function setSessionCookie(token: string) {
 export async function logout() {
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
-  if (token) await query("UPDATE sessions SET revoked_at=now() WHERE token_hash=$1", [tokenHash(token)]);
+  if (token) {
+    const hash = tokenHash(token);
+    sessionCache.delete(hash);
+    await query("UPDATE sessions SET revoked_at=now() WHERE token_hash=$1", [hash]);
+  }
   store.delete(COOKIE_NAME);
 }
 
@@ -147,4 +194,5 @@ export async function changePassword(userId: string, currentPassword: string, ne
     passwordHash,
     userId,
   ]);
+  sessionCache.clear();
 }

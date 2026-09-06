@@ -14,6 +14,7 @@ export type Customer = Timestamps & {
   owner: OwnerRef;
   source: string;
   status: CustomerStatus;
+  debt?: number;
   campaignId?: EntityId;
   notes?: string;
   contactName?: string;

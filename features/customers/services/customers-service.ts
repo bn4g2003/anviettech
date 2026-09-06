@@ -8,6 +8,7 @@ type ApiCustomer = {
   name: string;
   type: "company" | "individual";
   status: string;
+  debt?: number | string | null;
   email?: string | null;
   phone?: string | null;
   address?: string | null;
@@ -31,6 +32,7 @@ async function mapCustomer(row: ApiCustomer): Promise<Customer> {
     phone: row.phone ?? "",
     address: row.address ?? "",
     source: row.source ?? "",
+    debt: row.debt !== undefined && row.debt !== null ? Number(row.debt) : 0,
     owner: ownerByIdSync(row.ownerId ?? "", owners),
     campaignId: row.campaignId ?? undefined,
     notes: row.notes ?? undefined,
@@ -39,10 +41,31 @@ async function mapCustomer(row: ApiCustomer): Promise<Customer> {
   };
 }
 
+async function mapCustomers(rows: ApiCustomer[]): Promise<Customer[]> {
+  const owners = await loadOwners();
+  return rows.map((row) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    type: row.type,
+    status: (row.status as Customer["status"]) || "active",
+    email: row.email ?? "",
+    phone: row.phone ?? "",
+    address: row.address ?? "",
+    source: row.source ?? "",
+    debt: row.debt !== undefined && row.debt !== null ? Number(row.debt) : 0,
+    owner: ownerByIdSync(row.ownerId ?? "", owners),
+    campaignId: row.campaignId ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt ?? new Date().toISOString(),
+    updatedAt: row.updatedAt ?? new Date().toISOString(),
+  }));
+}
+
 export const customersService = {
   async list(params?: { search?: string; status?: string; ownerId?: string; scope?: "my"; page?: number; pageSize?: number }) {
     const result = await apiFetch<ApiCustomer[]>(`/api/v1/customers${toQuery({ ...params, page: params?.page ?? 1, pageSize: params?.pageSize ?? 1000 })}`);
-    return Promise.all((result.data ?? []).map(mapCustomer));
+    return mapCustomers(result.data ?? []);
   },
 
   async getById(id: string) {

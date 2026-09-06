@@ -21,26 +21,19 @@ export function useCustomers(filters?: {
     setLoading(true);
     setError(null);
     try {
-      const [list, invoices] = await Promise.all([
-        customersService.list({
-          search: filters?.query,
-          status: filters?.status,
-          ownerId: filters?.ownerId,
-          scope: filters?.scope,
-          pageSize: 1000,
-        }),
-        apiFetch<{ customerId: string; amount: number | string; paidAmount: number | string }[]>(
-          `/api/v1/invoices${toQuery({ pageSize: 1000 })}`,
-        ).catch(() => ({
-          data: [] as { customerId: string; amount: number | string; paidAmount: number | string }[],
-        })),
-      ]);
+      const list = await customersService.list({
+        search: filters?.query,
+        status: filters?.status,
+        ownerId: filters?.ownerId,
+        scope: filters?.scope,
+        pageSize: 1000,
+      });
       const filtered = filters?.type ? list.filter((c) => c.type === filters.type) : list;
       setRows(filtered);
 
       const map: Record<string, number> = {};
-      for (const inv of invoices.data ?? []) {
-        map[inv.customerId] = (map[inv.customerId] ?? 0) + (Number(inv.amount) - Number(inv.paidAmount));
+      for (const c of list) {
+        map[c.id] = c.debt ?? 0;
       }
       setDebts(map);
     } catch (err) {
