@@ -1,0 +1,2 @@
+DATABASE_URL= postgresql://neondb_owner:npg_zurVX35QvWCD@ep-curly-sea-axvs1qb9-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+CCTV_DATABASE_URL = postgresql://postgres.exxtypsnzdabogxndfpz:OXv3wlohXwR5iIL3@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres

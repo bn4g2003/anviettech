@@ -10,6 +10,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   CheckCircle2,
   ChevronsUpDown,
+  EyeOff,
   KeyRound,
   Loader2,
   LogOut,
@@ -25,6 +26,8 @@ import { NavLink } from "./nav-link";
 type AppSidebarProps = {
   collapsed: boolean;
   onToggle: () => void;
+  hidden: boolean;
+  onHide: () => void;
   currentUser?: CurrentUser | null;
 };
 
@@ -41,7 +44,7 @@ function getInitials(name?: string | null): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps) {
+export function AppSidebar({ collapsed, onToggle, hidden, onHide, currentUser }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null | undefined>(currentUser);
@@ -164,9 +167,11 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
 
   return (
     <aside
+      id="app-sidebar"
       className={cn(
         "flex h-full shrink-0 flex-col border-r border-border bg-white transition-[width]",
         collapsed ? "w-16" : "w-[var(--sidebar-width)]",
+        hidden && "hidden",
       )}
     >
       {/* Brand Header */}
@@ -316,7 +321,7 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
           </DropdownMenu.Root>
         )}
 
-        {/* Action Row: Collapse & Logout */}
+        {/* Action Row: Collapse, hide & logout */}
         <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-between")}>
           <Button
             variant="ghost"
@@ -336,6 +341,19 @@ export function AppSidebar({ collapsed, onToggle, currentUser }: AppSidebarProps
                 <span>Thu gọn</span>
               </>
             )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 justify-center p-0 text-muted hover:text-foreground"
+            onClick={onHide}
+            aria-label="Ẩn thanh điều hướng"
+            aria-controls="app-sidebar"
+            aria-expanded={true}
+            title="Ẩn thanh điều hướng"
+          >
+            <EyeOff className="h-4 w-4" />
           </Button>
 
           <button
