@@ -175,7 +175,7 @@ export function AppSidebar({ collapsed, onToggle, hidden, onHide, currentUser }:
       )}
     >
       {/* Brand Header */}
-      <div className="flex h-12 shrink-0 items-center border-b border-border px-3">
+      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border px-3">
         <div className={cn("flex w-full items-center gap-2.5 overflow-hidden", collapsed && "justify-center")}>
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-white p-0.5 shadow-2xs">
             <Image
@@ -199,6 +199,18 @@ export function AppSidebar({ collapsed, onToggle, hidden, onHide, currentUser }:
             </div>
           ) : null}
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 text-muted hover:text-foreground"
+          onClick={onHide}
+          aria-label="Ẩn thanh điều hướng"
+          aria-controls="app-sidebar"
+          aria-expanded={true}
+          title="Ẩn thanh điều hướng"
+        >
+          <EyeOff className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Grouped Navigation */}
@@ -321,7 +333,7 @@ export function AppSidebar({ collapsed, onToggle, hidden, onHide, currentUser }:
           </DropdownMenu.Root>
         )}
 
-        {/* Action Row: Collapse, hide & logout */}
+        {/* Action Row: Collapse & logout */}
         <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-between")}>
           <Button
             variant="ghost"
@@ -341,19 +353,6 @@ export function AppSidebar({ collapsed, onToggle, hidden, onHide, currentUser }:
                 <span>Thu gọn</span>
               </>
             )}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 justify-center p-0 text-muted hover:text-foreground"
-            onClick={onHide}
-            aria-label="Ẩn thanh điều hướng"
-            aria-controls="app-sidebar"
-            aria-expanded={true}
-            title="Ẩn thanh điều hướng"
-          >
-            <EyeOff className="h-4 w-4" />
           </Button>
 
           <button
