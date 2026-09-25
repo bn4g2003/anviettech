@@ -35,6 +35,11 @@ function linesSummary(r: StockMove) {
   return `${first.productName} ×${first.qty} +${r.lines.length - 1}`;
 }
 
+export function businessContextLabel(move: Pick<StockMove, "supplier" | "customer" | "project">) {
+  const reference = move.supplier ?? move.customer ?? move.project;
+  return reference ? `${reference.code} — ${reference.name}` : "—";
+}
+
 export function filterStockMoves(
   moves: StockMove[],
   moveType: StockMoveType,
@@ -95,6 +100,11 @@ export function StockMovesTable({ moveType }: Props) {
       id: "warehouse",
       header: "Kho",
       cell: (r) => <span className="text-muted">{warehouseLabel(r)}</span>,
+    },
+    {
+      id: "businessContext",
+      header: "Liên quan",
+      cell: (r) => <span className="text-muted">{businessContextLabel(r)}</span>,
     },
     {
       id: "orderId",

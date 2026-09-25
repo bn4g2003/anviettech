@@ -31,6 +31,7 @@ const MOVE_COLUMNS = [
   "status",
   "reason",
   "warehouse",
+  "businessContext",
   "orderId",
   "lines",
   "owner",

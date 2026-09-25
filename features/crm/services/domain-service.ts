@@ -1004,13 +1004,17 @@ export async function getStockMove(id: string) {
     supplierId: string | null; customerId: string | null; projectId: string | null; note: string | null; postedAt: string | null; createdAt: string;
     supplierCode: string | null; supplierName: string | null; customerCode: string | null; customerName: string | null;
     projectCode: string | null; projectName: string | null;
+    warehouseFromCode: string | null; warehouseFromName: string | null; warehouseToCode: string | null; warehouseToName: string | null;
   }>(
     `SELECT m.id, m.code, m.type, m.reason, m.status, m.order_id AS "orderId", m.warehouse_from_id AS "warehouseFromId", m.warehouse_to_id AS "warehouseToId", m.supplier_id AS "supplierId", m.customer_id AS "customerId", m.project_id AS "projectId", m.owner_id AS "ownerId", m.note, m.posted_at AS "postedAt", m.created_at AS "createdAt",
-      s.code AS "supplierCode", s.name AS "supplierName", c.code AS "customerCode", c.name AS "customerName", p.code AS "projectCode", p.name AS "projectName"
+      s.code AS "supplierCode", s.name AS "supplierName", c.code AS "customerCode", c.name AS "customerName", p.code AS "projectCode", p.name AS "projectName",
+      wf.code AS "warehouseFromCode", wf.name AS "warehouseFromName", wt.code AS "warehouseToCode", wt.name AS "warehouseToName"
      FROM stock_moves m
      LEFT JOIN suppliers s ON s.id=m.supplier_id AND s.deleted_at IS NULL
      LEFT JOIN customers c ON c.id=m.customer_id AND c.deleted_at IS NULL
      LEFT JOIN projects p ON p.id=m.project_id AND p.deleted_at IS NULL
+     LEFT JOIN warehouses wf ON wf.id=m.warehouse_from_id AND wf.deleted_at IS NULL
+     LEFT JOIN warehouses wt ON wt.id=m.warehouse_to_id AND wt.deleted_at IS NULL
      WHERE m.id=$1 AND m.deleted_at IS NULL`, [id],
   );
   if (!move.rows[0]) throw new ApiError(404, "Không tìm thấy phiếu kho");

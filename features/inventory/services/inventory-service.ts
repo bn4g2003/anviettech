@@ -13,6 +13,8 @@ type ApiMove = {
   supplierCode?: string | null; supplierName?: string | null;
   customerCode?: string | null; customerName?: string | null;
   projectCode?: string | null; projectName?: string | null;
+  warehouseFromCode?: string | null; warehouseFromName?: string | null;
+  warehouseToCode?: string | null; warehouseToName?: string | null;
   warehouseFromId?: string | null; warehouseToId?: string | null; ownerId?: string | null;
   note?: string | null; postedAt?: string | null; createdAt?: string; updatedAt?: string;
   lines?: { id: string; productId: string; productName: string; qty: number | string }[];
@@ -20,6 +22,10 @@ type ApiMove = {
 
 function mapReference(id?: string | null, code?: string | null, name?: string | null): StockMoveReference | undefined {
   return id && code && name ? { id, code, name } : undefined;
+}
+
+function mapWarehouseLabel(id?: string | null, code?: string | null, name?: string | null): string | undefined {
+  return code && name ? `${code} — ${name}` : id ?? undefined;
 }
 
 async function mapMove(row: ApiMove): Promise<StockMove> {
@@ -37,8 +43,8 @@ async function mapMove(row: ApiMove): Promise<StockMove> {
     supplier: mapReference(row.supplierId, row.supplierCode, row.supplierName),
     customer: mapReference(row.customerId, row.customerCode, row.customerName),
     project: mapReference(row.projectId, row.projectCode, row.projectName),
-    warehouseFrom: row.warehouseFromId ?? undefined,
-    warehouseTo: row.warehouseToId ?? undefined,
+    warehouseFrom: mapWarehouseLabel(row.warehouseFromId, row.warehouseFromCode, row.warehouseFromName),
+    warehouseTo: mapWarehouseLabel(row.warehouseToId, row.warehouseToCode, row.warehouseToName),
     owner: ownerByIdSync(row.ownerId ?? "", owners),
     note: row.note ?? undefined,
     lines: (row.lines ?? []).map((l) => ({
