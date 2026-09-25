@@ -1002,13 +1002,29 @@ export async function getStockMove(id: string) {
     id: string; code: string; type: string; reason: string | null; status: string; orderId: string | null;
     warehouseFromId: string | null; warehouseToId: string | null; ownerId: string | null;
     supplierId: string | null; customerId: string | null; projectId: string | null; note: string | null; postedAt: string | null; createdAt: string;
+    supplierCode: string | null; supplierName: string | null; customerCode: string | null; customerName: string | null;
+    projectCode: string | null; projectName: string | null;
   }>(
-    `SELECT id, code, type, reason, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", supplier_id AS "supplierId", customer_id AS "customerId", project_id AS "projectId", owner_id AS "ownerId", note, posted_at AS "postedAt", created_at AS "createdAt"
-     FROM stock_moves WHERE id=$1 AND deleted_at IS NULL`, [id],
+    `SELECT m.id, m.code, m.type, m.reason, m.status, m.order_id AS "orderId", m.warehouse_from_id AS "warehouseFromId", m.warehouse_to_id AS "warehouseToId", m.supplier_id AS "supplierId", m.customer_id AS "customerId", m.project_id AS "projectId", m.owner_id AS "ownerId", m.note, m.posted_at AS "postedAt", m.created_at AS "createdAt",
+      s.code AS "supplierCode", s.name AS "supplierName", c.code AS "customerCode", c.name AS "customerName", p.code AS "projectCode", p.name AS "projectName"
+     FROM stock_moves m
+     LEFT JOIN suppliers s ON s.id=m.supplier_id AND s.deleted_at IS NULL
+     LEFT JOIN customers c ON c.id=m.customer_id AND c.deleted_at IS NULL
+     LEFT JOIN projects p ON p.id=m.project_id AND p.deleted_at IS NULL
+     WHERE m.id=$1 AND m.deleted_at IS NULL`, [id],
   );
   if (!move.rows[0]) throw new ApiError(404, "Không tìm thấy phiếu kho");
   const lines = await query(`SELECT id, product_id AS "productId", product_name AS "productName", qty FROM stock_move_lines WHERE stock_move_id=$1`, [id]);
-  return { ...move.rows[0], lines: lines.rows };
+  const row = move.rows[0];
+  const reference = (referenceId: string | null, referenceCode: string | null, referenceName: string | null) =>
+    referenceId && referenceCode && referenceName ? { id: referenceId, code: referenceCode, name: referenceName } : undefined;
+  return {
+    ...row,
+    supplier: reference(row.supplierId, row.supplierCode, row.supplierName),
+    customer: reference(row.customerId, row.customerCode, row.customerName),
+    project: reference(row.projectId, row.projectCode, row.projectName),
+    lines: lines.rows,
+  };
 }
 
 async function ensureBalance(client: PoolClient, warehouseId: string, productId: string) {

@@ -4,6 +4,12 @@ export type StockMoveType = "in" | "out" | "transfer";
 export type StockMoveReason = "purchase_receipt" | "customer_return" | "warranty_receipt" | "installation_issue" | "sales_issue" | "supplier_return" | "transfer";
 export type StockMoveStatus = "draft" | "posted" | "cancelled";
 
+export type StockMoveReference = {
+  id: EntityId;
+  code: string;
+  name: string;
+};
+
 export type StockMoveLine = {
   id: EntityId;
   productId: EntityId;
@@ -21,6 +27,9 @@ export type StockMove = Timestamps & {
   supplierId?: EntityId;
   customerId?: EntityId;
   projectId?: EntityId;
+  supplier?: StockMoveReference;
+  customer?: StockMoveReference;
+  project?: StockMoveReference;
   warehouseFrom?: string;
   warehouseTo?: string;
   owner: OwnerRef;

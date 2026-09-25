@@ -16,7 +16,17 @@ const database = vi.hoisted(() => {
   function read(sql: string, canSeeUncommitted: boolean) {
     const visible = state.committed || canSeeUncommitted;
     if (sql.includes("FROM stock_moves ")) {
-      return result(visible && state.move ? [{ ...state.move }] : []);
+      const context = sql.includes("LEFT JOIN suppliers")
+        ? {
+            supplierCode: "NCC-TEST",
+            supplierName: "Nhà cung cấp kiểm thử",
+            customerCode: null,
+            customerName: null,
+            projectCode: null,
+            projectName: null,
+          }
+        : {};
+      return result(visible && state.move ? [{ ...state.move, ...context }] : []);
     }
     if (sql.includes("FROM stock_move_lines ")) {
       return result(visible ? state.lines.map((line) => ({ ...line })) : []);
@@ -39,6 +49,9 @@ const database = vi.hoisted(() => {
         status: "draft",
         warehouseFromId: values[3],
         warehouseToId: values[4],
+        supplierId: values[5],
+        customerId: values[6],
+        projectId: values[7],
         ownerId: values[8],
         note: values[9],
         orderId: null,
@@ -117,6 +130,21 @@ describe("createStockMove transaction visibility", () => {
       lines: [{ productId, productName: "Camera test", qty: "3" }],
     });
     expect(database.clientQuery.mock.calls.some(([sql]) => String(sql).includes("WHERE request_id IS NOT NULL AND deleted_at IS NULL DO NOTHING"))).toBe(true);
+  });
+
+  it("returns the selected supplier details with a newly created receipt", async () => {
+    const move = await createStockMove({
+      type: "in",
+      reason: "purchase_receipt",
+      supplierId,
+      warehouseToId: warehouseId,
+      lines: [{ productId, qty: 1 }],
+    }, ownerId);
+
+    expect(move).toMatchObject({
+      supplierId,
+      supplier: { id: supplierId, code: "NCC-TEST", name: "Nhà cung cấp kiểm thử" },
+    });
   });
 
   it("rolls back the move when a line refers to a missing product", async () => {

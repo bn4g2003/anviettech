@@ -1,5 +1,5 @@
 import { apiFetch, toQuery } from "@/lib/api-client";
-import type { StockLevel, StockMove, StockMoveInput } from "@/features/inventory/types";
+import type { StockLevel, StockMove, StockMoveInput, StockMoveReference } from "@/features/inventory/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type ApiBalance = {
@@ -10,10 +10,17 @@ type ApiBalance = {
 type ApiMove = {
   id: string; code: string; type: string; status: string; orderId?: string | null;
   reason?: string | null; supplierId?: string | null; customerId?: string | null; projectId?: string | null;
+  supplierCode?: string | null; supplierName?: string | null;
+  customerCode?: string | null; customerName?: string | null;
+  projectCode?: string | null; projectName?: string | null;
   warehouseFromId?: string | null; warehouseToId?: string | null; ownerId?: string | null;
   note?: string | null; postedAt?: string | null; createdAt?: string; updatedAt?: string;
   lines?: { id: string; productId: string; productName: string; qty: number | string }[];
 };
+
+function mapReference(id?: string | null, code?: string | null, name?: string | null): StockMoveReference | undefined {
+  return id && code && name ? { id, code, name } : undefined;
+}
 
 async function mapMove(row: ApiMove): Promise<StockMove> {
   const owners = await loadOwners();
@@ -27,6 +34,9 @@ async function mapMove(row: ApiMove): Promise<StockMove> {
     supplierId: row.supplierId ?? undefined,
     customerId: row.customerId ?? undefined,
     projectId: row.projectId ?? undefined,
+    supplier: mapReference(row.supplierId, row.supplierCode, row.supplierName),
+    customer: mapReference(row.customerId, row.customerCode, row.customerName),
+    project: mapReference(row.projectId, row.projectCode, row.projectName),
     warehouseFrom: row.warehouseFromId ?? undefined,
     warehouseTo: row.warehouseToId ?? undefined,
     owner: ownerByIdSync(row.ownerId ?? "", owners),

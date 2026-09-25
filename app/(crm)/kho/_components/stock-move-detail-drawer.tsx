@@ -8,12 +8,27 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatDateTime, relativeTime } from "@/features/shared/utils/date";
 import { useToast } from "@/components/ui/toast";
 import { StockMoveStatusBadge } from "./stock-move-status";
+import type { StockMove, StockMoveReason } from "@/features/inventory/types";
 
 const TYPE_LABEL: Record<StockMoveType, string> = {
   in: "Phiếu nhập",
   out: "Phiếu xuất",
   transfer: "Điều chuyển",
 };
+
+const REASON_LABEL: Record<StockMoveReason, string> = {
+  purchase_receipt: "Nhập hàng mới",
+  customer_return: "Hàng khách trả lại",
+  warranty_receipt: "Hàng bảo hành nhập về",
+  installation_issue: "Xuất lắp đặt",
+  sales_issue: "Xuất bán buôn / bán lẻ",
+  supplier_return: "Xuất trả nhà cung cấp",
+  transfer: "Điều chuyển kho",
+};
+
+function referenceLabel(reference: StockMove["supplier"], fallback?: string) {
+  return reference ? `${reference.code} — ${reference.name}` : fallback ?? "—";
+}
 
 export function StockMoveDetailDrawer() {
   const list = useListPage();
@@ -69,6 +84,10 @@ export function StockMoveDetailDrawer() {
           <p>{TYPE_LABEL[move.type]}</p>
         </div>
         <div>
+          <p className="text-xs text-muted">Nghiệp vụ</p>
+          <p>{REASON_LABEL[move.reason]}</p>
+        </div>
+        <div>
           <p className="text-xs text-muted">Kho xuất</p>
           <p>{move.warehouseFrom ?? "—"}</p>
         </div>
@@ -80,6 +99,24 @@ export function StockMoveDetailDrawer() {
           <p className="text-xs text-muted">Đơn hàng</p>
           <p className="font-mono text-xs">{move.orderId ?? "—"}</p>
         </div>
+        {move.supplierId ? (
+          <div className="col-span-2">
+            <p className="text-xs text-muted">Nhà cung cấp</p>
+            <p>{referenceLabel(move.supplier, move.supplierId)}</p>
+          </div>
+        ) : null}
+        {move.customerId ? (
+          <div className="col-span-2">
+            <p className="text-xs text-muted">Khách hàng</p>
+            <p>{referenceLabel(move.customer, move.customerId)}</p>
+          </div>
+        ) : null}
+        {move.projectId ? (
+          <div className="col-span-2">
+            <p className="text-xs text-muted">Công trình</p>
+            <p>{referenceLabel(move.project, move.projectId)}</p>
+          </div>
+        ) : null}
         <div>
           <p className="text-xs text-muted">Phụ trách</p>
           <p>{move.owner.name}</p>
