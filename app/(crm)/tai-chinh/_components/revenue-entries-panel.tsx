@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useOwners } from "@/features/shared/api/owners";
@@ -583,36 +584,36 @@ export function RevenueEntriesPanel() {
             value={form.occurredAt}
             onChange={(v) => change("occurredAt", v)}
           />
-          <FormSelect
+          <SearchableSelect
             label="Khách hàng *"
             value={form.customerId}
-            rows={customers}
+            options={toSearchableOptions(customers)}
             onChange={(customerId) =>
               setForm((x) => ({ ...x, customerId, projectId: "", invoiceId: "" }))
             }
           />
-          <FormSelect
+          <SearchableSelect
             label="Hóa đơn liên kết"
             value={form.invoiceId}
-            rows={selectedInvoices}
+            options={toSearchableOptions(selectedInvoices)}
             onChange={(v) => change("invoiceId", v)}
           />
-          <FormSelect
+          <SearchableSelect
             label="Công trình"
             value={form.projectId}
-            rows={selectedProjects}
+            options={toSearchableOptions(selectedProjects)}
             onChange={(v) => change("projectId", v)}
           />
-          <FormSelect
+          <SearchableSelect
             label="Hàng hóa / dịch vụ *"
             value={form.productId}
-            rows={products}
+            options={toSearchableOptions(products)}
             onChange={(v) => change("productId", v)}
           />
-          <FormSelect
+          <SearchableSelect
             label="Nhân viên phụ trách"
             value={form.employeeId}
-            rows={owners}
+            options={toSearchableOptions(owners)}
             onChange={(v) => change("employeeId", v)}
           />
           <Field
@@ -870,33 +871,15 @@ function Field({
   );
 }
 
-function FormSelect({
-  label,
-  value,
-  rows,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  rows: Array<Ref | { id: string; name: string }>;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="space-y-1 text-xs font-medium text-foreground">
-      <span>{label}</span>
-      <Select className="mt-1 w-full" value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Chọn</option>
-        {rows.map((row) => (
-          <option key={row.id} value={row.id}>
-            {("code" in row ? row.code : undefined) ?? ("sku" in row ? row.sku : undefined)
-              ? `${("code" in row ? row.code : undefined) ?? ("sku" in row ? row.sku : undefined)} — `
-              : ""}
-            {row.name}
-          </option>
-        ))}
-      </Select>
-    </label>
-  );
+function toSearchableOptions(rows: Array<Ref | { id: string; name: string }>) {
+  return rows.map((row) => {
+    const identifier = ("code" in row && row.code) || ("sku" in row && row.sku) || "";
+    return {
+      id: row.id,
+      label: identifier ? `${identifier} — ${row.name}` : row.name,
+      searchText: `${identifier} ${row.name}`,
+    };
+  });
 }
 
 function FilterSelect({
