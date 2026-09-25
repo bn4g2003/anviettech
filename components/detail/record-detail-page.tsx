@@ -236,7 +236,7 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
                 <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
                 <label className="text-xs text-muted">
                   Trạng thái
-                  <select
+                  <Select
                     className="mt-1 block w-full rounded border border-border bg-white px-2 py-1.5 text-sm text-foreground"
                     value={record.status}
                     onChange={(event) =>
@@ -248,7 +248,7 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
                     <option value="open">Cần thực hiện</option>
                     <option value="done">Hoàn thành</option>
                     <option value="cancelled">Đã hủy</option>
-                  </select>
+                  </Select>
                 </label>
               </>
             ) : kind === "quote" ? (

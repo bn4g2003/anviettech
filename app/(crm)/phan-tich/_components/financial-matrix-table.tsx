@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Select } from "@/components/ui/select";
 import { formatVnd } from "@/features/shared/utils/money";
 import { FileSpreadsheet, Printer, ChevronDown, ChevronUp, Layers } from "lucide-react";
 
@@ -103,7 +104,7 @@ export function FinancialMatrixTable({
           {onYearChange && (
             <div className="flex items-center gap-1.5 text-xs text-muted">
               <label htmlFor={selectId} className="font-medium">Năm báo cáo:</label>
-              <select
+              <Select
                 id={selectId}
                 value={year}
                 onChange={(e) => onYearChange(Number(e.target.value))}
@@ -114,7 +115,7 @@ export function FinancialMatrixTable({
                     Năm {y}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
 
