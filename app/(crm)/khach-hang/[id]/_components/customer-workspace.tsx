@@ -105,103 +105,103 @@ export function CustomerWorkspace({ id }: { id: string }) {
 
   return (
     <main className="min-h-0 flex-1 overflow-auto bg-surface">
-      <div className="mx-auto max-w-[1440px] p-3 lg:p-5">
-        <button type="button" onClick={() => router.push("/khach-hang")} className="mb-3 inline-flex items-center gap-1 text-xs text-muted hover:text-foreground">
-          <ChevronLeft className="h-3.5 w-3.5" />
-          Khách hàng
-        </button>
-        <section className="rounded-lg border border-border bg-white">
-          <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex min-w-0 gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white" style={{ background: customer.logoColor ?? "#334155" }}>
-                {(customer.name || "K").slice(0, 1)}
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="truncate text-lg font-semibold">{customer.name || "Khách hàng"}</h1>
-                  <CustomerStatusBadge status={customer.status} />
-                </div>
-                <p className="mt-1 font-mono text-xs text-muted">
-                  {customer.code} · {customer.type === "company" ? "Doanh nghiệp" : "Cá nhân"}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-                  <span className="inline-flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5" />
-                    {customer.phone || "—"}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Mail className="h-3.5 w-3.5" />
-                    {customer.email || "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setTaskOpen(true)}>
-                <Plus className="h-3.5 w-3.5" />
-                Tạo việc
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setDealOpen(true)}>
-                <Handshake className="h-3.5 w-3.5" />
-                Tạo cơ hội
-              </Button>
-              <Button variant="primary" size="sm" onClick={() => setPaymentOpen(true)} disabled={debt <= 0}>
-                <CircleDollarSign className="h-3.5 w-3.5" />
-                Ghi thanh toán
-              </Button>
-            </div>
+      <div className="mx-auto max-w-7xl p-3 lg:p-4 space-y-3">
+        {/* Top Header & Breadcrumb Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-white px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => router.push("/khach-hang")}
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground shrink-0"
+              title="Quay lại danh sách Khách hàng"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Khách hàng</span>
+            </button>
+            <span className="text-muted text-xs">/</span>
+            <span className="font-mono text-xs text-muted shrink-0">{customer.code}</span>
+            <span className="text-muted text-xs">/</span>
+            <h1 className="text-sm font-semibold truncate text-foreground" title={customer.name}>
+              {customer.name}
+            </h1>
+            <CustomerStatusBadge status={customer.status} />
           </div>
-          <div className="grid border-t border-border sm:grid-cols-2 xl:grid-cols-5">
-            <Metric label="Công nợ cần thu" value={formatVnd(debt)} tone={debt > 0 ? "danger" : "default"} />
-            <Metric label="Đã thanh toán" value={formatVnd(paidTotal)} />
-            <Metric label="Pipeline đang mở" value={formatVnd(pipeline)} />
-            <Metric label="Công việc cần xử lý" value={String(openTasks)} />
-            <Metric label="Cập nhật gần nhất" value={relativeTime(customer.updatedAt)} />
-          </div>
-        </section>
 
-        <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <section className="min-w-0 rounded-lg border border-border bg-white p-4">
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setTaskOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              Tạo việc
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setDealOpen(true)}>
+              <Handshake className="h-3.5 w-3.5" />
+              Tạo cơ hội
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuoteOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              Tạo báo giá
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)} disabled={debt <= 0}>
+              <CircleDollarSign className="h-3.5 w-3.5" />
+              Ghi thanh toán
+            </Button>
+          </div>
+        </div>
+
+        {/* Compact Metrics Row */}
+        <div className="grid grid-cols-2 rounded-lg border border-border bg-white sm:grid-cols-3 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-border">
+          <Metric label="Công nợ cần thu" value={formatVnd(debt)} tone={debt > 0 ? "danger" : "default"} />
+          <Metric label="Đã thu thanh toán" value={formatVnd(paidTotal)} />
+          <Metric label="Pipeline đang mở" value={formatVnd(pipeline)} />
+          <Metric label="Công việc cần xử lý" value={String(openTasks)} />
+          <Metric label="Cập nhật gần nhất" value={relativeTime(customer.updatedAt)} />
+        </div>
+
+        {/* 2-Column Split: Tabs Left, Rich Sidebar Right */}
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <section className="min-w-0 rounded-lg border border-border bg-white p-3.5">
             <Tabs defaultValue="overview">
-              <TabsList>
-                <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-                <TabsTrigger value="contacts">Liên hệ ({extra.contacts.length})</TabsTrigger>
-                <TabsTrigger value="activity">Hoạt động & việc</TabsTrigger>
-                <TabsTrigger value="deals">Cơ hội ({deals.length})</TabsTrigger>
-                <TabsTrigger value="sales">BG / Đơn / HĐ</TabsTrigger>
-                <TabsTrigger value="finance">Công nợ</TabsTrigger>
-                <TabsTrigger value="docs">Tài liệu</TabsTrigger>
-                <TabsTrigger value="audit">Audit</TabsTrigger>
+              <TabsList className="h-8">
+                <TabsTrigger value="overview" className="text-xs px-2.5">Tổng quan</TabsTrigger>
+                <TabsTrigger value="contacts" className="text-xs px-2.5">Liên hệ ({extra.contacts.length})</TabsTrigger>
+                <TabsTrigger value="activity" className="text-xs px-2.5">Hoạt động & việc ({customerTasks.length})</TabsTrigger>
+                <TabsTrigger value="deals" className="text-xs px-2.5">Cơ hội ({deals.length})</TabsTrigger>
+                <TabsTrigger value="sales" className="text-xs px-2.5">BG / Đơn / HĐ</TabsTrigger>
+                <TabsTrigger value="finance" className="text-xs px-2.5">Công nợ</TabsTrigger>
+                <TabsTrigger value="docs" className="text-xs px-2.5">Tài liệu</TabsTrigger>
+                <TabsTrigger value="audit" className="text-xs px-2.5">Audit</TabsTrigger>
               </TabsList>
               <TabsContent value="overview">
-                <div className="grid gap-4 pt-3 lg:grid-cols-2">
+                <div className="grid gap-3 pt-3 lg:grid-cols-2">
                   <ActivityPanel tasks={customerTasks} activities={extra.activities} />
                   <InvoicePanel invoices={invoices} />
                 </div>
               </TabsContent>
               <TabsContent value="contacts">
-                <div className="flex justify-end pt-3">
+                <div className="flex justify-end pt-2">
                   <Button size="sm" onClick={() => setContactOpen(true)}>
                     <Plus className="h-3.5 w-3.5" />
                     Thêm liên hệ
                   </Button>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-2.5 space-y-2">
                   {extra.contacts.map((c) => (
-                    <div key={c.id} className="rounded border border-border px-3 py-2">
-                      <p className="text-sm font-medium">
-                        {c.fullName} {c.isPrimary ? <Badge tone="success">Chính</Badge> : null}
-                      </p>
-                      <p className="text-xs text-muted">
-                        {c.jobTitle || "—"} · {c.email || "—"} · {c.phone || "—"}
+                    <div key={c.id} className="rounded border border-border px-3 py-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-foreground">
+                          {c.fullName}
+                        </span>
+                        {c.isPrimary ? <Badge tone="neutral">Chính</Badge> : null}
+                      </div>
+                      <p className="mt-0.5 text-muted">
+                        {c.jobTitle || "—"} · SĐT: {c.phone || "—"} · Email: {c.email || "—"}
                       </p>
                     </div>
                   ))}
-                  {!extra.contacts.length ? <p className="py-6 text-center text-sm text-muted">Chưa có liên hệ.</p> : null}
+                  {!extra.contacts.length ? <p className="py-6 text-center text-xs text-muted">Chưa có liên hệ bổ sung.</p> : null}
                 </div>
               </TabsContent>
               <TabsContent value="activity">
-                <div className="flex justify-end gap-2 pt-3">
+                <div className="flex justify-end gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => setActivityOpen(true)}>
                     Ghi hoạt động
                   </Button>
@@ -209,25 +209,26 @@ export function CustomerWorkspace({ id }: { id: string }) {
                     Tạo việc
                   </Button>
                 </div>
-                <div className="mt-3 grid gap-4 lg:grid-cols-2">
+                <div className="mt-2.5 grid gap-3 lg:grid-cols-2">
                   <ActivityPanel tasks={customerTasks} activities={extra.activities} />
                   <div>
-                    <h2 className="text-sm font-semibold">Công việc</h2>
-                    <div className="mt-2 space-y-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Công việc cần xử lý</h2>
+                    <div className="mt-2 space-y-1.5">
                       {customerTasks.map((task) => (
-                        <div key={task.id} className="rounded border border-border px-3 py-2 text-sm">
-                          <p className="font-medium">{task.title}</p>
-                          <p className="text-xs text-muted">
-                            {task.status} · hạn {formatDateTime(task.dueAt)}
+                        <div key={task.id} className="rounded border border-border px-2.5 py-1.5 text-xs">
+                          <p className="font-medium text-foreground">{task.title}</p>
+                          <p className="text-[11px] text-muted">
+                            Trạng thái: {task.status} · Hạn {formatDateTime(task.dueAt)}
                           </p>
                         </div>
                       ))}
+                      {!customerTasks.length ? <p className="py-4 text-center text-xs text-muted">Chưa có việc.</p> : null}
                     </div>
                   </div>
                 </div>
               </TabsContent>
               <TabsContent value="deals">
-                <div className="flex justify-end pt-3">
+                <div className="flex justify-end pt-2">
                   <Button size="sm" onClick={() => setDealOpen(true)}>
                     <Plus className="h-3.5 w-3.5" />
                     Tạo cơ hội
@@ -236,7 +237,7 @@ export function CustomerWorkspace({ id }: { id: string }) {
                 <DealsPanel rows={deals} onStageChange={dealsApi.setStage} />
               </TabsContent>
               <TabsContent value="sales">
-                <div className="space-y-4 pt-3">
+                <div className="space-y-3 pt-2">
                   <div className="flex justify-end">
                     <Button size="sm" onClick={() => setQuoteOpen(true)}>
                       <Plus className="h-3.5 w-3.5" />
@@ -244,24 +245,26 @@ export function CustomerWorkspace({ id }: { id: string }) {
                     </Button>
                   </div>
                   <QuotesPanel rows={quotes} onApprove={quotesApi.approve} onSend={quotesApi.send} toast={toast} />
-                  <h3 className="text-sm font-semibold">Đơn hàng</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted pt-2 border-t border-border">Đơn hàng</h3>
                   {ordersApi.rows.map((o) => (
-                    <div key={o.id} className="flex justify-between rounded border border-border px-3 py-2 text-sm">
-                      <span className="font-mono text-xs">{o.code}</span>
+                    <div key={o.id} className="flex justify-between rounded border border-border px-2.5 py-1.5 text-xs">
+                      <span className="font-mono">{o.code}</span>
                       <span>
                         {o.status} · {formatVnd(o.total)}
                       </span>
                     </div>
                   ))}
-                  <h3 className="text-sm font-semibold">Hợp đồng</h3>
+                  {ordersApi.rows.length === 0 ? <p className="text-xs text-muted">Chưa có đơn hàng.</p> : null}
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted pt-2 border-t border-border">Hợp đồng</h3>
                   {contractsApi.rows.map((c) => (
-                    <div key={c.id} className="flex justify-between rounded border border-border px-3 py-2 text-sm">
-                      <span className="font-mono text-xs">{c.code}</span>
+                    <div key={c.id} className="flex justify-between rounded border border-border px-2.5 py-1.5 text-xs">
+                      <span className="font-mono">{c.code}</span>
                       <span>
                         {c.status} · {formatVnd(c.value)}
                       </span>
                     </div>
                   ))}
+                  {contractsApi.rows.length === 0 ? <p className="text-xs text-muted">Chưa có hợp đồng.</p> : null}
                 </div>
               </TabsContent>
               <TabsContent value="finance">
@@ -271,27 +274,148 @@ export function CustomerWorkspace({ id }: { id: string }) {
                 <DocsPanel customerId={id} documents={extra.documents} onCreated={reloadCustomer} toast={toast} />
               </TabsContent>
               <TabsContent value="audit">
-                <div className="space-y-2 pt-3">
+                <div className="space-y-1.5 pt-2">
                   {extra.audits.map((a) => (
-                    <div key={a.id} className="rounded border border-border px-3 py-2 text-sm">
-                      <p className="font-medium">
+                    <div key={a.id} className="rounded border border-border px-2.5 py-1.5 text-xs">
+                      <p className="font-medium text-foreground">
                         {a.module}/{a.action}
                       </p>
-                      <p className="text-xs text-muted">{formatDateTime(a.createdAt)}</p>
+                      <p className="text-[11px] text-muted">{formatDateTime(a.createdAt)}</p>
                     </div>
                   ))}
-                  {!extra.audits.length ? <p className="py-6 text-center text-sm text-muted">Chưa có audit.</p> : null}
+                  {!extra.audits.length ? <p className="py-6 text-center text-xs text-muted">Chưa có audit.</p> : null}
                 </div>
               </TabsContent>
             </Tabs>
           </section>
+
+          {/* Right Sidebar: Rich, Balanced, Informative */}
           <aside className="space-y-3">
-            <section className="rounded-lg border border-border bg-white p-4">
-              <h2 className="text-sm font-semibold">Thông tin liên hệ</h2>
-              <div className="mt-3 space-y-3 text-sm">
-                <Info icon={UserRound} label="Phụ trách" value={customer.owner.name} />
-                <Info icon={MapPin} label="Địa chỉ" value={customer.address || "Chưa cập nhật"} />
-                <Info icon={Building2} label="Nguồn" value={customer.source} />
+            {/* Card 1: Customer Profile Overview */}
+            <section className="rounded-lg border border-border bg-white p-3.5 space-y-2.5">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+                Hồ sơ khách hàng
+              </h2>
+              <div className="space-y-2 text-xs divide-y divide-border">
+                <div className="pt-1">
+                  <p className="text-[11px] text-muted">Tên doanh nghiệp / Khách hàng</p>
+                  <p className="font-semibold text-foreground text-sm truncate">{customer.name}</p>
+                </div>
+
+                <div className="pt-2 flex justify-between">
+                  <div>
+                    <p className="text-[11px] text-muted">Hình thức</p>
+                    <p className="font-medium text-foreground">
+                      {customer.type === "company" ? "Doanh nghiệp" : "Cá nhân"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] text-muted">Nguồn tiếp cận</p>
+                    <p className="font-medium text-foreground">{customer.source}</p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-between">
+                  <div>
+                    <p className="text-[11px] text-muted">Điện thoại</p>
+                    <p className="font-medium text-foreground">{customer.phone || "—"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] text-muted">Email</p>
+                    <p className="font-medium text-foreground truncate max-w-[150px]">{customer.email || "—"}</p>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <p className="text-[11px] text-muted">Địa chỉ</p>
+                  <p className="font-medium text-foreground leading-snug">{customer.address || "Chưa cập nhật"}</p>
+                </div>
+
+                <div className="pt-2 flex justify-between">
+                  <div>
+                    <p className="text-[11px] text-muted">Người phụ trách</p>
+                    <p className="font-medium text-foreground">{customer.owner.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] text-muted">Ngày tạo</p>
+                    <p className="font-medium text-foreground">{formatDate(customer.createdAt)}</p>
+                  </div>
+                </div>
+
+                {customer.notes ? (
+                  <div className="pt-2">
+                    <p className="text-[11px] text-muted">Ghi chú</p>
+                    <p className="text-muted-foreground whitespace-pre-line text-[11px]">{customer.notes}</p>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            {/* Card 2: Quick Contacts */}
+            <section className="rounded-lg border border-border bg-white p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  Đầu mối liên hệ ({extra.contacts.length})
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setContactOpen(true)} className="h-6 px-1.5 text-xs">
+                  <Plus className="h-3 w-3 mr-0.5" />
+                  Thêm
+                </Button>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                {extra.contacts.slice(0, 3).map((c) => (
+                  <div key={c.id} className="rounded border border-border p-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground">{c.fullName}</span>
+                      {c.isPrimary ? <Badge tone="neutral">Chính</Badge> : null}
+                    </div>
+                    {c.jobTitle ? <p className="text-[11px] text-muted">{c.jobTitle}</p> : null}
+                    <div className="flex items-center gap-3 pt-0.5 text-[11px]">
+                      {c.phone ? (
+                        <a href={`tel:${c.phone}`} className="inline-flex items-center gap-1 text-foreground hover:underline">
+                          <Phone className="h-3 w-3 text-muted" />
+                          {c.phone}
+                        </a>
+                      ) : null}
+                      {c.email ? (
+                        <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 text-foreground hover:underline truncate">
+                          <Mail className="h-3 w-3 text-muted" />
+                          {c.email}
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+                {!extra.contacts.length ? (
+                  <p className="text-xs text-muted italic">Chưa có thông tin đầu mối liên hệ.</p>
+                ) : null}
+              </div>
+            </section>
+
+            {/* Card 3: Financial Summary */}
+            <section className="rounded-lg border border-border bg-white p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  Tài chính & Sổ nợ
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setPaymentOpen(true)} disabled={debt <= 0} className="h-6 px-1.5 text-xs">
+                  Thu nợ
+                </Button>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted">Tổng nợ cần thu:</span>
+                  <span className="font-semibold tabular-nums text-foreground">{formatVnd(debt)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Đã thanh toán:</span>
+                  <span className="font-medium tabular-nums text-foreground">{formatVnd(paidTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Hóa đơn còn nợ:</span>
+                  <span className="font-medium text-foreground">{invoices.filter((i) => i.amount > i.paidAmount).length}</span>
+                </div>
               </div>
             </section>
           </aside>
@@ -310,19 +434,19 @@ export function CustomerWorkspace({ id }: { id: string }) {
 
 function Metric({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "danger" }) {
   return (
-    <div className="border-b border-border px-4 py-3 last:border-b-0 sm:border-r sm:last:border-r-0 xl:border-b-0">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</p>
-      <p className={tone === "danger" ? "mt-1 text-base font-semibold tabular-nums text-danger" : "mt-1 text-base font-semibold tabular-nums"}>{value}</p>
+    <div className="px-3 py-2">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted">{label}</p>
+      <p className={tone === "danger" ? "mt-0.5 text-sm font-bold tabular-nums text-danger" : "mt-0.5 text-sm font-bold tabular-nums text-foreground"}>{value}</p>
     </div>
   );
 }
 function Info({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" />
       <div>
-        <p className="text-xs text-muted">{label}</p>
-        <p className="mt-0.5">{value}</p>
+        <p className="text-[11px] text-muted">{label}</p>
+        <p className="text-xs font-medium text-foreground">{value}</p>
       </div>
     </div>
   );
@@ -330,30 +454,30 @@ function Info({ icon: Icon, label, value }: { icon: typeof MapPin; label: string
 function ActivityPanel({ tasks, activities }: { tasks: ReturnType<typeof useTasks>["all"]; activities: WorkspaceExtra["activities"] }) {
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Hoạt động gần đây</h2>
-        <Clock3 className="h-4 w-4 text-muted" />
+      <div className="flex items-center justify-between pb-1 mb-2 border-b border-border">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Hoạt động gần đây</h2>
+        <Clock3 className="h-3.5 w-3.5 text-muted" />
       </div>
-      <div className="mt-3 space-y-0 border-l border-border pl-3">
+      <div className="space-y-0 border-l border-border pl-3">
         {(activities ?? []).slice(0, 4).map((a) => (
-          <div key={a.id} className="relative pb-3">
-            <i className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-blue-500" />
-            <p className="text-sm font-medium">{a.subject}</p>
-            <p className="text-xs text-muted">
+          <div key={a.id} className="relative pb-2.5">
+            <i className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-neutral-900" />
+            <p className="text-xs font-medium text-foreground">{a.subject}</p>
+            <p className="text-[11px] text-muted">
               {a.type} · {formatDateTime(a.occurredAt)}
             </p>
           </div>
         ))}
         {(tasks ?? []).slice(0, 4).map((task) => (
-          <div key={task.id} className="relative pb-3 last:pb-0">
-            <i className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-emerald-500" />
-            <p className="text-sm font-medium">{task.title}</p>
-            <p className="mt-0.5 text-xs text-muted">
-              {task.status === "done" ? "Đã hoàn thành" : "Hạn"} · {formatDateTime(task.dueAt)}
+          <div key={task.id} className="relative pb-2.5 last:pb-0">
+            <i className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-neutral-400" />
+            <p className="text-xs font-medium text-foreground">{task.title}</p>
+            <p className="text-[11px] text-muted">
+              {task.status === "done" ? "Đã xong" : "Hạn"} · {formatDateTime(task.dueAt)}
             </p>
           </div>
         ))}
-        {!(activities ?? []).length && !(tasks ?? []).length ? <p className="text-sm text-muted">Chưa có hoạt động.</p> : null}
+        {!(activities ?? []).length && !(tasks ?? []).length ? <p className="text-xs text-muted">Chưa có hoạt động.</p> : null}
       </div>
     </section>
   );
@@ -420,36 +544,40 @@ function FinancePanel({ invoices, payments }: { invoices: ReturnType<typeof useF
     </div>
   );
 }
-function DealsPanel({ rows, onStageChange }: { rows: ReturnType<typeof useDeals>["all"]; onStageChange: (id: string, stage: DealStage, reason?: string) => unknown }) {
+function DealsPanel({ rows }: { rows: ReturnType<typeof useDeals>["all"]; onStageChange?: (id: string, stage: DealStage, reason?: string) => unknown }) {
   return (
-    <div className="space-y-2 pt-3">
-      {rows.map((deal) => (
-        <div key={deal.id} className="flex items-center justify-between gap-3 rounded border border-border px-3 py-2.5">
-          <Link href={`/co-hoi/${deal.id}`} className="min-w-0 hover:underline">
-            <p className="truncate text-sm font-medium">{deal.title}</p>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Select
-              className="h-8 w-36 text-xs"
-              value={deal.stage}
-              onChange={(event) => {
-                const stage = event.target.value as DealStage;
-                const reason = stage === "won" || stage === "lost" ? window.prompt("Nhập lý do thắng/thua") || undefined : undefined;
-                if ((stage === "won" || stage === "lost") && !reason) return;
-                void onStageChange(deal.id, stage, reason);
-              }}
-            >
-              {Object.entries(DEAL_STAGE_META).map(([stage, data]) => (
-                <option key={stage} value={stage}>
-                  {data.label}
-                </option>
-              ))}
-            </Select>
-            <span className="shrink-0 text-sm font-semibold">{formatVnd(deal.value)}</span>
+    <div className="space-y-1.5 pt-2">
+      {rows.map((deal) => {
+        const meta = DEAL_STAGE_META[deal.stage] || { label: deal.stage };
+        const isWon = deal.stage === "won";
+        const isLost = deal.stage === "lost";
+        return (
+          <div key={deal.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-3 py-2 text-xs">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Link href={`/co-hoi/${deal.id}`} className="font-semibold text-foreground hover:underline truncate">
+                  {deal.title}
+                </Link>
+                <span className="font-mono text-[11px] text-muted shrink-0">{deal.code}</span>
+              </div>
+              <p className="text-[11px] text-muted mt-0.5">
+                Xác suất: {deal.probability ?? 0}% · Hạn chốt: {formatDate(deal.expectedCloseDate)}
+                {deal.closedReason ? ` · [${isWon ? "Thắng" : isLost ? "Thua" : "Kết quả"}] ${deal.closedReason}` : ""}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge tone="neutral">{meta.label}</Badge>
+              <span className="font-semibold tabular-nums text-foreground">{formatVnd(deal.value)}</span>
+              <Link href={`/co-hoi/${deal.id}`}>
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs">
+                  Chi tiết
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-      ))}
-      {rows.length === 0 ? <p className="py-8 text-center text-sm text-muted">Chưa có cơ hội.</p> : null}
+        );
+      })}
+      {rows.length === 0 ? <p className="py-6 text-center text-xs text-muted">Chưa có cơ hội bán hàng nào.</p> : null}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export function AnalyticsWinLossWidget() {
       <div>
         <div className="flex items-center justify-between pb-2.5 border-b border-border">
           <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-emerald-600" />
+            <Trophy className="h-4 w-4 text-muted" />
             <div>
               <h3 className="text-sm font-semibold text-foreground">
                 Tỷ Lệ Thắng / Thua & Hiệu Quả Bán Hàng
@@ -36,19 +36,19 @@ export function AnalyticsWinLossWidget() {
 
         {/* Stats highlight row */}
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded border border-emerald-200 bg-emerald-50/50 p-2 text-center">
-            <span className="text-[10px] text-emerald-700 font-medium uppercase tracking-wide">
+          <div className="rounded border border-border bg-white p-2 text-center">
+            <span className="text-[10px] text-muted font-medium uppercase tracking-wide">
               Tỷ lệ Thắng
             </span>
-            <p className="text-xl font-bold text-emerald-700 mt-0.5">
+            <p className="text-xl font-bold text-foreground mt-0.5">
               {metrics.winRate}%
             </p>
-            <span className="text-[10px] text-emerald-600">
+            <span className="text-[10px] text-muted">
               {metrics.wonCount} won / {metrics.wonCount + metrics.lostCount} closed
             </span>
           </div>
 
-          <div className="rounded border border-border bg-surface-raised/40 p-2 text-center">
+          <div className="rounded border border-border bg-white p-2 text-center">
             <span className="text-[10px] text-muted font-medium uppercase tracking-wide">
               Doanh Thu Thắng
             </span>
@@ -60,14 +60,14 @@ export function AnalyticsWinLossWidget() {
             </span>
           </div>
 
-          <div className="rounded border border-rose-200 bg-rose-50/50 p-2 text-center">
-            <span className="text-[10px] text-rose-700 font-medium uppercase tracking-wide">
+          <div className="rounded border border-border bg-white p-2 text-center">
+            <span className="text-[10px] text-muted font-medium uppercase tracking-wide">
               Thất Bại (Lost)
             </span>
-            <p className="text-xl font-bold text-rose-700 mt-0.5">
+            <p className="text-xl font-bold text-foreground mt-0.5">
               {metrics.lostCount}
             </p>
-            <span className="text-[10px] text-rose-600 truncate block">
+            <span className="text-[10px] text-muted truncate block">
               Mất: {formatVnd(metrics.lostValue)}
             </span>
           </div>
@@ -103,7 +103,7 @@ export function AnalyticsWinLossWidget() {
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
               <span className="text-[10px] text-muted">Tỷ lệ</span>
-              <span className="text-sm font-bold text-emerald-700">
+              <span className="text-sm font-bold text-foreground">
                 {metrics.winRate}%
               </span>
             </div>
@@ -114,16 +114,16 @@ export function AnalyticsWinLossWidget() {
             <p className="text-[11px] font-semibold text-foreground">Top lý do chốt deal:</p>
             {metrics.winReasons.slice(0, 2).map((r) => (
               <div key={r.name} className="flex items-center justify-between text-[11px]">
-                <span className="text-emerald-700 font-medium truncate max-w-[140px]">
-                  🏆 {r.name}
+                <span className="text-foreground font-medium truncate max-w-[140px]">
+                  [Thắng] {r.name}
                 </span>
                 <span className="text-muted font-mono">{r.count} deal</span>
               </div>
             ))}
             {metrics.lossReasons.slice(0, 2).map((r) => (
               <div key={r.name} className="flex items-center justify-between text-[11px]">
-                <span className="text-rose-700 font-medium truncate max-w-[140px]">
-                  ⚠️ {r.name}
+                <span className="text-muted font-medium truncate max-w-[140px]">
+                  [Thua] {r.name}
                 </span>
                 <span className="text-muted font-mono">{r.count} deal</span>
               </div>

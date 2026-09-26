@@ -78,7 +78,7 @@ export function DealWinLossDialog({
 
       await onConfirm(deal!.id, targetStage!, formattedReason, val);
       toast(
-        isWon ? "Đã ghi nhận cơ hội Thắng 🎉" : "Đã ghi nhận cơ hội Thua",
+        isWon ? "Đã ghi nhận cơ hội Thắng" : "Đã ghi nhận cơ hội Thua",
         "success",
       );
       onOpenChange(false);
@@ -105,7 +105,7 @@ export function DealWinLossDialog({
             Hủy
           </Button>
           <Button
-            variant={isWon ? "primary" : "danger"}
+            variant={isWon ? "primary" : "outline"}
             disabled={submitting}
             onClick={() => void handleConfirm()}
           >
@@ -120,13 +120,7 @@ export function DealWinLossDialog({
     >
       <div className="space-y-3.5 text-xs">
         {/* Deal Info summary */}
-        <div
-          className={`rounded-lg border p-3 ${
-            isWon
-              ? "border-emerald-200 bg-emerald-50/60"
-              : "border-rose-200 bg-rose-50/60"
-          }`}
-        >
+        <div className="rounded-lg border border-border bg-muted-bg/40 p-3">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold text-foreground text-sm">{deal.title}</p>

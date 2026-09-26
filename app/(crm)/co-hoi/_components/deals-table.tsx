@@ -95,12 +95,10 @@ export function DealsTable() {
             <StatusDot color={meta.color} label={meta.label} />
             {parsedReason ? (
               <span
-                className={`text-[10px] font-medium truncate max-w-[150px] ${
-                  r.stage === "won" ? "text-emerald-700" : "text-rose-700"
-                }`}
+                className="text-[10px] font-medium truncate max-w-[150px] text-muted"
                 title={r.closedReason}
               >
-                {r.stage === "won" ? "🏆 " : "⚠️ "}{parsedReason.category}
+                [{r.stage === "won" ? "Thắng" : "Thua"}] {parsedReason.category}
                 {parsedReason.competitor ? ` (${parsedReason.competitor})` : ""}
               </span>
             ) : null}
@@ -157,7 +155,7 @@ export function DealsTable() {
             <>
               <button
                 type="button"
-                className="h-6 w-6 flex items-center justify-center rounded text-emerald-600 hover:bg-emerald-50"
+                className="h-6 w-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-muted-bg"
                 title="Chốt Thắng (Won)"
                 onClick={() => winLoss?.openWinLoss(r, "won")}
               >
@@ -165,7 +163,7 @@ export function DealsTable() {
               </button>
               <button
                 type="button"
-                className="h-6 w-6 flex items-center justify-center rounded text-rose-600 hover:bg-rose-50"
+                className="h-6 w-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-muted-bg"
                 title="Báo Thua (Lost)"
                 onClick={() => winLoss?.openWinLoss(r, "lost")}
               >

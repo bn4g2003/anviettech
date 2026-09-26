@@ -51,7 +51,7 @@ export function DealsPageHeader() {
             )}
             onClick={() => setFilter("viewMode", "analytics")}
           >
-            <PieChart className="h-3.5 w-3.5 text-emerald-600" />
+            <PieChart className="h-3.5 w-3.5" />
             Tỷ lệ Thắng/Thua
           </button>
         </div>

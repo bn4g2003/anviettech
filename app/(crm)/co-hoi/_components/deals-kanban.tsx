@@ -104,15 +104,10 @@ export function DealsKanban() {
 
                       {parsedReason ? (
                         <div
-                          className={cn(
-                            "mt-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight",
-                            d.stage === "won"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-rose-50 text-rose-700 border border-rose-200"
-                          )}
+                          className="mt-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight bg-muted-bg text-foreground border border-border"
                           title={d.closedReason ?? ""}
                         >
-                          {d.stage === "won" ? "🏆 " : "⚠️ "}{parsedReason.category}
+                          [{d.stage === "won" ? "Thắng" : "Thua"}] {parsedReason.category}
                           {parsedReason.competitor ? ` · ĐT: ${parsedReason.competitor}` : ""}
                         </div>
                       ) : null}

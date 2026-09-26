@@ -181,44 +181,53 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
 
   return (
     <main className="min-h-0 flex-1 overflow-auto bg-surface">
-      <div className="mx-auto max-w-6xl p-4 lg:p-6">
-        <button
-          type="button"
-          onClick={() => router.push(meta.back)}
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại {meta.label}
-        </button>
-        <section className="rounded-xl border border-border bg-white p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-900 text-white">
-                <Icon className="h-5 w-5" />
+      <div className="mx-auto max-w-7xl p-3 lg:p-4 space-y-3">
+        {/* Top Breadcrumb Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-white px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => router.push(meta.back)}
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground shrink-0"
+              title={`Quay lại ${meta.label}`}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>{meta.label}</span>
+            </button>
+            <span className="text-muted text-xs">/</span>
+            <h1 className="text-sm font-semibold truncate text-foreground">{title}</h1>
+          </div>
+          <Badge tone="neutral">
+            {kind === "task"
+              ? record.status
+              : kind === "deal"
+                ? `${record.probability}% xác suất`
+                : kind === "quote" || kind === "contract"
+                  ? record.status
+                  : record.status}
+          </Badge>
+        </div>
+
+        <section className="rounded-lg border border-border bg-white p-3.5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-neutral-900 text-white">
+                <Icon className="h-4 w-4" />
               </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
                   {meta.label}
                 </p>
-                <h1 className="mt-0.5 text-xl font-semibold">{title}</h1>
-                <p className="mt-1 text-sm text-muted">
+                <h2 className="mt-0.5 text-base font-semibold truncate text-foreground">{title}</h2>
+                <p className="text-xs text-muted">
                   {kind === "customer"
                     ? `${record.code} · ${record.contactName ?? "Chưa có đầu mối"}`
                     : customer?.name ?? "Bản ghi nghiệp vụ"}
                 </p>
               </div>
             </div>
-            <Badge tone="info">
-              {kind === "task"
-                ? record.status
-                : kind === "deal"
-                  ? `${record.probability}% xác suất`
-                  : kind === "quote" || kind === "contract"
-                    ? record.status
-                    : record.status}
-            </Badge>
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 md:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 md:grid-cols-4">
             {kind === "customer" ? (
               <>
                 <Info label="Điện thoại" value={record.phone} />
@@ -245,28 +254,21 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
                 />
                 <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
                 {record.closedReason ? (
-                  <div
-                    className={`col-span-2 md:col-span-4 rounded-md border p-3 text-xs ${
-                      record.stage === "won"
-                        ? "border-emerald-200 bg-emerald-50/70 text-emerald-950"
-                        : "border-rose-200 bg-rose-50/70 text-rose-950"
-                    }`}
-                  >
+                  <div className="col-span-2 md:col-span-4 rounded-md border border-border bg-muted-bg/40 p-3 text-xs text-foreground">
                     <p className="font-semibold text-sm">
-                      {record.stage === "won" ? "🏆 Kết quả Thắng" : "⚠️ Kết quả Thua"}:{" "}
-                      {parsedReason?.category || "Đã chốt kết quả"}
+                      Kết quả: {record.stage === "won" ? "Thắng (Won)" : "Thua (Lost)"} — {parsedReason?.category || "Đã chốt kết quả"}
                     </p>
                     {parsedReason?.notes ? (
-                      <p className="mt-1 text-xs opacity-90">{parsedReason.notes}</p>
+                      <p className="mt-1 text-xs text-muted">{parsedReason.notes}</p>
                     ) : null}
                     {parsedReason?.competitor ? (
-                      <p className="mt-0.5 text-xs opacity-85">
-                        <span className="font-medium">Đối thủ cạnh tranh:</span> {parsedReason.competitor}
+                      <p className="mt-0.5 text-xs text-muted">
+                        <span className="font-medium text-foreground">Đối thủ cạnh tranh:</span> {parsedReason.competitor}
                       </p>
                     ) : null}
                     {parsedReason?.actualValue ? (
-                      <p className="mt-0.5 text-xs opacity-85">
-                        <span className="font-medium">Giá trị chốt thực tế:</span> {formatVnd(parsedReason.actualValue)}
+                      <p className="mt-0.5 text-xs text-muted">
+                        <span className="font-medium text-foreground">Giá trị chốt thực tế:</span> {formatVnd(parsedReason.actualValue)}
                       </p>
                     ) : null}
                   </div>
@@ -359,23 +361,23 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
         ) : null}
 
         {kind === "task" ? (
-          <section className="mt-4 rounded-xl border border-border bg-white p-4">
-            <h2 className="font-medium">Ghi chú</h2>
-            <p className="mt-2 text-sm text-muted">
+          <section className="rounded-lg border border-border bg-white p-3.5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Ghi chú</h2>
+            <p className="mt-1 text-xs text-foreground">
               {record.notes || "Chưa có ghi chú."}
             </p>
           </section>
         ) : (
           <Tabs
             defaultValue="deals"
-            className="mt-4 rounded-xl border border-border bg-white p-4"
+            className="rounded-lg border border-border bg-white p-3.5"
           >
-            <TabsList>
-              <TabsTrigger value="deals">Cơ hội ({relatedDeals.length})</TabsTrigger>
-              <TabsTrigger value="tasks">Công việc ({relatedTasks.length})</TabsTrigger>
-              <TabsTrigger value="quotes">Báo giá ({relatedQuotes.length})</TabsTrigger>
-              <TabsTrigger value="contracts">HĐ ({relatedContracts.length})</TabsTrigger>
-              {kind === "deal" ? <TabsTrigger value="remarketing">Chăm sóc ({activities.rows.length})</TabsTrigger> : null}
+            <TabsList className="h-8">
+              <TabsTrigger value="deals" className="text-xs px-2.5">Cơ hội ({relatedDeals.length})</TabsTrigger>
+              <TabsTrigger value="tasks" className="text-xs px-2.5">Công việc ({relatedTasks.length})</TabsTrigger>
+              <TabsTrigger value="quotes" className="text-xs px-2.5">Báo giá ({relatedQuotes.length})</TabsTrigger>
+              <TabsTrigger value="contracts" className="text-xs px-2.5">HĐ ({relatedContracts.length})</TabsTrigger>
+              {kind === "deal" ? <TabsTrigger value="remarketing" className="text-xs px-2.5">Chăm sóc ({activities.rows.length})</TabsTrigger> : null}
             </TabsList>
             <TabsContent value="deals">
               <RelatedList

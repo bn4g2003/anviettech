@@ -1,6 +1,6 @@
-import { RecordDetailPage } from "@/components/detail/record-detail-page";
+import { DealWorkspace } from "./_components/deal-workspace";
 
 export default async function DealDetailRoute({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <RecordDetailPage kind="deal" id={id} />;
+  return <DealWorkspace id={id} />;
 }

@@ -142,19 +142,17 @@ export function DealDetailDrawer() {
             <Button
               variant="outline"
               size="sm"
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
               onClick={() => winLoss?.openWinLoss(deal, "won")}
             >
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-muted" />
               Chốt Thắng
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="border-rose-300 text-rose-700 hover:bg-rose-50"
               onClick={() => winLoss?.openWinLoss(deal, "lost")}
             >
-              <XCircle className="h-3.5 w-3.5 mr-1" />
+              <XCircle className="h-3.5 w-3.5 mr-1 text-muted" />
               Báo Thua
             </Button>
           </>
@@ -162,29 +160,29 @@ export function DealDetailDrawer() {
       </div>
 
       {deal.stage === "won" ? (
-        <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-xs">
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-800 text-sm">
-            <Trophy className="h-4 w-4 text-emerald-600" />
+        <div className="mb-3 rounded-lg border border-border bg-muted-bg/40 p-3 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm">
+            <Trophy className="h-4 w-4 text-muted" />
             <span>KẾT QUẢ: THẮNG DỰ ÁN (WON)</span>
           </div>
-          <div className="mt-2 space-y-1 text-emerald-900">
+          <div className="mt-2 space-y-1 text-foreground">
             <p><span className="font-semibold">Lý do thắng:</span> {parsedReason?.category || "—"}</p>
             {parsedReason?.notes ? <p><span className="font-semibold">Chi tiết:</span> {parsedReason.notes}</p> : null}
             {parsedReason?.actualValue ? <p><span className="font-semibold">Giá trị chốt thực tế:</span> {formatVnd(parsedReason.actualValue)}</p> : null}
-            <p className="text-[11px] text-emerald-700 pt-1">Cập nhật kết quả: {formatDateTime(deal.updatedAt)}</p>
+            <p className="text-[11px] text-muted pt-1">Cập nhật kết quả: {formatDateTime(deal.updatedAt)}</p>
           </div>
         </div>
       ) : deal.stage === "lost" ? (
-        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50/70 p-3 text-xs">
-          <div className="flex items-center gap-1.5 font-semibold text-rose-800 text-sm">
-            <XCircle className="h-4 w-4 text-rose-600" />
+        <div className="mb-3 rounded-lg border border-border bg-muted-bg/40 p-3 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm">
+            <XCircle className="h-4 w-4 text-muted" />
             <span>KẾT QUẢ: THUA DỰ ÁN (LOST)</span>
           </div>
-          <div className="mt-2 space-y-1 text-rose-900">
+          <div className="mt-2 space-y-1 text-foreground">
             <p><span className="font-semibold">Lý do thua:</span> {parsedReason?.category || "—"}</p>
             {parsedReason?.notes ? <p><span className="font-semibold">Chi tiết:</span> {parsedReason.notes}</p> : null}
             {parsedReason?.competitor ? <p><span className="font-semibold">Đối thủ cạnh tranh:</span> {parsedReason.competitor}</p> : null}
-            <p className="text-[11px] text-rose-700 pt-1">Cập nhật kết quả: {formatDateTime(deal.updatedAt)}</p>
+            <p className="text-[11px] text-muted pt-1">Cập nhật kết quả: {formatDateTime(deal.updatedAt)}</p>
           </div>
         </div>
       ) : null}

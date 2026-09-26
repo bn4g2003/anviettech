@@ -163,9 +163,9 @@ export function calculateWinLossMetrics(deals: Deal[]): WinLossMetrics {
     .sort((a, b) => b.count - a.count);
 
   const pieData = [
-    { name: "Thắng (Won)", value: wonCount, color: "#16a34a", amount: wonValue },
-    { name: "Thua (Lost)", value: lostCount, color: "#dc2626", amount: lostValue },
-    { name: "Đang xử lý (Open)", value: openCount, color: "#2563eb", amount: openValue },
+    { name: "Thắng (Won)", value: wonCount, color: "#171717", amount: wonValue },
+    { name: "Thua (Lost)", value: lostCount, color: "#737373", amount: lostValue },
+    { name: "Đang xử lý (Open)", value: openCount, color: "#d4d4d4", amount: openValue },
   ].filter((item) => item.value > 0);
 
   return {

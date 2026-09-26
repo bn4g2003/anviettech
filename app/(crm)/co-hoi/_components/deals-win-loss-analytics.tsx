@@ -43,17 +43,17 @@ export function DealsWinLossAnalytics() {
       {/* KPI Cards Row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {/* Win Rate */}
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3.5 shadow-2xs">
+        <div className="rounded-lg border border-border bg-white p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-800">
+            <span className="text-xs font-medium text-muted">
               Tỷ lệ Thắng (Win Rate)
             </span>
-            <Trophy className="h-4 w-4 text-emerald-600" />
+            <Trophy className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">
+          <p className="mt-2 text-2xl font-bold text-foreground">
             {metrics.winRate}%
           </p>
-          <p className="mt-0.5 text-[11px] text-emerald-600">
+          <p className="mt-0.5 text-[11px] text-muted">
             {metrics.wonCount} thắng / {metrics.wonCount + metrics.lostCount} đã chốt
           </p>
         </div>
@@ -64,7 +64,7 @@ export function DealsWinLossAnalytics() {
             <span className="text-xs font-medium text-muted">
               Doanh thu Thắng
             </span>
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
+            <TrendingUp className="h-4 w-4 text-muted" />
           </div>
           <p className="mt-2 text-xl font-bold text-foreground truncate">
             {formatVnd(metrics.wonValue)}
@@ -75,17 +75,17 @@ export function DealsWinLossAnalytics() {
         </div>
 
         {/* Lost Deals */}
-        <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-3.5 shadow-2xs">
+        <div className="rounded-lg border border-border bg-white p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-rose-800">
+            <span className="text-xs font-medium text-muted">
               Cơ hội Thất bại (Lost)
             </span>
-            <XCircle className="h-4 w-4 text-rose-600" />
+            <XCircle className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-rose-700">
+          <p className="mt-2 text-2xl font-bold text-foreground">
             {metrics.lostCount}
           </p>
-          <p className="mt-0.5 text-[11px] text-rose-600 truncate">
+          <p className="mt-0.5 text-[11px] text-muted truncate">
             Giá trị mất: {formatVnd(metrics.lostValue)}
           </p>
         </div>
@@ -96,9 +96,9 @@ export function DealsWinLossAnalytics() {
             <span className="text-xs font-medium text-muted">
               Đang chăm sóc (Open)
             </span>
-            <Clock className="h-4 w-4 text-blue-600" />
+            <Clock className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-blue-600">
+          <p className="mt-2 text-2xl font-bold text-foreground">
             {metrics.openCount}
           </p>
           <p className="mt-0.5 text-[11px] text-muted truncate">
@@ -112,7 +112,7 @@ export function DealsWinLossAnalytics() {
             <span className="text-xs font-medium text-muted">
               Chuyển đổi Phễu
             </span>
-            <Percent className="h-4 w-4 text-primary" />
+            <Percent className="h-4 w-4 text-muted" />
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground">
             {metrics.pipelineRate}%
@@ -172,7 +172,7 @@ export function DealsWinLossAnalytics() {
               {/* Centered Win Rate Badge */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="text-xs text-muted">Tỷ lệ thắng</span>
-                <span className="text-lg font-bold text-emerald-700">
+                <span className="text-lg font-bold text-foreground">
                   {metrics.winRate}%
                 </span>
               </div>
@@ -215,7 +215,7 @@ export function DealsWinLossAnalytics() {
         <div className="rounded-lg border border-border bg-white p-4 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 pb-2.5 border-b border-border">
-              <BarChart3 className="h-4 w-4 text-emerald-600" />
+              <BarChart3 className="h-4 w-4 text-muted" />
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
                   Phân Tích Lý Do Thắng ({metrics.wonCount} deal)
@@ -240,7 +240,7 @@ export function DealsWinLossAnalytics() {
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted-bg">
                       <div
-                        className="h-full rounded-full bg-emerald-600"
+                        className="h-full rounded-full bg-neutral-800"
                         style={{ width: `${r.percentage}%` }}
                       />
                     </div>
@@ -254,7 +254,7 @@ export function DealsWinLossAnalytics() {
             </div>
           </div>
           <div className="pt-2 border-t border-border text-[11px] text-muted">
-            💡 Tận dụng điểm mạnh giá và chất lượng để nhân bản cho các khách hàng mới.
+            Ghi chú: Tận dụng điểm mạnh giá và chất lượng để nhân bản cho các khách hàng mới.
           </div>
         </div>
 
@@ -262,7 +262,7 @@ export function DealsWinLossAnalytics() {
         <div className="rounded-lg border border-border bg-white p-4 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 pb-2.5 border-b border-border">
-              <BarChart3 className="h-4 w-4 text-rose-600" />
+              <BarChart3 className="h-4 w-4 text-muted" />
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
                   Phân Tích Lý Do Thua ({metrics.lostCount} deal)
@@ -287,7 +287,7 @@ export function DealsWinLossAnalytics() {
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted-bg">
                       <div
-                        className="h-full rounded-full bg-rose-600"
+                        className="h-full rounded-full bg-neutral-500"
                         style={{ width: `${r.percentage}%` }}
                       />
                     </div>
@@ -301,7 +301,7 @@ export function DealsWinLossAnalytics() {
             </div>
           </div>
           <div className="pt-2 border-t border-border text-[11px] text-muted">
-            🔍 Rà soát lý do mất về đối thủ hoặc giá cao để tối ưu chính sách báo giá.
+            Ghi chú: Rà soát lý do mất về đối thủ hoặc giá cao để tối ưu chính sách báo giá.
           </div>
         </div>
       </div>
