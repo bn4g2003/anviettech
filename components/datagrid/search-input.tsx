@@ -18,7 +18,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
     ref,
   ) {
     return (
-      <div className={cn("relative flex items-center", className)}>
+      <div className={cn("relative flex items-center shrink-0", className)}>
         <Search className="pointer-events-none absolute left-2 h-3.5 w-3.5 text-muted" />
         <input
           ref={ref}

@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/cn";
 import { Select } from "@/components/ui/select";
 import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
@@ -23,7 +24,7 @@ export function OwnerLookup({
   const owners = useOwners();
   return (
     <Select
-      className={className}
+      className={cn("w-auto min-w-[130px] max-w-[190px] shrink-0 text-xs", className)}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}

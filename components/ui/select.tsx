@@ -111,7 +111,7 @@ export function Select({
           variant="outline"
           size="sm"
           disabled={disabled}
-          className={cn("w-full justify-between gap-2 text-left font-normal", className)}
+          className={cn("w-auto min-w-[110px] shrink-0 justify-between gap-2 text-left font-normal", className)}
           aria-label={ariaLabel}
           aria-haspopup="listbox"
         >
@@ -123,7 +123,7 @@ export function Select({
         <Popover.Content
           align="start"
           sideOffset={4}
-          className="z-[60] w-[var(--radix-popover-trigger-width)] rounded-md border border-border bg-white p-1.5 shadow-lg"
+          className="z-[60] min-w-[240px] w-[max(var(--radix-popover-trigger-width),240px)] max-w-[380px] rounded-md border border-border bg-white p-1.5 shadow-lg"
         >
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />

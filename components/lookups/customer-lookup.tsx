@@ -26,7 +26,7 @@ export function CustomerLookup({
 
   return (
     <Select
-      className={cn("w-36 max-w-[150px] truncate text-xs", className)}
+      className={cn("w-auto min-w-[130px] max-w-[200px] shrink-0 text-xs", className)}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
