@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { productsService } from "@/features/products/services/products-service";
 import { inventoryService } from "@/features/inventory/services/inventory-service";
+import { DEFAULT_PRODUCT_CATEGORIES } from "@/features/products/constants";
 import type { Product, ProductInput } from "@/features/products/types";
 
 export function useProducts(filters?: { query?: string; status?: string; category?: string }) {
   const [rows, setRows] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [stock, setStock] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +19,9 @@ export function useProducts(filters?: { query?: string; status?: string; categor
         productsService.list({ search: filters?.query, status: filters?.status }),
         inventoryService.listLevels().catch(() => []),
       ]);
-      const list = (Array.isArray(rawList) ? rawList : []).filter((p) => !filters?.category || p.category === filters.category);
+      const fullList = Array.isArray(rawList) ? rawList : [];
+      setAllProducts(fullList);
+      const list = fullList.filter((p) => !filters?.category || p.category === filters.category);
       setRows(list);
       const map: Record<string, number> = {};
       for (const level of levels ?? []) map[level.productId] = level.qty;
@@ -25,6 +29,7 @@ export function useProducts(filters?: { query?: string; status?: string; categor
     } catch (err) {
       console.error("Error loading products:", err);
       setRows([]);
+      setAllProducts([]);
       setStock({});
     } finally {
       setLoading(false);
@@ -35,11 +40,16 @@ export function useProducts(filters?: { query?: string; status?: string; categor
     void reload();
   }, [reload]);
 
-  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+  const byId = useMemo(() => new Map(allProducts.map((r) => [r.id, r])), [allProducts]);
+
+  const categories = useMemo(() => {
+    const list = allProducts.map((p) => p.category).filter(Boolean) as string[];
+    return Array.from(new Set([...DEFAULT_PRODUCT_CATEGORIES, ...list]));
+  }, [allProducts]);
 
   return {
     rows,
-    all: rows,
+    all: allProducts,
     loading,
     reload,
     getById: (id: string) => byId.get(id),
@@ -62,6 +72,6 @@ export function useProducts(filters?: { query?: string; status?: string; categor
       await productsService.removeMany(ids);
       await reload();
     },
-    categories: [...new Set(rows.map((p) => p.category).filter(Boolean))] as string[],
+    categories,
   };
 }

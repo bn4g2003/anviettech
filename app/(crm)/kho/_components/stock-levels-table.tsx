@@ -67,6 +67,9 @@ export function StockLevelsTable() {
       if (list.sortKey === "name") {
         return (a.product?.name ?? "").localeCompare(b.product?.name ?? "", "vi") * dir;
       }
+      if (list.sortKey === "category") {
+        return (a.product?.category ?? "").localeCompare(b.product?.category ?? "", "vi") * dir;
+      }
       return 0;
     });
   }, [filtered, list.sortKey, list.sortDir]);
@@ -104,6 +107,7 @@ export function StockLevelsTable() {
     {
       id: "category",
       header: "Danh mục",
+      sortable: true,
       cell: (r) => <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap">{r.product?.category || "—"}</span>,
     },
     {

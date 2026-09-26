@@ -13,7 +13,7 @@ import type { ProductItemType, ProductStatus } from "@/features/products/types";
 const empty = {
   sku: "",
   name: "",
-  category: "Thiết bị điện",
+  category: "Thiết bị điện chính",
   unit: "cái",
   unitPrice: 0,
   costPrice: 0,
@@ -31,6 +31,7 @@ export function ProductFormDialog() {
   const open = list.createOpen || !!list.editId;
   const editing = list.editId ? getById(list.editId) : null;
   const [form, setForm] = useState(empty);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
 
   useEffect(() => {
     if (editing) {
@@ -47,10 +48,12 @@ export function ProductFormDialog() {
         itemType: editing.itemType,
         description: editing.description ?? "",
       });
+      setIsCustomCategory(Boolean(editing.category && !categories.includes(editing.category)));
     } else if (list.createOpen) {
       setForm(empty);
+      setIsCustomCategory(false);
     }
-  }, [editing, list.createOpen]);
+  }, [editing, list.createOpen, categories]);
 
   function close() {
     list.setCreateOpen(false);
@@ -68,10 +71,15 @@ export function ProductFormDialog() {
       toast("Vui lòng nhập tên sản phẩm", "error");
       return;
     }
+    const trimmedCategory = form.category.trim();
+    if (!trimmedCategory) {
+      toast("Vui lòng chọn hoặc nhập danh mục sản phẩm", "error");
+      return;
+    }
     const payload = {
       sku: form.sku.trim(),
       name: form.name.trim(),
-      category: form.category,
+      category: trimmedCategory,
       unit: form.unit,
       unitPrice: Number(form.unitPrice) || 0,
       costPrice: Number(form.costPrice) || 0,
@@ -160,20 +168,47 @@ export function ProductFormDialog() {
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
         </label>
-        <label className="space-y-1 text-xs">
-          <span className="text-muted">Danh mục</span>
-          <Select
-            className="w-full"
-            value={form.category}
-            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-          >
-            {categoryOptions.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </Select>
-        </label>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-muted">Danh mục</span>
+            <button
+              type="button"
+              onClick={() => setIsCustomCategory((prev) => !prev)}
+              className="text-[11px] text-primary hover:underline cursor-pointer"
+            >
+              {isCustomCategory ? "Chọn từ danh sách" : "+ Nhập danh mục mới"}
+            </button>
+          </div>
+          {isCustomCategory ? (
+            <Input
+              placeholder="Nhập tên danh mục..."
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              autoFocus
+            />
+          ) : (
+            <Select
+              className="w-full"
+              value={form.category}
+              onChange={(e) => {
+                if (e.target.value === "__NEW__") {
+                  setIsCustomCategory(true);
+                  setForm((f) => ({ ...f, category: "" }));
+                } else {
+                  setForm((f) => ({ ...f, category: e.target.value }));
+                }
+              }}
+            >
+              <option value="">-- Chọn danh mục --</option>
+              {categoryOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              <option value="__NEW__">+ Nhập danh mục mới...</option>
+            </Select>
+          )}
+        </div>
         <label className="space-y-1 text-xs">
           <span className="text-muted">Đơn vị</span>
           <Input
