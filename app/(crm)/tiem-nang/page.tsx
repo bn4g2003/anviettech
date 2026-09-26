@@ -15,13 +15,14 @@ import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { LEAD_SOURCE_OPTIONS } from "@/features/leads/source-options";
 import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
+import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { SearchInput } from "@/components/datagrid/search-input";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 import { StatusDot } from "@/components/ui/status-dot";
 import { CheckCircle2, XCircle, UserCheck, RefreshCw, Target, Filter, ArrowUpDown } from "lucide-react";
-import { relativeTime } from "@/features/shared/utils/date";
+import { isDateInRange, relativeTime } from "@/features/shared/utils/date";
 
 type Lead = {
   id: string;
@@ -72,6 +73,8 @@ export default function TiemNangPage() {
   const [status, setStatus] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [error, setError] = useState("");
 
   const [page, setPage] = useState(1);
@@ -235,8 +238,11 @@ export default function TiemNangPage() {
     if (sourceFilter) {
       list = list.filter((r) => r.source === sourceFilter);
     }
+    if (fromDate || toDate) {
+      list = list.filter((r) => isDateInRange(r.createdAt, fromDate, toDate));
+    }
     return list;
-  }, [rows, query, sourceFilter]);
+  }, [rows, query, sourceFilter, fromDate, toDate]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
@@ -454,6 +460,15 @@ export default function TiemNangPage() {
               value={ownerFilter}
               onChange={(v) => {
                 setOwnerFilter(v);
+                setPage(1);
+              }}
+            />
+            <DateRangeFilter
+              fromDate={fromDate}
+              toDate={toDate}
+              onChange={(from, to) => {
+                setFromDate(from);
+                setToDate(to);
                 setPage(1);
               }}
             />

@@ -9,7 +9,7 @@ import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useFinance } from "@/features/finance/hooks/use-finance";
 import type { Invoice } from "@/features/finance/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
-import { formatDate } from "@/features/shared/utils/date";
+import { formatDate, isDateInRange } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { Banknote, Receipt } from "lucide-react";
 import { useMemo } from "react";
@@ -31,6 +31,11 @@ export function InvoicesTable() {
     }
     if (list.filters.invoiceStatus) {
       result = result.filter((i) => i.status === list.filters.invoiceStatus);
+    }
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((i) =>
+        isDateInRange(i.dueDate || i.createdAt, list.filters.fromDate, list.filters.toDate),
+      );
     }
     if (!list.sortKey) return result;
     const dir = list.sortDir === "asc" ? 1 : -1;
@@ -56,7 +61,7 @@ export function InvoicesTable() {
       const bv = String((b as Record<string, unknown>)[list.sortKey] ?? "");
       return av.localeCompare(bv, "vi") * dir;
     });
-  }, [invoices, list.sortKey, list.sortDir, list.filters.customerId, list.filters.invoiceStatus, getCustomer]);
+  }, [invoices, list.sortKey, list.sortDir, list.filters.customerId, list.filters.invoiceStatus, list.filters.fromDate, list.filters.toDate, getCustomer]);
 
   const pageRows = list.paginate(sorted);
 

@@ -9,7 +9,7 @@ import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useDeals } from "@/features/deals/hooks/use-deals";
 import { DEAL_STAGE_META, type Deal, type DealStage } from "@/features/deals/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
-import { formatDate, relativeTime } from "@/features/shared/utils/date";
+import { formatDate, isDateInRange, relativeTime } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useWinLoss } from "./win-loss-context";
@@ -33,19 +33,27 @@ export function DealsTable() {
   });
 
   const filtered = useMemo(() => {
-    if (!list.query.trim()) return rows;
-    const q = list.query.toLowerCase().trim();
-    return rows.filter((r) => {
-      const c = getCustomer(r.customerId);
-      return (
-        r.title.toLowerCase().includes(q) ||
-        r.code.toLowerCase().includes(q) ||
-        (c?.name && c.name.toLowerCase().includes(q)) ||
-        (c?.phone && c.phone.includes(q)) ||
-        (r.notes && r.notes.toLowerCase().includes(q))
+    let result = rows;
+    if (list.query.trim()) {
+      const q = list.query.toLowerCase().trim();
+      result = result.filter((r) => {
+        const c = getCustomer(r.customerId);
+        return (
+          r.title.toLowerCase().includes(q) ||
+          r.code.toLowerCase().includes(q) ||
+          (c?.name && c.name.toLowerCase().includes(q)) ||
+          (c?.phone && c.phone.includes(q)) ||
+          (r.notes && r.notes.toLowerCase().includes(q))
+        );
+      });
+    }
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((r) =>
+        isDateInRange(r.expectedCloseDate || r.createdAt, list.filters.fromDate, list.filters.toDate),
       );
-    });
-  }, [rows, list.query, getCustomer]);
+    }
+    return result;
+  }, [rows, list.query, list.filters.fromDate, list.filters.toDate, getCustomer]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

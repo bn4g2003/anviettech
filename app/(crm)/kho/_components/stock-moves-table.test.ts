@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { businessContextLabel, filterStockMoves } from "./stock-moves-table";
 
 const moves = [
-  { id: "in", code: "PN-01", type: "in", status: "posted", supplierId: "supplier-1", customerId: undefined, projectId: undefined, owner: { id: "user-1", name: "Kho" }, lines: [] },
-  { id: "out", code: "PX-01", type: "out", status: "posted", supplierId: undefined, customerId: undefined, projectId: "project-1", owner: { id: "user-1", name: "Kho" }, lines: [] },
-  { id: "sale", code: "PX-02", type: "out", status: "draft", supplierId: undefined, customerId: "customer-1", projectId: undefined, owner: { id: "user-2", name: "Kinh doanh" }, lines: [] },
+  { id: "in", code: "PN-01", type: "in", status: "posted", supplierId: "supplier-1", customerId: undefined, projectId: undefined, owner: { id: "user-1", name: "Kho" }, createdAt: "2026-09-10T10:00:00Z", lines: [] },
+  { id: "out", code: "PX-01", type: "out", status: "posted", supplierId: undefined, customerId: undefined, projectId: "project-1", owner: { id: "user-1", name: "Kho" }, createdAt: "2026-09-15T10:00:00Z", lines: [] },
+  { id: "sale", code: "PX-02", type: "out", status: "draft", supplierId: undefined, customerId: "customer-1", projectId: undefined, owner: { id: "user-2", name: "Kinh doanh" }, createdAt: "2026-09-20T10:00:00Z", lines: [] },
 ] as never[];
 
 describe("filterStockMoves", () => {
@@ -12,6 +12,19 @@ describe("filterStockMoves", () => {
     expect(filterStockMoves(moves, "in", { supplierId: "supplier-1" }, "").map((move) => move.id)).toEqual(["in"]);
     expect(filterStockMoves(moves, "out", { projectId: "project-1" }, "").map((move) => move.id)).toEqual(["out"]);
     expect(filterStockMoves(moves, "out", { customerId: "customer-1" }, "").map((move) => move.id)).toEqual(["sale"]);
+  });
+
+  it("filters stock moves by date range (fromDate, toDate)", () => {
+    expect(
+      filterStockMoves(moves, "out", { fromDate: "2026-09-16", toDate: "2026-09-25" }, "").map(
+        (move) => move.id,
+      ),
+    ).toEqual(["sale"]);
+    expect(
+      filterStockMoves(moves, "out", { fromDate: "2026-09-01", toDate: "2026-09-15" }, "").map(
+        (move) => move.id,
+      ),
+    ).toEqual(["out"]);
   });
 });
 

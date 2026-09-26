@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useDeals } from "@/features/deals/hooks/use-deals";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
-import { formatDateTime, relativeTime } from "@/features/shared/utils/date";
+import { formatDateTime, isDateInRange, relativeTime } from "@/features/shared/utils/date";
 import { useTasks } from "@/features/tasks/hooks/use-tasks";
 import type { Task } from "@/features/tasks/types";
 import { TASK_TYPE_LABEL } from "@/features/tasks/types";
@@ -30,15 +30,25 @@ export function TasksTable() {
   const { getById: getCustomer } = useCustomers();
   const { getById: getDeal } = useDeals();
 
+  const filtered = useMemo(() => {
+    let result = rows;
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((r) =>
+        isDateInRange(r.dueAt || r.createdAt, list.filters.fromDate, list.filters.toDate),
+      );
+    }
+    return result;
+  }, [rows, list.filters.fromDate, list.filters.toDate]);
+
   const sorted = useMemo(() => {
-    if (!list.sortKey) return rows;
+    if (!list.sortKey) return filtered;
     const dir = list.sortDir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const av = String((a as Record<string, unknown>)[list.sortKey] ?? "");
       const bv = String((b as Record<string, unknown>)[list.sortKey] ?? "");
       return av.localeCompare(bv, "vi") * dir;
     });
-  }, [rows, list.sortKey, list.sortDir]);
+  }, [filtered, list.sortKey, list.sortDir]);
 
   const pageRows = list.paginate(sorted);
 

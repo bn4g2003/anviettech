@@ -11,6 +11,7 @@ import { useQuotes } from "@/features/quotes/hooks/use-quotes";
 import { inventoryService } from "@/features/inventory/services/inventory-service";
 import type { Order } from "@/features/orders/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
+import { isDateInRange } from "@/features/shared/utils/date";
 import { useToast } from "@/components/ui/toast";
 import { formatVnd } from "@/features/shared/utils/money";
 import { CheckCircle2, ShoppingCart } from "lucide-react";
@@ -35,8 +36,13 @@ export function OrdersTable() {
     if (list.filters.ownerId) {
       result = result.filter((r) => r.owner.id === list.filters.ownerId);
     }
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((r) =>
+        isDateInRange(r.createdAt, list.filters.fromDate, list.filters.toDate),
+      );
+    }
     return result;
-  }, [rows, list.filters.customerId, list.filters.ownerId]);
+  }, [rows, list.filters.customerId, list.filters.ownerId, list.filters.fromDate, list.filters.toDate]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

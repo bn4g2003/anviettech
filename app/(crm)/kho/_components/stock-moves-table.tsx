@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useInventory } from "@/features/inventory/hooks/use-inventory";
 import type { StockMove, StockMoveType } from "@/features/inventory/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
+import { isDateInRange } from "@/features/shared/utils/date";
 import { useToast } from "@/components/ui/toast";
 import { CheckCircle2, Package } from "lucide-react";
 import { useMemo } from "react";
@@ -54,6 +55,9 @@ export function filterStockMoves(
     if (filters.supplierId && move.supplierId !== filters.supplierId) return false;
     if (filters.customerId && move.customerId !== filters.customerId) return false;
     if (filters.projectId && move.projectId !== filters.projectId) return false;
+    if (filters.fromDate || filters.toDate) {
+      if (!isDateInRange(move.createdAt, filters.fromDate, filters.toDate)) return false;
+    }
     if (!term) return true;
     return move.code.toLowerCase().includes(term) || move.lines.some((line) => line.productName.toLowerCase().includes(term));
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
+import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
@@ -69,6 +70,14 @@ export function MarketingFilterBar() {
               </option>
             ))}
           </Select>
+          <DateRangeFilter
+            fromDate={filters.fromDate}
+            toDate={filters.toDate}
+            onChange={(from, to) => {
+              setFilter("fromDate", from);
+              setFilter("toDate", to);
+            }}
+          />
         </>
       }
       actions={

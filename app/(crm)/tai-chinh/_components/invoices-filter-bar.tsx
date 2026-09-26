@@ -1,5 +1,6 @@
 "use client";
 
+import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,14 @@ export function InvoicesFilterBar({ onRefresh }: { onRefresh?: () => void }) {
             <option value="paid">Đã TT</option>
             <option value="cancelled">Đã hủy</option>
           </Select>
+          <DateRangeFilter
+            fromDate={filters.fromDate}
+            toDate={filters.toDate}
+            onChange={(from, to) => {
+              setFilter("fromDate", from);
+              setFilter("toDate", to);
+            }}
+          />
         </>
       }
       actions={

@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useMarketing } from "@/features/marketing/hooks/use-marketing";
 import type { Campaign } from "@/features/marketing/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
-import { formatDate } from "@/features/shared/utils/date";
+import { formatDate, isDateInRange } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Megaphone } from "lucide-react";
@@ -26,10 +26,20 @@ export function CampaignsTable() {
     channel: list.filters.channel,
   });
 
+  const filtered = useMemo(() => {
+    let result = rows;
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((r) =>
+        isDateInRange(r.startDate || r.createdAt, list.filters.fromDate, list.filters.toDate),
+      );
+    }
+    return result;
+  }, [rows, list.filters.fromDate, list.filters.toDate]);
+
   const sorted = useMemo(() => {
-    if (!list.sortKey) return rows;
+    if (!list.sortKey) return filtered;
     const dir = list.sortDir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const key = list.sortKey as keyof Campaign;
       const av = a[key];
       const bv = b[key];
@@ -38,7 +48,7 @@ export function CampaignsTable() {
       }
       return String(av ?? "").localeCompare(String(bv ?? ""), "vi") * dir;
     });
-  }, [rows, list.sortKey, list.sortDir]);
+  }, [filtered, list.sortKey, list.sortDir]);
 
   const pageRows = list.paginate(sorted);
 

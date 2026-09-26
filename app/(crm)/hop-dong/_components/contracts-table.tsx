@@ -10,7 +10,7 @@ import { useQuotes } from "@/features/quotes/hooks/use-quotes";
 import type { Contract } from "@/features/contracts/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
-import { formatDate } from "@/features/shared/utils/date";
+import { formatDate, isDateInRange } from "@/features/shared/utils/date";
 import { Handshake } from "lucide-react";
 import { useMemo } from "react";
 import { ContractStatusBadge } from "./contract-status";
@@ -43,8 +43,13 @@ export function ContractsTable() {
         );
       });
     }
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((r) =>
+        isDateInRange(r.startDate || r.createdAt, list.filters.fromDate, list.filters.toDate),
+      );
+    }
     return result;
-  }, [rows, list.filters.ownerId, list.query, getCustomer]);
+  }, [rows, list.filters.ownerId, list.filters.fromDate, list.filters.toDate, list.query, getCustomer]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

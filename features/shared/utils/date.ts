@@ -66,3 +66,20 @@ export function isSameDay(a: string | Date, b: string | Date): boolean {
     da.getDate() === db.getDate()
   );
 }
+
+/**
+ * Checks whether a date (ISO string or YYYY-MM-DD string) falls within [fromDate, toDate].
+ * fromDate and toDate are expected as YYYY-MM-DD or undefined/empty string.
+ */
+export function isDateInRange(
+  dateIsoOrStr?: string | null,
+  fromDate?: string | null,
+  toDate?: string | null,
+): boolean {
+  if (!fromDate && !toDate) return true;
+  if (!dateIsoOrStr) return false;
+  const itemDate = dateIsoOrStr.slice(0, 10);
+  if (fromDate && itemDate < fromDate) return false;
+  if (toDate && itemDate > toDate) return false;
+  return true;
+}

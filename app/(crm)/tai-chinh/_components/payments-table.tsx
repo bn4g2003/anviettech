@@ -7,7 +7,7 @@ import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useFinance } from "@/features/finance/hooks/use-finance";
 import type { Payment, PaymentMethod } from "@/features/finance/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
-import { formatDateTime } from "@/features/shared/utils/date";
+import { formatDateTime, isDateInRange } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { CreditCard } from "lucide-react";
 import { useMemo } from "react";
@@ -34,6 +34,11 @@ export function PaymentsTable() {
     return payments.filter((p) => {
       if (methodFilter && p.method !== methodFilter) return false;
       if (custFilter && p.customerId !== custFilter) return false;
+      if (list.filters.fromDate || list.filters.toDate) {
+        if (!isDateInRange(p.paidAt || p.createdAt, list.filters.fromDate, list.filters.toDate)) {
+          return false;
+        }
+      }
       if (!q) return true;
       const inv = getInvoice(p.invoiceId);
       const custName = p.customerName || getCustomer(p.customerId)?.name || "";
@@ -43,7 +48,7 @@ export function PaymentsTable() {
         custName.toLowerCase().includes(q)
       );
     });
-  }, [payments, list.query, list.filters.method, list.filters.customerId, getInvoice, getCustomer]);
+  }, [payments, list.query, list.filters.method, list.filters.customerId, list.filters.fromDate, list.filters.toDate, getInvoice, getCustomer]);
 
   const sorted = useMemo(() => {
     const sortKey = list.sortKey || "paidAt";

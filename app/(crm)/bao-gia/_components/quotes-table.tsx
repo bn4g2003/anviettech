@@ -10,7 +10,7 @@ import { useDeals } from "@/features/deals/hooks/use-deals";
 import type { Quote } from "@/features/quotes/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
-import { formatDate } from "@/features/shared/utils/date";
+import { formatDate, isDateInRange } from "@/features/shared/utils/date";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { FileText } from "lucide-react";
 import { useMemo } from "react";
@@ -47,8 +47,13 @@ export function QuotesTable() {
         );
       });
     }
+    if (list.filters.fromDate || list.filters.toDate) {
+      result = result.filter((r) =>
+        isDateInRange(r.createdAt, list.filters.fromDate, list.filters.toDate),
+      );
+    }
     return result;
-  }, [rows, list.filters.ownerId, list.query, getCustomer]);
+  }, [rows, list.filters.ownerId, list.filters.fromDate, list.filters.toDate, list.query, getCustomer]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

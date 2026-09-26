@@ -1,5 +1,6 @@
 "use client";
 
+import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,14 @@ export function StockMovesFilterBar() {
           <ReferenceFilter label="Nhà cung cấp" value={filters.supplierId ?? ""} rows={references.suppliers} onChange={(value) => setFilter("supplierId", value)} />
           <ReferenceFilter label="Khách hàng" value={filters.customerId ?? ""} rows={references.customers} onChange={(value) => setFilter("customerId", value)} />
           <ReferenceFilter label="Công trình" value={filters.projectId ?? ""} rows={references.projects} onChange={(value) => setFilter("projectId", value)} />
+          <DateRangeFilter
+            fromDate={filters.fromDate}
+            toDate={filters.toDate}
+            onChange={(from, to) => {
+              setFilter("fromDate", from);
+              setFilter("toDate", to);
+            }}
+          />
         </>
       }
       actions={
