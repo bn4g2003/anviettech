@@ -32,6 +32,8 @@ export type StockMove = Timestamps & {
   project?: StockMoveReference;
   warehouseFrom?: string;
   warehouseTo?: string;
+  warehouseFromId?: string;
+  warehouseToId?: string;
   owner: OwnerRef;
   lines: StockMoveLine[];
   note?: string;

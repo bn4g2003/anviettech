@@ -7,12 +7,14 @@ import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useProducts } from "@/features/products/hooks/use-products";
+import { useInventory } from "@/features/inventory/hooks/use-inventory";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
 
 const COLUMN_DEFS = [
   { id: "sku", label: "SKU" },
   { id: "name", label: "Sản phẩm" },
   { id: "category", label: "Danh mục" },
+  { id: "warehouse", label: "Kho" },
   { id: "unit", label: "ĐVT" },
   { id: "qty", label: "Tồn kho" },
   { id: "minStock", label: "Tối thiểu" },
@@ -33,6 +35,7 @@ export function StockLevelsFilterBar() {
     toggleSort,
   } = useListPage();
   const { categories } = useProducts();
+  const { warehouses } = useInventory();
 
   return (
     <FilterBar
@@ -44,6 +47,17 @@ export function StockLevelsFilterBar() {
             value={query}
             onChange={setQuery}
           />
+          <Select
+            value={filters.warehouseId ?? ""}
+            onChange={(e) => setFilter("warehouseId", e.target.value)}
+          >
+            <option value="">Tất cả kho</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.code} — {w.name}
+              </option>
+            ))}
+          </Select>
           <Select
             value={filters.category ?? ""}
             onChange={(e) => setFilter("category", e.target.value)}

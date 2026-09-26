@@ -17,6 +17,7 @@ const STOCK_COLUMNS = [
   "sku",
   "name",
   "category",
+  "warehouse",
   "unit",
   "qty",
   "minStock",

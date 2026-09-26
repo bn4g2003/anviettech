@@ -17,6 +17,8 @@ import { Eye } from "lucide-react";
 type StockRow = {
   id: string;
   productId: string;
+  warehouseId?: string;
+  warehouseName?: string;
   qty: number;
   product?: {
     sku: string;
@@ -31,11 +33,59 @@ type StockRow = {
 export function StockLevelsTable() {
   const router = useRouter();
   const list = useListPage();
-  const { levels, loading } = useInventory();
+  const { levels, balances, warehouses, loading } = useInventory();
+
+  const rows: StockRow[] = useMemo(() => {
+    const warehouseId = list.filters.warehouseId;
+    if (warehouseId) {
+      const warehouse = warehouses.find((w) => w.id === warehouseId);
+      const warehouseLabel = warehouse ? `${warehouse.code} — ${warehouse.name}` : "Kho đã chọn";
+      const whBalances = balances.filter((b) => b.warehouseId === warehouseId);
+      return whBalances.map((b) => {
+        const prod = levels.find((l) => l.productId === b.productId)?.product;
+        const qty = Number(b.qty);
+        return {
+          id: `${b.warehouseId}-${b.productId}`,
+          productId: b.productId,
+          warehouseId: b.warehouseId,
+          warehouseName: warehouseLabel,
+          qty,
+          product: prod ?? {
+            sku: b.sku,
+            name: b.productName,
+            minStock: Number(b.minStock),
+            category: "",
+            unit: "",
+            costPrice: 0,
+          },
+        };
+      });
+    }
+
+    return (levels as unknown as { productId: string; qty: number; product?: StockRow["product"] }[]).map((l) => {
+      const pBalances = balances.filter((b) => b.productId === l.productId && Number(b.qty) > 0);
+      let whSummary = "Tất cả kho";
+      if (pBalances.length === 1) {
+        whSummary = pBalances[0].warehouseName || "1 kho";
+      } else if (pBalances.length > 1) {
+        whSummary = `${pBalances.length} kho (${pBalances.map((b) => `${b.warehouseName || b.warehouseCode}: ${b.qty}`).join(", ")})`;
+      } else if (l.qty === 0) {
+        whSummary = "Chưa có tồn";
+      }
+
+      return {
+        id: l.productId,
+        productId: l.productId,
+        warehouseName: whSummary,
+        qty: l.qty,
+        product: l.product,
+      };
+    });
+  }, [list.filters.warehouseId, warehouses, balances, levels]);
 
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
-    return (levels as unknown as StockRow[]).filter((row) => {
+    return rows.filter((row) => {
       const p = row.product;
       if (!p) return false;
       if (list.filters.category && p.category !== list.filters.category) return false;
@@ -46,10 +96,11 @@ export function StockLevelsTable() {
       return (
         p.sku.toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+        p.category.toLowerCase().includes(q) ||
+        (row.warehouseName && row.warehouseName.toLowerCase().includes(q))
       );
     });
-  }, [levels, list.query, list.filters.category, list.filters.stockStatus]);
+  }, [rows, list.query, list.filters.category, list.filters.stockStatus]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;
@@ -69,6 +120,9 @@ export function StockLevelsTable() {
       }
       if (list.sortKey === "category") {
         return (a.product?.category ?? "").localeCompare(b.product?.category ?? "", "vi") * dir;
+      }
+      if (list.sortKey === "warehouse") {
+        return (a.warehouseName ?? "").localeCompare(b.warehouseName ?? "", "vi") * dir;
       }
       return 0;
     });
@@ -109,6 +163,16 @@ export function StockLevelsTable() {
       header: "Danh mục",
       sortable: true,
       cell: (r) => <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap">{r.product?.category || "—"}</span>,
+    },
+    {
+      id: "warehouse",
+      header: "Kho",
+      sortable: true,
+      cell: (r) => (
+        <span className="text-muted text-xs truncate max-w-[180px] block whitespace-nowrap" title={r.warehouseName}>
+          {r.warehouseName || "—"}
+        </span>
+      ),
     },
     {
       id: "unit",

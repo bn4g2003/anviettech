@@ -14,6 +14,18 @@ describe("filterStockMoves", () => {
     expect(filterStockMoves(moves, "out", { customerId: "customer-1" }, "").map((move) => move.id)).toEqual(["sale"]);
   });
 
+  it("filters stock moves by warehouse", () => {
+    const whMoves = [
+      { id: "m1", type: "in", status: "posted", warehouseToId: "wh-1", lines: [] },
+      { id: "m2", type: "in", status: "posted", warehouseToId: "wh-2", lines: [] },
+      { id: "m3", type: "out", status: "posted", warehouseFromId: "wh-1", lines: [] },
+    ] as never[];
+
+    expect(filterStockMoves(whMoves, "in", { warehouseId: "wh-1" }, "").map((m) => m.id)).toEqual(["m1"]);
+    expect(filterStockMoves(whMoves, "in", { warehouseId: "wh-2" }, "").map((m) => m.id)).toEqual(["m2"]);
+    expect(filterStockMoves(whMoves, "out", { warehouseId: "wh-1" }, "").map((m) => m.id)).toEqual(["m3"]);
+  });
+
   it("filters stock moves by date range (fromDate, toDate)", () => {
     expect(
       filterStockMoves(moves, "out", { fromDate: "2026-09-16", toDate: "2026-09-25" }, "").map(

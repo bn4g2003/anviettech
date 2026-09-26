@@ -2,9 +2,16 @@ import { apiFetch, toQuery } from "@/lib/api-client";
 import type { StockLevel, StockMove, StockMoveInput, StockMoveReference } from "@/features/inventory/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
-type ApiBalance = {
-  warehouseId: string; productId: string; sku: string; productName: string;
-  minStock: number | string; qty: number | string; belowMin: boolean;
+export type ApiBalance = {
+  warehouseId: string;
+  warehouseCode?: string;
+  warehouseName?: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  minStock: number | string;
+  qty: number | string;
+  belowMin: boolean;
 };
 
 type ApiMove = {
@@ -45,6 +52,8 @@ async function mapMove(row: ApiMove): Promise<StockMove> {
     project: mapReference(row.projectId, row.projectCode, row.projectName),
     warehouseFrom: mapWarehouseLabel(row.warehouseFromId, row.warehouseFromCode, row.warehouseFromName),
     warehouseTo: mapWarehouseLabel(row.warehouseToId, row.warehouseToCode, row.warehouseToName),
+    warehouseFromId: row.warehouseFromId ?? undefined,
+    warehouseToId: row.warehouseToId ?? undefined,
     owner: ownerByIdSync(row.ownerId ?? "", owners),
     note: row.note ?? undefined,
     lines: (row.lines ?? []).map((l) => ({
@@ -59,11 +68,15 @@ async function mapMove(row: ApiMove): Promise<StockMove> {
 }
 
 export const inventoryService = {
-  async listLevels(): Promise<(StockLevel & { minStock?: number; belowMin?: boolean; productName?: string })[]> {
+  async listBalances(): Promise<ApiBalance[]> {
     const result = await apiFetch<ApiBalance[]>("/api/v1/inventory/balances");
+    return result.data ?? [];
+  },
+  async listLevels(): Promise<(StockLevel & { minStock?: number; belowMin?: boolean; productName?: string })[]> {
+    const rows = await this.listBalances();
     const byProduct = new Map<string, number>();
     const meta = new Map<string, { minStock: number; belowMin: boolean; productName: string }>();
-    for (const row of result.data ?? []) {
+    for (const row of rows) {
       byProduct.set(row.productId, (byProduct.get(row.productId) ?? 0) + Number(row.qty));
       meta.set(row.productId, {
         minStock: Number(row.minStock),

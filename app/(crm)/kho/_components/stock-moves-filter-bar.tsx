@@ -6,7 +6,6 @@ import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
-import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { apiFetch, toQuery } from "@/lib/api-client";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
@@ -35,16 +34,25 @@ export function StockMovesFilterBar() {
     setVisibleColumns,
     toggleSort,
   } = useListPage();
-  const [references, setReferences] = useState<{ suppliers: Reference[]; customers: Reference[]; projects: Reference[] }>({ suppliers: [], customers: [], projects: [] });
+  const [references, setReferences] = useState<{
+    suppliers: Reference[];
+    customers: Reference[];
+    projects: Reference[];
+    warehouses: Reference[];
+  }>({ suppliers: [], customers: [], projects: [], warehouses: [] });
 
   useEffect(() => {
     void Promise.all([
       apiFetch<Reference[]>(`/api/v1/suppliers${toQuery({ pageSize: 100, status: "active" })}`),
       apiFetch<Reference[]>(`/api/v1/customers${toQuery({ pageSize: 100, status: "active" })}`),
       apiFetch<Reference[]>(`/api/v1/projects${toQuery({ pageSize: 100 })}`),
-    ]).then(([suppliers, customers, projects]) => setReferences({
-      suppliers: suppliers.data ?? [], customers: customers.data ?? [], projects: projects.data ?? [],
-    })).catch(() => setReferences({ suppliers: [], customers: [], projects: [] }));
+      apiFetch<Reference[]>(`/api/v1/warehouses${toQuery({ pageSize: 50 })}`),
+    ]).then(([suppliers, customers, projects, warehouses]) => setReferences({
+      suppliers: suppliers.data ?? [],
+      customers: customers.data ?? [],
+      projects: projects.data ?? [],
+      warehouses: warehouses.data ?? [],
+    })).catch(() => setReferences({ suppliers: [], customers: [], projects: [], warehouses: [] }));
   }, []);
 
   return (
@@ -57,6 +65,12 @@ export function StockMovesFilterBar() {
             value={query}
             onChange={setQuery}
           />
+          <ReferenceFilter
+            label="Kho"
+            value={filters.warehouseId ?? ""}
+            rows={references.warehouses}
+            onChange={(value) => setFilter("warehouseId", value)}
+          />
           <Select
             value={filters.status ?? ""}
             onChange={(e) => setFilter("status", e.target.value)}
@@ -66,10 +80,6 @@ export function StockMovesFilterBar() {
             <option value="posted">Đã ghi sổ</option>
             <option value="cancelled">Đã hủy</option>
           </Select>
-          <OwnerLookup
-            value={filters.ownerId}
-            onChange={(v) => setFilter("ownerId", v)}
-          />
           <ReferenceFilter label="Nhà cung cấp" value={filters.supplierId ?? ""} rows={references.suppliers} onChange={(value) => setFilter("supplierId", value)} />
           <ReferenceFilter label="Khách hàng" value={filters.customerId ?? ""} rows={references.customers} onChange={(value) => setFilter("customerId", value)} />
           <ReferenceFilter label="Công trình" value={filters.projectId ?? ""} rows={references.projects} onChange={(value) => setFilter("projectId", value)} />

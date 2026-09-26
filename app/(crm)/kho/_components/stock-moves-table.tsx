@@ -51,7 +51,15 @@ export function filterStockMoves(
   return moves.filter((move) => {
     if (move.type !== moveType) return false;
     if (filters.status && move.status !== filters.status) return false;
-    if (filters.ownerId && move.owner.id !== filters.ownerId) return false;
+    if (filters.warehouseId) {
+      const matchWh =
+        move.warehouseFromId === filters.warehouseId ||
+        move.warehouseToId === filters.warehouseId ||
+        (move.warehouseFrom && move.warehouseFrom.includes(filters.warehouseId)) ||
+        (move.warehouseTo && move.warehouseTo.includes(filters.warehouseId));
+      if (!matchWh) return false;
+    }
+    if (filters.ownerId && move.owner?.id !== filters.ownerId) return false;
     if (filters.supplierId && move.supplierId !== filters.supplierId) return false;
     if (filters.customerId && move.customerId !== filters.customerId) return false;
     if (filters.projectId && move.projectId !== filters.projectId) return false;
