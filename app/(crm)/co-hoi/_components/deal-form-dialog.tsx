@@ -15,6 +15,8 @@ import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { daysFromNow } from "@/features/shared/utils/date";
 import { useEffect, useState } from "react";
 
+import { WIN_REASONS, LOSS_REASONS } from "@/features/deals/win-loss";
+
 const STAGES = Object.keys(DEAL_STAGE_META) as DealStage[];
 
 function toDateInput(iso?: string | null) {
@@ -240,10 +242,27 @@ export function DealFormDialog() {
         {form.stage === "won" || form.stage === "lost" ? (
           <label className="col-span-2 space-y-1 text-xs">
             <span className="text-muted">Lý do *</span>
+            <div className="flex flex-wrap gap-1 pb-1">
+              {(form.stage === "won" ? WIN_REASONS : LOSS_REASONS).map((cat) => (
+                <button
+                  type="button"
+                  key={cat}
+                  className="rounded border border-border bg-surface-raised px-1.5 py-0.5 text-[10px] text-muted hover:border-neutral-400 hover:text-foreground"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      reason: f.reason ? `[${cat}] ${f.reason.replace(/^\[.*?\]\s*/, "")}` : `[${cat}] `,
+                    }))
+                  }
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
             <Input
               value={form.reason}
               maxLength={1000}
-              placeholder={form.stage === "won" ? "Lý do cơ hội thắng" : "Lý do cơ hội thua"}
+              placeholder={form.stage === "won" ? "Lý do cơ hội thắng (chọn gợi ý hoặc nhập chi tiết)" : "Lý do cơ hội thua (chọn gợi ý hoặc nhập chi tiết)"}
               onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
             />
           </label>

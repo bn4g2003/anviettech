@@ -16,6 +16,7 @@ import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { LEAD_SOURCE_OPTIONS } from "@/features/leads/source-options";
 import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
 import { FilterBar } from "@/components/datagrid/filter-bar";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -217,11 +218,23 @@ export default function TiemNangPage() {
 
   const filtered = useMemo(() => {
     let list = rows;
+    if (query.trim()) {
+      const q = query.toLowerCase().trim();
+      list = list.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.code.toLowerCase().includes(q) ||
+          (r.companyName && r.companyName.toLowerCase().includes(q)) ||
+          (r.phone && r.phone.includes(q)) ||
+          (r.email && r.email.toLowerCase().includes(q)) ||
+          (r.notes && r.notes.toLowerCase().includes(q)),
+      );
+    }
     if (sourceFilter) {
       list = list.filter((r) => r.source === sourceFilter);
     }
     return list;
-  }, [rows, sourceFilter]);
+  }, [rows, query, sourceFilter]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
@@ -376,12 +389,12 @@ export default function TiemNangPage() {
       <FilterBar
         filters={
           <>
-            <Input
-              className="w-56"
-              placeholder="Tìm kiếm lead..."
+            <SearchInput
+              className="w-60"
+              placeholder="Tìm tên liên hệ, công ty, SĐT, email..."
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
+              onChange={(v) => {
+                setQuery(v);
                 setPage(1);
               }}
             />

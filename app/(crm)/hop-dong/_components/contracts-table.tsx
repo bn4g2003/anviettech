@@ -32,8 +32,19 @@ export function ContractsTable() {
     if (list.filters.ownerId) {
       result = result.filter((r) => r.owner.id === list.filters.ownerId);
     }
+    if (list.query.trim()) {
+      const q = list.query.toLowerCase().trim();
+      result = result.filter((r) => {
+        const c = getCustomer(r.customerId);
+        return (
+          r.code.toLowerCase().includes(q) ||
+          (c?.name && c.name.toLowerCase().includes(q)) ||
+          (c?.phone && c.phone.includes(q))
+        );
+      });
+    }
     return result;
-  }, [rows, list.filters.ownerId]);
+  }, [rows, list.filters.ownerId, list.query, getCustomer]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

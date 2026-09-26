@@ -12,7 +12,9 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatDate, relativeTime } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
-import { Briefcase } from "lucide-react";
+import { useWinLoss } from "./win-loss-context";
+import { parseClosedReason } from "@/features/deals/win-loss";
+import { Briefcase, CheckCircle2, XCircle } from "lucide-react";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
@@ -21,6 +23,7 @@ export function DealsTable() {
   const router = useRouter();
   const { canEdit, canDelete } = useCurrentUser();
   const { getById: getCustomer } = useCustomers();
+  const winLoss = useWinLoss();
 
   const { rows, loading, removeMany } = useDeals({
     query: list.query,
@@ -29,15 +32,30 @@ export function DealsTable() {
     customerId: list.filters.customerId,
   });
 
+  const filtered = useMemo(() => {
+    if (!list.query.trim()) return rows;
+    const q = list.query.toLowerCase().trim();
+    return rows.filter((r) => {
+      const c = getCustomer(r.customerId);
+      return (
+        r.title.toLowerCase().includes(q) ||
+        r.code.toLowerCase().includes(q) ||
+        (c?.name && c.name.toLowerCase().includes(q)) ||
+        (c?.phone && c.phone.includes(q)) ||
+        (r.notes && r.notes.toLowerCase().includes(q))
+      );
+    });
+  }, [rows, list.query, getCustomer]);
+
   const sorted = useMemo(() => {
-    if (!list.sortKey) return rows;
+    if (!list.sortKey) return filtered;
     const dir = list.sortDir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const av = String((a as Record<string, unknown>)[list.sortKey] ?? "");
       const bv = String((b as Record<string, unknown>)[list.sortKey] ?? "");
       return av.localeCompare(bv, "vi") * dir;
     });
-  }, [rows, list.sortKey, list.sortDir]);
+  }, [filtered, list.sortKey, list.sortDir]);
 
   const pageRows = list.paginate(sorted);
 
@@ -68,7 +86,26 @@ export function DealsTable() {
       header: "Giai đoạn",
       cell: (r) => {
         const meta = DEAL_STAGE_META[r.stage] ?? { label: r.stage || "—", color: "blue", probability: 0 };
-        return <StatusDot color={meta.color} label={meta.label} />;
+        const parsedReason =
+          (r.stage === "won" || r.stage === "lost") && r.closedReason
+            ? parseClosedReason(r.closedReason)
+            : null;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <StatusDot color={meta.color} label={meta.label} />
+            {parsedReason ? (
+              <span
+                className={`text-[10px] font-medium truncate max-w-[150px] ${
+                  r.stage === "won" ? "text-emerald-700" : "text-rose-700"
+                }`}
+                title={r.closedReason}
+              >
+                {r.stage === "won" ? "🏆 " : "⚠️ "}{parsedReason.category}
+                {parsedReason.competitor ? ` (${parsedReason.competitor})` : ""}
+              </span>
+            ) : null}
+          </div>
+        );
       },
     },
     {
@@ -115,11 +152,33 @@ export function DealsTable() {
       header: "Thao tác",
       sticky: "right",
       cell: (r) => (
-        <RowActions
-          onView={() => router.push(`/co-hoi/${r.id}`)}
-          onEdit={canEdit("deals", r.owner?.id) ? () => list.setEditId(r.id) : undefined}
-          onDelete={canDelete("deals", r.owner?.id) ? () => list.setDeleteId(r.id) : undefined}
-        />
+        <div className="flex items-center gap-1">
+          {r.stage !== "won" && r.stage !== "lost" && canEdit("deals", r.owner?.id) ? (
+            <>
+              <button
+                type="button"
+                className="h-6 w-6 flex items-center justify-center rounded text-emerald-600 hover:bg-emerald-50"
+                title="Chốt Thắng (Won)"
+                onClick={() => winLoss?.openWinLoss(r, "won")}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className="h-6 w-6 flex items-center justify-center rounded text-rose-600 hover:bg-rose-50"
+                title="Báo Thua (Lost)"
+                onClick={() => winLoss?.openWinLoss(r, "lost")}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) : null}
+          <RowActions
+            onView={() => router.push(`/co-hoi/${r.id}`)}
+            onEdit={canEdit("deals", r.owner?.id) ? () => list.setEditId(r.id) : undefined}
+            onDelete={canDelete("deals", r.owner?.id) ? () => list.setDeleteId(r.id) : undefined}
+          />
+        </div>
       ),
     },
   ];

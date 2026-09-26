@@ -37,6 +37,8 @@ const kindMeta: Record<RecordKind, { label: string; back: string; icon: typeof U
 function RelatedLink({ href, children }: { href: string; children: React.ReactNode }) { return <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:underline">{children}<ExternalLink className="h-3 w-3" /></Link>; }
 function EmptyRelated({ label }: { label: string }) { return <p className="rounded border border-dashed border-border px-3 py-5 text-center text-xs text-muted">Chưa có {label} liên quan.</p>; }
 
+import { parseClosedReason } from "@/features/deals/win-loss";
+
 export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -75,6 +77,11 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
             ? quotes.getById(id)
             : contracts.getById(id)
   ) as unknown as DetailRecord | undefined;
+
+  const parsedReason =
+    kind === "deal" && record && (record.stage === "won" || record.stage === "lost") && record.closedReason
+      ? parseClosedReason(record.closedReason)
+      : null;
 
   if (isLoading && !record) {
     return (
@@ -226,8 +233,44 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
                   label="Dự kiến chốt"
                   value={formatDate(record.expectedCloseDate)}
                 />
-                <Info label="Giai đoạn" value={record.stage} />
+                <Info
+                  label="Giai đoạn"
+                  value={
+                    record.stage === "won"
+                      ? "Thắng (Won)"
+                      : record.stage === "lost"
+                        ? "Thua (Lost)"
+                        : String(record.stage)
+                  }
+                />
                 <Info label="Phụ trách" value={record.owner?.name ?? "—"} />
+                {record.closedReason ? (
+                  <div
+                    className={`col-span-2 md:col-span-4 rounded-md border p-3 text-xs ${
+                      record.stage === "won"
+                        ? "border-emerald-200 bg-emerald-50/70 text-emerald-950"
+                        : "border-rose-200 bg-rose-50/70 text-rose-950"
+                    }`}
+                  >
+                    <p className="font-semibold text-sm">
+                      {record.stage === "won" ? "🏆 Kết quả Thắng" : "⚠️ Kết quả Thua"}:{" "}
+                      {parsedReason?.category || "Đã chốt kết quả"}
+                    </p>
+                    {parsedReason?.notes ? (
+                      <p className="mt-1 text-xs opacity-90">{parsedReason.notes}</p>
+                    ) : null}
+                    {parsedReason?.competitor ? (
+                      <p className="mt-0.5 text-xs opacity-85">
+                        <span className="font-medium">Đối thủ cạnh tranh:</span> {parsedReason.competitor}
+                      </p>
+                    ) : null}
+                    {parsedReason?.actualValue ? (
+                      <p className="mt-0.5 text-xs opacity-85">
+                        <span className="font-medium">Giá trị chốt thực tế:</span> {formatVnd(parsedReason.actualValue)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             ) : kind === "task" ? (
               <>

@@ -11,6 +11,8 @@ import { DEAL_STAGE_META, type DealStage } from "@/features/deals/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { ArrowUpDown, Filter, RefreshCw } from "lucide-react";
 
+import { SearchInput } from "@/components/datagrid/search-input";
+
 const COLUMN_DEFS = [
   { id: "code", label: "Mã" },
   { id: "title", label: "Tiêu đề" },
@@ -43,6 +45,12 @@ export function DealsFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-56"
+            placeholder="Tìm tiêu đề, mã, khách hàng..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.stage ?? ""}
             onChange={(e) => setFilter("stage", e.target.value)}
@@ -62,12 +70,6 @@ export function DealsFilterBar() {
             value={filters.customerId}
             onChange={(v) => setFilter("customerId", v)}
             emptyLabel="Khách hàng"
-          />
-          <Input
-            className="w-44"
-            placeholder="Tiêu đề / mã..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
           />
         </>
       }

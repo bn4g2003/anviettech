@@ -5,18 +5,18 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { cn } from "@/lib/cn";
-import { Kanban, List } from "lucide-react";
+import { Kanban, List, PieChart } from "lucide-react";
 
 export function DealsPageHeader() {
   const { setCreateOpen, filters, setFilter } = useListPage();
   const { canCreate } = useCurrentUser();
-  const viewMode = filters.viewMode === "kanban" ? "kanban" : "list";
+  const viewMode = filters.viewMode === "analytics" ? "analytics" : filters.viewMode === "kanban" ? "kanban" : "list";
   const allowed = canCreate("deals");
 
   return (
     <AppHeader
       moduleLabel="Cơ hội"
-      viewLabel={viewMode === "kanban" ? "Kanban" : "Danh sách"}
+      viewLabel={viewMode === "analytics" ? "Tỷ lệ Thắng/Thua" : viewMode === "kanban" ? "Kanban" : "Danh sách"}
       onCreate={allowed ? () => setCreateOpen(true) : undefined}
       createLabel="Tạo"
       viewModes={
@@ -25,7 +25,7 @@ export function DealsPageHeader() {
             type="button"
             className={cn(
               "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium",
-              viewMode === "list" ? "bg-muted-bg" : "text-muted hover:bg-muted-bg/60",
+              viewMode === "list" ? "bg-muted-bg text-foreground font-semibold" : "text-muted hover:bg-muted-bg/60",
             )}
             onClick={() => setFilter("viewMode", "list")}
           >
@@ -36,12 +36,23 @@ export function DealsPageHeader() {
             type="button"
             className={cn(
               "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium",
-              viewMode === "kanban" ? "bg-muted-bg" : "text-muted hover:bg-muted-bg/60",
+              viewMode === "kanban" ? "bg-muted-bg text-foreground font-semibold" : "text-muted hover:bg-muted-bg/60",
             )}
             onClick={() => setFilter("viewMode", "kanban")}
           >
             <Kanban className="h-3.5 w-3.5" />
             Kanban
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium",
+              viewMode === "analytics" ? "bg-muted-bg text-foreground font-semibold" : "text-muted hover:bg-muted-bg/60",
+            )}
+            onClick={() => setFilter("viewMode", "analytics")}
+          >
+            <PieChart className="h-3.5 w-3.5 text-emerald-600" />
+            Tỷ lệ Thắng/Thua
           </button>
         </div>
       }

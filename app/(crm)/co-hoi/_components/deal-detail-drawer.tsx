@@ -16,6 +16,10 @@ import { formatVnd } from "@/features/shared/utils/money";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { useWinLoss } from "./win-loss-context";
+import { parseClosedReason } from "@/features/deals/win-loss";
+import { formatDateTime } from "@/features/shared/utils/date";
+import { Trophy, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -26,8 +30,9 @@ export function DealDetailDrawer() {
   const { all: products } = useProducts();
   const { rows: followups, create: createTask } = useTasks({ dealId: list.viewId ?? undefined, enabled: !!list.viewId });
   const { rows: activities, create: createActivity } = useActivities({ dealId: list.viewId ?? undefined, enabled: !!list.viewId });
-  const { canCreate } = useCurrentUser();
+  const { canCreate, canEdit } = useCurrentUser();
   const { toast } = useToast();
+  const winLoss = useWinLoss();
   const [remarketing, setRemarketing] = useState({ type: "call" as const, subject: "", content: "", nextFollowupAt: "" });
   const deal = list.viewId ? getById(list.viewId) : null;
 
@@ -46,6 +51,7 @@ export function DealDetailDrawer() {
   const customer = deal.customerId ? getCustomer(deal.customerId) : null;
   const stageMeta = DEAL_STAGE_META[deal.stage] ?? { label: deal.stage || "—", color: "blue", probability: 0 };
   const dealProducts = products.filter((p) => (deal.productIds ?? []).includes(p.id));
+  const parsedReason = (deal.stage === "won" || deal.stage === "lost") && deal.closedReason ? parseClosedReason(deal.closedReason) : null;
 
   async function createFollowupTask() {
     if (!deal) return;
@@ -131,7 +137,57 @@ export function DealDetailDrawer() {
         <Button variant="outline" size="sm" onClick={() => void createFollowupTask()}>
           Tạo công việc
         </Button>
+        {deal.stage !== "won" && deal.stage !== "lost" && canEdit("deals", deal.owner?.id) ? (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+              onClick={() => winLoss?.openWinLoss(deal, "won")}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+              Chốt Thắng
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-rose-300 text-rose-700 hover:bg-rose-50"
+              onClick={() => winLoss?.openWinLoss(deal, "lost")}
+            >
+              <XCircle className="h-3.5 w-3.5 mr-1" />
+              Báo Thua
+            </Button>
+          </>
+        ) : null}
       </div>
+
+      {deal.stage === "won" ? (
+        <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-emerald-800 text-sm">
+            <Trophy className="h-4 w-4 text-emerald-600" />
+            <span>KẾT QUẢ: THẮNG DỰ ÁN (WON)</span>
+          </div>
+          <div className="mt-2 space-y-1 text-emerald-900">
+            <p><span className="font-semibold">Lý do thắng:</span> {parsedReason?.category || "—"}</p>
+            {parsedReason?.notes ? <p><span className="font-semibold">Chi tiết:</span> {parsedReason.notes}</p> : null}
+            {parsedReason?.actualValue ? <p><span className="font-semibold">Giá trị chốt thực tế:</span> {formatVnd(parsedReason.actualValue)}</p> : null}
+            <p className="text-[11px] text-emerald-700 pt-1">Cập nhật kết quả: {formatDateTime(deal.updatedAt)}</p>
+          </div>
+        </div>
+      ) : deal.stage === "lost" ? (
+        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50/70 p-3 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-rose-800 text-sm">
+            <XCircle className="h-4 w-4 text-rose-600" />
+            <span>KẾT QUẢ: THUA DỰ ÁN (LOST)</span>
+          </div>
+          <div className="mt-2 space-y-1 text-rose-900">
+            <p><span className="font-semibold">Lý do thua:</span> {parsedReason?.category || "—"}</p>
+            {parsedReason?.notes ? <p><span className="font-semibold">Chi tiết:</span> {parsedReason.notes}</p> : null}
+            {parsedReason?.competitor ? <p><span className="font-semibold">Đối thủ cạnh tranh:</span> {parsedReason.competitor}</p> : null}
+            <p className="text-[11px] text-rose-700 pt-1">Cập nhật kết quả: {formatDateTime(deal.updatedAt)}</p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>

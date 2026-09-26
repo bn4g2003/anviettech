@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -41,6 +41,12 @@ export function CustomersFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tên KH, mã, SĐT, email..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.type ?? ""}
             onChange={(e) => setFilter("type", e.target.value)}
@@ -61,12 +67,6 @@ export function CustomersFilterBar() {
           <OwnerLookup
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
-          />
-          <Input
-            className="w-44"
-            placeholder="Tên / mã / SĐT..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
           />
         </>
       }

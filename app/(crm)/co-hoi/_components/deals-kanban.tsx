@@ -9,11 +9,16 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useMemo } from "react";
 
+import { useWinLoss } from "./win-loss-context";
+import { parseClosedReason } from "@/features/deals/win-loss";
+import { cn } from "@/lib/cn";
+
 const STAGES: DealStage[] = ["new", "demo", "negotiation", "ready", "won", "lost"];
 
 export function DealsKanban() {
   const list = useListPage();
   const { getById: getCustomer } = useCustomers();
+  const winLoss = useWinLoss();
   const { rows, setStage } = useDeals({
     query: list.query,
     stage: (list.filters.stage as DealStage) || undefined,
@@ -21,16 +26,39 @@ export function DealsKanban() {
     customerId: list.filters.customerId,
   });
 
+  const filteredRows = useMemo(() => {
+    if (!list.query.trim()) return rows;
+    const q = list.query.toLowerCase().trim();
+    return rows.filter((d) => {
+      const cust = d.customerId ? getCustomer(d.customerId) : null;
+      return (
+        d.title.toLowerCase().includes(q) ||
+        d.code.toLowerCase().includes(q) ||
+        (cust?.name && cust.name.toLowerCase().includes(q)) ||
+        (cust?.phone && cust.phone.includes(q)) ||
+        (d.notes && d.notes.toLowerCase().includes(q))
+      );
+    });
+  }, [rows, list.query, getCustomer]);
+
   const byStage = useMemo(() => {
     const map = Object.fromEntries(STAGES.map((s) => [s, [] as Deal[]])) as Record<
       DealStage,
       Deal[]
     >;
-    for (const d of rows) {
+    for (const d of filteredRows) {
       map[d.stage]?.push(d);
     }
     return map;
-  }, [rows]);
+  }, [filteredRows]);
+
+  const handleStageChange = (deal: Deal, s: DealStage) => {
+    if ((s === "won" || s === "lost") && winLoss) {
+      winLoss.openWinLoss(deal, s);
+    } else {
+      void setStage(deal.id, s);
+    }
+  };
 
   return (
     <div className="min-h-0 flex-1 overflow-x-auto p-3">
@@ -58,6 +86,7 @@ export function DealsKanban() {
                   const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : undefined;
                   const nextStage = currentIdx >= 0 && currentIdx < STAGES.length - 1 ? STAGES[currentIdx + 1] : undefined;
                   const nextStages = [prevStage, nextStage].filter((s): s is DealStage => Boolean(s));
+                  const parsedReason = (d.stage === "won" || d.stage === "lost") && d.closedReason ? parseClosedReason(d.closedReason) : null;
                   return (
                     <div
                       key={d.id}
@@ -72,6 +101,22 @@ export function DealsKanban() {
                       <p className="font-medium leading-snug">{d.title}</p>
                       <p className="mt-0.5 text-muted">{customer?.name ?? "—"}</p>
                       <p className="mt-1 font-medium">{formatVnd(d.value)}</p>
+
+                      {parsedReason ? (
+                        <div
+                          className={cn(
+                            "mt-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight",
+                            d.stage === "won"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-rose-50 text-rose-700 border border-rose-200"
+                          )}
+                          title={d.closedReason ?? ""}
+                        >
+                          {d.stage === "won" ? "🏆 " : "⚠️ "}{parsedReason.category}
+                          {parsedReason.competitor ? ` · ĐT: ${parsedReason.competitor}` : ""}
+                        </div>
+                      ) : null}
+
                       <div
                         className="mt-1.5 flex flex-wrap gap-0.5"
                         onClick={(e) => e.stopPropagation()}
@@ -82,7 +127,7 @@ export function DealsKanban() {
                             variant="ghost"
                             size="sm"
                             className="h-5 px-1 text-[10px] text-muted"
-                            onClick={() => setStage(d.id, s)}
+                            onClick={() => handleStageChange(d, s)}
                           >
                             → {DEAL_STAGE_META[s]?.label ?? s}
                           </Button>

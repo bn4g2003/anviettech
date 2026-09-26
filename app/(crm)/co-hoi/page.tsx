@@ -14,6 +14,9 @@ import { DealFormDialog } from "./_components/deal-form-dialog";
 import { DealDetailDrawer } from "./_components/deal-detail-drawer";
 import { DealDeleteDialog } from "./_components/deal-delete-dialog";
 
+import { DealsWinLossAnalytics } from "./_components/deals-win-loss-analytics";
+import { WinLossProvider } from "./_components/win-loss-context";
+
 const COLUMNS = [
   "code",
   "title",
@@ -48,6 +51,7 @@ function SyncUrlFilters() {
 function DealsContent() {
   const { filters } = useListPage();
   const isKanban = filters.viewMode === "kanban";
+  const isAnalytics = filters.viewMode === "analytics";
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -56,7 +60,13 @@ function DealsContent() {
       </Suspense>
       <DealsPageHeader />
       <DealsFilterBar />
-      {isKanban ? <DealsKanban /> : <DealsTable />}
+      {isAnalytics ? (
+        <DealsWinLossAnalytics />
+      ) : isKanban ? (
+        <DealsKanban />
+      ) : (
+        <DealsTable />
+      )}
       <DealFormDialog />
       <DealDetailDrawer />
       <DealDeleteDialog />
@@ -67,9 +77,11 @@ function DealsContent() {
 export default function DealsPage() {
   return (
     <ListPageProvider defaultColumns={COLUMNS} defaultFilters={{ viewMode: "list" }}>
-      <Suspense fallback={<div className="p-4 text-sm text-muted">Đang tải...</div>}>
-        <DealsContent />
-      </Suspense>
+      <WinLossProvider>
+        <Suspense fallback={<div className="p-4 text-sm text-muted">Đang tải...</div>}>
+          <DealsContent />
+        </Suspense>
+      </WinLossProvider>
     </ListPageProvider>
   );
 }

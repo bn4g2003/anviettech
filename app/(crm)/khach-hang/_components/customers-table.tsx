@@ -29,10 +29,23 @@ export function CustomersTable() {
     scope: scopeForCustomerView(list.filters.view),
   });
 
+  const filtered = useMemo(() => {
+    if (!list.query.trim()) return rows;
+    const q = list.query.toLowerCase().trim();
+    return rows.filter((c) =>
+      c.name.toLowerCase().includes(q) ||
+      c.code.toLowerCase().includes(q) ||
+      (c.phone && c.phone.includes(q)) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (c.contactName && c.contactName.toLowerCase().includes(q)) ||
+      (c.address && c.address.toLowerCase().includes(q)),
+    );
+  }, [rows, list.query]);
+
   const sorted = useMemo(() => {
-    if (!list.sortKey) return rows;
+    if (!list.sortKey) return filtered;
     const dir = list.sortDir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       if (list.sortKey === "debt") {
         return (getDebt(a.id) - getDebt(b.id)) * dir;
       }
@@ -40,7 +53,7 @@ export function CustomersTable() {
       const bv = String((b as Record<string, unknown>)[list.sortKey] ?? "");
       return av.localeCompare(bv, "vi") * dir;
     });
-  }, [rows, list.sortKey, list.sortDir, getDebt]);
+  }, [filtered, list.sortKey, list.sortDir, getDebt]);
 
   const pageRows = list.paginate(sorted);
 

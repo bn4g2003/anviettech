@@ -6,6 +6,7 @@ import { AnalyticsKpiRow } from "./_components/analytics-kpi-row";
 import { FinancialMatrixTable } from "./_components/financial-matrix-table";
 import { FinancialChartsOverview } from "./_components/financial-charts-overview";
 import { AnalyticsFunnel } from "./_components/analytics-funnel";
+import { AnalyticsWinLossWidget } from "./_components/analytics-win-loss-widget";
 import { AnalyticsTopCustomers } from "./_components/analytics-top-customers";
 import { AnalyticsReplenishmentForecast } from "./_components/analytics-replenishment-forecast";
 import { Loader2 } from "lucide-react";
@@ -56,6 +57,7 @@ export default function AnalyticsPage() {
 
             {/* Operational Widgets */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <AnalyticsWinLossWidget />
               <AnalyticsFunnel />
               <AnalyticsReplenishmentForecast />
               <div className="lg:col-span-2">
