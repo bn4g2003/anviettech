@@ -28,7 +28,8 @@ export function useCustomers(filters?: {
         scope: filters?.scope,
         pageSize: 1000,
       });
-      const filtered = filters?.type ? list.filter((c) => c.type === filters.type) : list;
+      const types = filters?.type ? filters.type.split(",").filter(Boolean) : [];
+      const filtered = types.length > 0 ? list.filter((c) => types.includes(c.type)) : list;
       setRows(filtered);
 
       const map: Record<string, number> = {};

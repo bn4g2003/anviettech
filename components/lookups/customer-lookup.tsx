@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
   allowEmpty?: boolean;
   emptyLabel?: string;
   disabled?: boolean;
+  multiple?: boolean;
 };
 
 export function CustomerLookup({
@@ -20,8 +22,23 @@ export function CustomerLookup({
   allowEmpty = true,
   emptyLabel = "Chọn khách hàng",
   disabled,
+  multiple = false,
 }: Props) {
   const { all } = useCustomers();
+
+  if (multiple) {
+    return (
+      <MultiSelectFilter
+        title={emptyLabel}
+        value={value}
+        onChange={onChange}
+        className={className}
+        disabled={disabled}
+        options={all.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+      />
+    );
+  }
+
   const selected = all.find((c) => c.id === value);
 
   return (

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/datagrid/search-input";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -143,12 +144,15 @@ export function RevenueEntriesPanel() {
 
   const visibleRows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const customerIds = filters.customerId ? filters.customerId.split(",").filter(Boolean) : [];
+    const employeeIds = filters.employeeId ? filters.employeeId.split(",").filter(Boolean) : [];
+    const projectIds = filters.projectId ? filters.projectId.split(",").filter(Boolean) : [];
     return rows.filter((row) => {
       if (filters.from && row.occurredAt < filters.from) return false;
       if (filters.to && row.occurredAt > filters.to) return false;
-      if (filters.customerId && row.customerId !== filters.customerId) return false;
-      if (filters.employeeId && row.employeeId !== filters.employeeId) return false;
-      if (filters.projectId && row.projectId !== filters.projectId) return false;
+      if (customerIds.length > 0 && !customerIds.includes(row.customerId)) return false;
+      if (employeeIds.length > 0 && (!row.employeeId || !employeeIds.includes(row.employeeId))) return false;
+      if (projectIds.length > 0 && (!row.projectId || !projectIds.includes(row.projectId))) return false;
       if (!q) return true;
       const custName = (row.customerName || findName(customers, row.customerId)).toLowerCase();
       const prodName = findName(products, row.productId).toLowerCase();
@@ -904,19 +908,15 @@ function FilterSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <Select
-      className="w-36 max-w-[150px] truncate text-xs"
+    <MultiSelectFilter
+      title={label}
       value={value}
-      aria-label={label}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">{label}</option>
-      {rows.map((row) => (
-        <option key={row.id} value={row.id}>
-          {"code" in row && row.code ? `${row.code} — ${row.name}` : row.name}
-        </option>
-      ))}
-    </Select>
+      onChange={onChange}
+      options={rows.map((row) => ({
+        value: row.id,
+        label: "code" in row && row.code ? `${row.code} — ${row.name}` : row.name,
+      }))}
+    />
   );
 }
 

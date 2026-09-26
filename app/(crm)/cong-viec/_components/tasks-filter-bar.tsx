@@ -5,7 +5,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { TASK_TYPE_LABEL } from "@/features/tasks/types";
@@ -43,40 +43,41 @@ export function TasksFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Trạng thái"
             value={filters.status ?? ""}
-            onChange={(e) => setFilter("status", e.target.value)}
-          >
-            <option value="">Trạng thái</option>
-            <option value="open">Mở</option>
-            <option value="done">Xong</option>
-            <option value="cancelled">Đã hủy</option>
-          </Select>
-          <Select
+            onChange={(val) => setFilter("status", val)}
+            options={[
+              { value: "open", label: "Mở" },
+              { value: "done", label: "Xong" },
+              { value: "cancelled", label: "Đã hủy" },
+            ]}
+          />
+          <MultiSelectFilter
+            title="Loại"
             value={filters.type ?? ""}
-            onChange={(e) => setFilter("type", e.target.value)}
-          >
-            <option value="">Loại</option>
-            {Object.entries(TASK_TYPE_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilter("type", val)}
+            options={Object.entries(TASK_TYPE_LABEL).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
           <OwnerLookup
+            multiple
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
           />
-          <Select
+          <MultiSelectFilter
+            title="Góc nhìn"
             value={filters.view ?? ""}
-            onChange={(e) => setFilter("view", e.target.value)}
-          >
-            <option value="">Góc nhìn</option>
-            <option value="my">Việc của tôi</option>
-            <option value="today">Hôm nay</option>
-            <option value="overdue">Quá hạn</option>
-            <option value="upcoming">Sắp tới</option>
-          </Select>
+            onChange={(val) => setFilter("view", val)}
+            options={[
+              { value: "my", label: "Việc của tôi" },
+              { value: "today", label: "Hôm nay" },
+              { value: "overdue", label: "Quá hạn" },
+              { value: "upcoming", label: "Sắp tới" },
+            ]}
+          />
           <DateRangeFilter
             fromDate={filters.fromDate}
             toDate={filters.toDate}

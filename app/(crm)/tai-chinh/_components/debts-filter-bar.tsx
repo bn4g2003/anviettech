@@ -5,6 +5,7 @@ import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { RefreshCw } from "lucide-react";
@@ -44,17 +45,15 @@ export function DebtsFilterBar({ onRefresh }: { onRefresh?: () => void }) {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Khách hàng"
             value={filters.customerId ?? ""}
-            onChange={(e) => setFilter("customerId", e.target.value)}
-          >
-            <option value="">Khách hàng</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} — {c.name}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilter("customerId", val)}
+            options={customers.map((c) => ({
+              value: c.id,
+              label: `${c.code} — ${c.name}`,
+            }))}
+          />
         </>
       }
       actions={

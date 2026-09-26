@@ -35,16 +35,28 @@ export function AnalyticsWinLossWidget() {
         </div>
 
         {/* Stats highlight row */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="rounded border border-border bg-white p-2 text-center">
             <span className="text-[10px] text-muted font-medium uppercase tracking-wide">
               Tỷ lệ Thắng
             </span>
-            <p className="text-xl font-bold text-foreground mt-0.5">
+            <p className="text-xl font-bold text-emerald-600 mt-0.5">
               {metrics.winRate}%
             </p>
             <span className="text-[10px] text-muted">
               {metrics.wonCount} won / {metrics.wonCount + metrics.lostCount} closed
+            </span>
+          </div>
+
+          <div className="rounded border border-border bg-white p-2 text-center">
+            <span className="text-[10px] text-muted font-medium uppercase tracking-wide">
+              Tỷ lệ Thua
+            </span>
+            <p className="text-xl font-bold text-rose-600 mt-0.5">
+              {metrics.lossRate}%
+            </p>
+            <span className="text-[10px] text-muted">
+              {metrics.lostCount} lost / {metrics.wonCount + metrics.lostCount} closed
             </span>
           </div>
 
@@ -102,9 +114,13 @@ export function AnalyticsWinLossWidget() {
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] text-muted">Tỷ lệ</span>
-              <span className="text-sm font-bold text-foreground">
+              <span className="text-[9px] text-muted">Thắng</span>
+              <span className="text-xs font-bold text-emerald-600">
                 {metrics.winRate}%
+              </span>
+              <span className="text-[9px] text-muted mt-0.5">Thua</span>
+              <span className="text-xs font-bold text-rose-600">
+                {metrics.lossRate}%
               </span>
             </div>
           </div>

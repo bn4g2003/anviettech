@@ -18,6 +18,7 @@ import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
 import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { SearchInput } from "@/components/datagrid/search-input";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -236,7 +237,10 @@ export default function TiemNangPage() {
       );
     }
     if (sourceFilter) {
-      list = list.filter((r) => r.source === sourceFilter);
+      const sources = sourceFilter.split(",").filter(Boolean);
+      if (sources.length > 0) {
+        list = list.filter((r) => r.source && sources.includes(r.source));
+      }
     }
     if (fromDate || toDate) {
       list = list.filter((r) => isDateInRange(r.createdAt, fromDate, toDate));
@@ -428,35 +432,32 @@ export default function TiemNangPage() {
                 setPage(1);
               }}
             />
-            <Select
+            <MultiSelectFilter
+              title="Trạng thái"
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
+              onChange={(val) => {
+                setStatus(val);
                 setPage(1);
               }}
-            >
-              <option value="">Trạng thái</option>
-              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v.label}
-                </option>
-              ))}
-            </Select>
-            <Select
+              options={Object.entries(STATUS_CONFIG).map(([k, v]) => ({
+                value: k,
+                label: v.label,
+              }))}
+            />
+            <MultiSelectFilter
+              title="Nguồn"
               value={sourceFilter}
-              onChange={(e) => {
-                setSourceFilter(e.target.value);
+              onChange={(val) => {
+                setSourceFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Nguồn</option>
-              {LEAD_SOURCE_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
+              options={LEAD_SOURCE_OPTIONS.map((s) => ({
+                value: s,
+                label: s,
+              }))}
+            />
             <OwnerLookup
+              multiple
               value={ownerFilter}
               onChange={(v) => {
                 setOwnerFilter(v);

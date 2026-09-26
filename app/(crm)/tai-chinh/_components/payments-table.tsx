@@ -29,11 +29,11 @@ export function PaymentsTable() {
 
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
-    const custFilter = list.filters.customerId;
-    const methodFilter = list.filters.method;
+    const custFilterList = list.filters.customerId ? list.filters.customerId.split(",").filter(Boolean) : [];
+    const methodFilterList = list.filters.method ? list.filters.method.split(",").filter(Boolean) : [];
     return payments.filter((p) => {
-      if (methodFilter && p.method !== methodFilter) return false;
-      if (custFilter && p.customerId !== custFilter) return false;
+      if (methodFilterList.length > 0 && !methodFilterList.includes(p.method)) return false;
+      if (custFilterList.length > 0 && !custFilterList.includes(p.customerId)) return false;
       if (list.filters.fromDate || list.filters.toDate) {
         if (!isDateInRange(p.paidAt || p.createdAt, list.filters.fromDate, list.filters.toDate)) {
           return false;

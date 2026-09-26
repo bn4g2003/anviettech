@@ -37,8 +37,9 @@ export function filterSerials<T extends Pick<Serial, "serial" | "productId" | "s
   warehouses: (Pick<Warehouse, "id" | "name"> & { code?: string })[] = [],
 ) {
   const term = query.trim().toLocaleLowerCase("vi");
+  const statuses = status ? status.split(",").filter(Boolean) : [];
   return rows.filter((row) => {
-    if (status && row.status !== status) return false;
+    if (statuses.length > 0 && !statuses.includes(row.status)) return false;
     if (!term) return true;
     const prod = products.find((product) => product.id === row.productId);
     const wh = warehouses.find((w) => w.id === row.warehouseId);
@@ -68,6 +69,7 @@ async function loadReferenceData() {
 import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { SearchInput } from "@/components/datagrid/search-input";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
@@ -159,8 +161,9 @@ export function SerialNumbersPage() {
 
   const visibleRows = useMemo(() => {
     let list = filterSerials(rows, products, query, statusFilter, warehouses);
-    if (warehouseFilter) {
-      list = list.filter((r) => r.warehouseId === warehouseFilter);
+    const whList = warehouseFilter ? warehouseFilter.split(",").filter(Boolean) : [];
+    if (whList.length > 0) {
+      list = list.filter((r) => r.warehouseId && whList.includes(r.warehouseId));
     }
     return list;
   }, [products, query, rows, statusFilter, warehouseFilter, warehouses]);
@@ -345,36 +348,30 @@ export function SerialNumbersPage() {
               }}
               placeholder="Tìm serial, SKU, sản phẩm, kho..."
             />
-            <Select
-              className="w-40"
+            <MultiSelectFilter
+              title="Trạng thái"
               value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Trạng thái</option>
-              {Object.entries(SERIAL_STATUS_CONFIG).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v.label}
-                </option>
-              ))}
-            </Select>
-            <Select
-              className="w-44"
+              options={Object.entries(SERIAL_STATUS_CONFIG).map(([k, v]) => ({
+                value: k,
+                label: v.label,
+              }))}
+            />
+            <MultiSelectFilter
+              title="Kho"
               value={warehouseFilter}
-              onChange={(event) => {
-                setWarehouseFilter(event.target.value);
+              onChange={(val) => {
+                setWarehouseFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Kho</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </Select>
+              options={warehouses.map((w) => ({
+                value: w.id,
+                label: w.name,
+              }))}
+            />
           </>
         }
         actions={
@@ -548,9 +545,11 @@ export function InventoryCountsPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const whList = warehouseFilter ? warehouseFilter.split(",").filter(Boolean) : [];
+    const stList = statusFilter ? statusFilter.split(",").filter(Boolean) : [];
     return rows.filter((row) => {
-      if (warehouseFilter && row.warehouseId !== warehouseFilter) return false;
-      if (statusFilter && row.status !== statusFilter) return false;
+      if (whList.length > 0 && !whList.includes(row.warehouseId)) return false;
+      if (stList.length > 0 && !stList.includes(row.status)) return false;
       if (fromDate && row.countedAt < fromDate) return false;
       if (toDate && row.countedAt > toDate) return false;
       if (!q) return true;
@@ -792,36 +791,30 @@ export function InventoryCountsPage() {
               }}
               placeholder="Tìm mã phiếu, kho, ghi chú..."
             />
-            <Select
-              className="w-44"
+            <MultiSelectFilter
+              title="Kho"
               value={warehouseFilter}
-              onChange={(e) => {
-                setWarehouseFilter(e.target.value);
+              onChange={(val) => {
+                setWarehouseFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Kho</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </Select>
-            <Select
-              className="w-40"
+              options={warehouses.map((w) => ({
+                value: w.id,
+                label: w.name,
+              }))}
+            />
+            <MultiSelectFilter
+              title="Trạng thái"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Trạng thái</option>
-              {Object.entries(COUNT_STATUS_CONFIG).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v.label}
-                </option>
-              ))}
-            </Select>
+              options={Object.entries(COUNT_STATUS_CONFIG).map(([k, v]) => ({
+                value: k,
+                label: v.label,
+              }))}
+            />
             <DateRangeFilter
               fromDate={fromDate}
               toDate={toDate}

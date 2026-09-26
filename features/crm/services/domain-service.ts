@@ -1703,9 +1703,21 @@ export async function getFinanceReport(filters: FinanceReportFilters) {
   const manualWhere = ["re.deleted_at IS NULL"];
   const orderWhere = ["o.deleted_at IS NULL", "o.status IN ('confirmed','fulfilled')"];
   const add = (value: string, manualColumn: string, orderColumn?: string) => {
-    manualValues.push(value); manualWhere.push(`${manualColumn}$${manualValues.length}`);
-    if (orderColumn) { orderValues.push(value); orderWhere.push(`${orderColumn}$${orderValues.length}`); }
-    else orderWhere.push("FALSE");
+    const list = value.split(",").map((s) => s.trim()).filter(Boolean);
+    if (list.length === 1) {
+      manualValues.push(list[0]); manualWhere.push(`${manualColumn}$${manualValues.length}`);
+      if (orderColumn) { orderValues.push(list[0]); orderWhere.push(`${orderColumn}$${orderValues.length}`); }
+      else orderWhere.push("FALSE");
+    } else if (list.length > 1) {
+      const manualCol = manualColumn.replace(/[\s=><]+$/, "");
+      manualValues.push(list); manualWhere.push(`${manualCol} = ANY($${manualValues.length}::uuid[])`);
+      if (orderColumn) {
+        const orderCol = orderColumn.replace(/[\s=><]+$/, "");
+        orderValues.push(list); orderWhere.push(`${orderCol} = ANY($${orderValues.length}::uuid[])`);
+      } else {
+        orderWhere.push("FALSE");
+      }
+    }
   };
   if (filters.from) add(filters.from, "re.occurred_at >=", "o.created_at::date >=");
   if (filters.to) add(filters.to, "re.occurred_at <=", "o.created_at::date <=");

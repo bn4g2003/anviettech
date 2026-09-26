@@ -15,6 +15,7 @@ import { formatDate } from "@/features/shared/utils/date";
 import { apiFetch, toQuery } from "@/lib/api-client";
 import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
 import { FilterBar } from "@/components/datagrid/filter-bar";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 
@@ -90,8 +91,9 @@ export function OperatingExpensesPanel() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const categories = categoryFilter ? categoryFilter.split(",").filter(Boolean) : [];
     return rows.filter((row) => {
-      if (categoryFilter && row.category !== categoryFilter) return false;
+      if (categories.length > 0 && !categories.includes(row.category)) return false;
       if (fromDate && row.expenseDate < fromDate) return false;
       if (toDate && row.expenseDate > toDate) return false;
       if (!q) return true;
@@ -226,21 +228,18 @@ export function OperatingExpensesPanel() {
                 setPage(1);
               }}
             />
-            <Select
-              className="w-44"
+            <MultiSelectFilter
+              title="Nhóm chi phí"
               value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
+              onChange={(val) => {
+                setCategoryFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Nhóm chi phí</option>
-              {Object.entries(CATEGORY_LABEL).map(([val, label]) => (
-                <option key={val} value={val}>
-                  {label}
-                </option>
-              ))}
-            </Select>
+              options={Object.entries(CATEGORY_LABEL).map(([val, label]) => ({
+                value: val,
+                label,
+              }))}
+            />
             <Input
               type="date"
               className="w-36"

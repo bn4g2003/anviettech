@@ -58,8 +58,9 @@ export function DebtsTable() {
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
     const custFilter = list.filters.customerId;
+    const custIds = custFilter ? custFilter.split(",").filter(Boolean) : [];
     return enrichedRows.filter((d) => {
-      if (custFilter && d.customerId !== custFilter) return false;
+      if (custIds.length > 0 && !custIds.includes(d.customerId)) return false;
       if (!q) return true;
       return (
         d.customerName.toLowerCase().includes(q) ||

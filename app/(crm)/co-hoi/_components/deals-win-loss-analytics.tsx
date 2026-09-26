@@ -41,7 +41,7 @@ export function DealsWinLossAnalytics() {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {/* Win Rate */}
         <div className="rounded-lg border border-border bg-white p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
@@ -50,11 +50,27 @@ export function DealsWinLossAnalytics() {
             </span>
             <Trophy className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-foreground">
+          <p className="mt-2 text-2xl font-bold text-emerald-600">
             {metrics.winRate}%
           </p>
           <p className="mt-0.5 text-[11px] text-muted">
             {metrics.wonCount} thắng / {metrics.wonCount + metrics.lostCount} đã chốt
+          </p>
+        </div>
+
+        {/* Loss Rate */}
+        <div className="rounded-lg border border-border bg-white p-3.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted">
+              Tỷ lệ Thua (Loss Rate)
+            </span>
+            <XCircle className="h-4 w-4 text-muted" />
+          </div>
+          <p className="mt-2 text-2xl font-bold text-rose-600">
+            {metrics.lossRate}%
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted">
+            {metrics.lostCount} thua / {metrics.wonCount + metrics.lostCount} đã chốt
           </p>
         </div>
 
@@ -169,11 +185,15 @@ export function DealsWinLossAnalytics() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Centered Win Rate Badge */}
+              {/* Centered Win/Loss Rate Badge */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-xs text-muted">Tỷ lệ thắng</span>
-                <span className="text-lg font-bold text-foreground">
+                <span className="text-[10px] text-muted">Thắng</span>
+                <span className="text-base font-bold text-emerald-600">
                   {metrics.winRate}%
+                </span>
+                <span className="text-[10px] text-muted mt-0.5">Thua</span>
+                <span className="text-base font-bold text-rose-600">
+                  {metrics.lossRate}%
                 </span>
               </div>
             </div>

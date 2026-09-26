@@ -12,7 +12,10 @@ export function useMarketing(filters?: { query?: string; status?: string; channe
     setLoading(true);
     try {
       let list = await marketingService.list({ search: filters?.query, status: filters?.status });
-      if (Array.isArray(list) && filters?.channel) list = list.filter((c) => c.channel === filters.channel);
+      if (Array.isArray(list) && filters?.channel) {
+        const channels = filters.channel.split(",").filter(Boolean);
+        if (channels.length > 0) list = list.filter((c) => channels.includes(c.channel));
+      }
       setRows(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error loading marketing campaigns:", err);

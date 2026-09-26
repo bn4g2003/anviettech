@@ -5,7 +5,7 @@ import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { ArrowUpDown, Filter, RefreshCw } from "lucide-react";
 import {
@@ -48,28 +48,24 @@ export function MarketingFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Trạng thái"
             value={filters.status ?? ""}
-            onChange={(e) => setFilter("status", e.target.value)}
-          >
-            <option value="">Trạng thái</option>
-            {Object.entries(CAMPAIGN_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-          <Select
+            onChange={(val) => setFilter("status", val)}
+            options={Object.entries(CAMPAIGN_STATUS_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+          <MultiSelectFilter
+            title="Kênh"
             value={filters.channel ?? ""}
-            onChange={(e) => setFilter("channel", e.target.value)}
-          >
-            <option value="">Kênh</option>
-            {Object.entries(CAMPAIGN_CHANNEL_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilter("channel", val)}
+            options={Object.entries(CAMPAIGN_CHANNEL_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
           <DateRangeFilter
             fromDate={filters.fromDate}
             toDate={filters.toDate}

@@ -118,6 +118,8 @@ describe("win-loss utilities", () => {
     expect(metrics.openCount).toBe(1);
     // Win rate: 2 / (2 + 1) = 66.7%
     expect(metrics.winRate).toBe(66.7);
+    // Loss rate: 1 / (2 + 1) = 33.3%
+    expect(metrics.lossRate).toBe(33.3);
     // Pipeline conversion rate: 2 / 4 = 50%
     expect(metrics.pipelineRate).toBe(50);
     expect(metrics.wonValue).toBe(30000000);

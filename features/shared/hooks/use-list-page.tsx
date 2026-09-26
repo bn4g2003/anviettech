@@ -29,7 +29,7 @@ type ListPageState = {
   deleteId: string | null;
   setDeleteId: (id: string | null) => void;
   filters: Record<string, string>;
-  setFilter: (key: string, value: string) => void;
+  setFilter: (key: string, value: string | string[]) => void;
   visibleColumns: string[];
   setVisibleColumns: (ids: string[]) => void;
   sortKey: string;
@@ -63,8 +63,9 @@ export function ListPageProvider({
   const [sortKey, setSortKey] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const setFilter = useCallback((key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  const setFilter = useCallback((key: string, value: string | string[]) => {
+    const stringVal = Array.isArray(value) ? value.filter(Boolean).join(",") : value;
+    setFilters((prev) => ({ ...prev, [key]: stringVal }));
     setPage(1);
   }, []);
 

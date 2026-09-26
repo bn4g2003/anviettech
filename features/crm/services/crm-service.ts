@@ -213,12 +213,24 @@ export async function listResource(name: ResourceName, options: ListOptions) {
   }
   if (options.status) {
     const statusCol = config.statusColumn ?? "status";
-    values.push(options.status);
-    where.push(`${statusCol}=$${values.length}`);
+    const statuses = options.status.split(",").map((s) => s.trim()).filter(Boolean);
+    if (statuses.length === 1) {
+      values.push(statuses[0]);
+      where.push(`${statusCol}=$${values.length}`);
+    } else if (statuses.length > 1) {
+      values.push(statuses);
+      where.push(`${statusCol} = ANY($${values.length}::text[])`);
+    }
   }
-  if (options.type && (name === "tasks" || name === "activities" || name === "stock_moves")) {
-    values.push(options.type);
-    where.push(`type=$${values.length}`);
+  if (options.type && (name === "tasks" || name === "activities" || name === "stock_moves" || name === "customers")) {
+    const types = options.type.split(",").map((t) => t.trim()).filter(Boolean);
+    if (types.length === 1) {
+      values.push(types[0]);
+      where.push(`type=$${values.length}`);
+    } else if (types.length > 1) {
+      values.push(types);
+      where.push(`type = ANY($${values.length}::text[])`);
+    }
   }
   if (options.due && name === "tasks") {
     where.push(`status='open'`);
@@ -231,12 +243,24 @@ export async function listResource(name: ResourceName, options: ListOptions) {
     }
   }
   if (options.ownerId && options.canViewAll && ownerCol) {
-    values.push(options.ownerId);
-    where.push(`${ownerCol}=$${values.length}`);
+    const owners = options.ownerId.split(",").map((o) => o.trim()).filter(Boolean);
+    if (owners.length === 1) {
+      values.push(owners[0]);
+      where.push(`${ownerCol}=$${values.length}`);
+    } else if (owners.length > 1) {
+      values.push(owners);
+      where.push(`${ownerCol} = ANY($${values.length}::uuid[])`);
+    }
   }
-  if (options.customerId && (name === "contacts" || name === "activities" || name === "tasks" || name === "deals" || name === "quotes" || name === "orders" || name === "contracts" || name === "invoices" || name === "payments" || name === "revenue_entries" || name === "revenue_reductions")) {
-    values.push(options.customerId);
-    where.push(`customer_id=$${values.length}`);
+  if (options.customerId && (name === "contacts" || name === "activities" || name === "tasks" || name === "deals" || name === "quotes" || name === "orders" || name === "contracts" || name === "invoices" || name === "payments" || name === "revenue_entries" || name === "revenue_reductions" || name === "stock_moves")) {
+    const custs = options.customerId.split(",").map((c) => c.trim()).filter(Boolean);
+    if (custs.length === 1) {
+      values.push(custs[0]);
+      where.push(`customer_id=$${values.length}`);
+    } else if (custs.length > 1) {
+      values.push(custs);
+      where.push(`customer_id = ANY($${values.length}::uuid[])`);
+    }
   }
   if (options.dealId && (name === "activities" || name === "tasks")) {
     values.push(options.dealId);

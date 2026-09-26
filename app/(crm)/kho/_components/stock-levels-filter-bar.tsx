@@ -4,7 +4,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useProducts } from "@/features/products/hooks/use-products";
 import { useInventory } from "@/features/inventory/hooks/use-inventory";
@@ -47,36 +47,30 @@ export function StockLevelsFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Kho"
             value={filters.warehouseId ?? ""}
-            onChange={(e) => setFilter("warehouseId", e.target.value)}
-          >
-            <option value="">Tất cả kho</option>
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.code} — {w.name}
-              </option>
-            ))}
-          </Select>
-          <Select
+            onChange={(val) => setFilter("warehouseId", val)}
+            options={warehouses.map((w) => ({
+              value: w.id,
+              label: `${w.code} — ${w.name}`,
+            }))}
+          />
+          <MultiSelectFilter
+            title="Danh mục"
             value={filters.category ?? ""}
-            onChange={(e) => setFilter("category", e.target.value)}
-          >
-            <option value="">Danh mục</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </Select>
-          <Select
+            onChange={(val) => setFilter("category", val)}
+            options={categories.map((c) => ({ value: c, label: c }))}
+          />
+          <MultiSelectFilter
+            title="Cảnh báo tồn"
             value={filters.stockStatus ?? ""}
-            onChange={(e) => setFilter("stockStatus", e.target.value)}
-          >
-            <option value="">Tồn kho</option>
-            <option value="low">Sắp hết</option>
-            <option value="ok">Đủ tồn</option>
-          </Select>
+            onChange={(val) => setFilter("stockStatus", val)}
+            options={[
+              { value: "low", label: "Sắp hết" },
+              { value: "ok", label: "Đủ tồn" },
+            ]}
+          />
         </>
       }
       actions={

@@ -94,6 +94,7 @@ export interface WinLossMetrics {
   lostCount: number;
   openCount: number;
   winRate: number; // Won / (Won + Lost)
+  lossRate: number; // Lost / (Won + Lost)
   pipelineRate: number; // Won / Total
   wonValue: number;
   lostValue: number;
@@ -143,6 +144,7 @@ export function calculateWinLossMetrics(deals: Deal[]): WinLossMetrics {
   const totalDeals = deals.length;
   const closedCount = wonCount + lostCount;
   const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 1000) / 10 : 0;
+  const lossRate = closedCount > 0 ? Math.round((lostCount / closedCount) * 1000) / 10 : 0;
   const pipelineRate = totalDeals > 0 ? Math.round((wonCount / totalDeals) * 1000) / 10 : 0;
   const totalValue = wonValue + lostValue + openValue;
 
@@ -174,6 +176,7 @@ export function calculateWinLossMetrics(deals: Deal[]): WinLossMetrics {
     lostCount,
     openCount,
     winRate,
+    lossRate,
     pipelineRate,
     wonValue,
     lostValue,

@@ -50,19 +50,36 @@ export function filterStockMoves(
   const term = query.trim().toLowerCase();
   return moves.filter((move) => {
     if (move.type !== moveType) return false;
-    if (filters.status && move.status !== filters.status) return false;
-    if (filters.warehouseId) {
-      const matchWh =
-        move.warehouseFromId === filters.warehouseId ||
-        move.warehouseToId === filters.warehouseId ||
-        (move.warehouseFrom && move.warehouseFrom.includes(filters.warehouseId)) ||
-        (move.warehouseTo && move.warehouseTo.includes(filters.warehouseId));
-      if (!matchWh) return false;
+    if (filters.status) {
+      const statuses = filters.status.split(",").filter(Boolean);
+      if (statuses.length > 0 && !statuses.includes(move.status)) return false;
     }
-    if (filters.ownerId && move.owner?.id !== filters.ownerId) return false;
-    if (filters.supplierId && move.supplierId !== filters.supplierId) return false;
-    if (filters.customerId && move.customerId !== filters.customerId) return false;
-    if (filters.projectId && move.projectId !== filters.projectId) return false;
+    if (filters.warehouseId) {
+      const whIds = filters.warehouseId.split(",").filter(Boolean);
+      if (whIds.length > 0) {
+        const matchWh =
+          (move.warehouseFromId && whIds.includes(move.warehouseFromId)) ||
+          (move.warehouseToId && whIds.includes(move.warehouseToId)) ||
+          whIds.some((id) => (move.warehouseFrom && move.warehouseFrom.includes(id)) || (move.warehouseTo && move.warehouseTo.includes(id)));
+        if (!matchWh) return false;
+      }
+    }
+    if (filters.ownerId) {
+      const ownerIds = filters.ownerId.split(",").filter(Boolean);
+      if (ownerIds.length > 0 && (!move.owner?.id || !ownerIds.includes(move.owner.id))) return false;
+    }
+    if (filters.supplierId) {
+      const supplierIds = filters.supplierId.split(",").filter(Boolean);
+      if (supplierIds.length > 0 && (!move.supplierId || !supplierIds.includes(move.supplierId))) return false;
+    }
+    if (filters.customerId) {
+      const customerIds = filters.customerId.split(",").filter(Boolean);
+      if (customerIds.length > 0 && (!move.customerId || !customerIds.includes(move.customerId))) return false;
+    }
+    if (filters.projectId) {
+      const projectIds = filters.projectId.split(",").filter(Boolean);
+      if (projectIds.length > 0 && (!move.projectId || !projectIds.includes(move.projectId))) return false;
+    }
     if (filters.fromDate || filters.toDate) {
       if (!isDateInRange(move.createdAt, filters.fromDate, filters.toDate)) return false;
     }

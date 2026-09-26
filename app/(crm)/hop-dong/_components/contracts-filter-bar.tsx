@@ -5,7 +5,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { CustomerLookup } from "@/components/lookups/customer-lookup";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -44,22 +44,25 @@ export function ContractsFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Trạng thái"
             value={filters.status ?? ""}
-            onChange={(e) => setFilter("status", e.target.value)}
-          >
-            <option value="">Trạng thái</option>
-            <option value="draft">Nháp</option>
-            <option value="active">Hiệu lực</option>
-            <option value="completed">Hoàn thành</option>
-            <option value="cancelled">Đã hủy</option>
-          </Select>
+            onChange={(val) => setFilter("status", val)}
+            options={[
+              { value: "draft", label: "Nháp" },
+              { value: "active", label: "Hiệu lực" },
+              { value: "completed", label: "Hoàn thành" },
+              { value: "cancelled", label: "Đã hủy" },
+            ]}
+          />
           <CustomerLookup
+            multiple
             value={filters.customerId}
             onChange={(v) => setFilter("customerId", v)}
             emptyLabel="Khách hàng"
           />
           <OwnerLookup
+            multiple
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
           />

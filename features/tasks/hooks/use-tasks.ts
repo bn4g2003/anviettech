@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { tasksService } from "@/features/tasks/services/tasks-service";
 import type { Task, TaskInput } from "@/features/tasks/types";
 
-function viewToDue(view?: string) {
-  if (view === "today" || view === "overdue" || view === "upcoming") return view;
-  return undefined;
+function parseViews(view?: string) {
+  if (!view) return [];
+  return view.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 export function useTasks(filters?: {
@@ -31,16 +31,35 @@ export function useTasks(filters?: {
     }
     setLoading(true);
     try {
-      const list = await tasksService.list({
+      const views = parseViews(filters?.view);
+      const isSingleDue = views.length === 1 && (views[0] === "today" || views[0] === "overdue" || views[0] === "upcoming");
+      let list = await tasksService.list({
         search: filters?.query,
         status: filters?.status,
         ownerId: filters?.ownerId,
         customerId: filters?.customerId,
         dealId: filters?.dealId,
         type: filters?.type,
-        due: viewToDue(filters?.view),
-        scope: filters?.scope === "my" || filters?.view === "my" ? "my" : undefined,
+        due: isSingleDue ? (views[0] as "today" | "overdue" | "upcoming") : undefined,
+        scope: filters?.scope === "my" || views.includes("my") ? "my" : undefined,
       });
+
+      if (Array.isArray(list) && views.length > 0 && !isSingleDue) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        list = list.filter((task) => {
+          if (!task.dueAt) return views.includes("upcoming");
+          const taskDate = task.dueAt.slice(0, 10);
+          const isOverdue = taskDate < todayStr && task.status === "open";
+          const isToday = taskDate === todayStr && task.status === "open";
+          const isUpcoming = taskDate > todayStr && task.status === "open";
+          if (views.includes("overdue") && isOverdue) return true;
+          if (views.includes("today") && isToday) return true;
+          if (views.includes("upcoming") && isUpcoming) return true;
+          if (views.includes("my")) return true;
+          return false;
+        });
+      }
+
       setRows(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Error loading tasks:", err);

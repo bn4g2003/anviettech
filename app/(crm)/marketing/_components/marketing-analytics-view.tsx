@@ -122,7 +122,7 @@ export function MarketingAnalyticsView() {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {/* Total Marketing Customers */}
         <div className="rounded-lg border border-border bg-white p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
@@ -157,11 +157,25 @@ export function MarketingAnalyticsView() {
             <span className="text-xs font-medium text-muted">Tỷ lệ Thắng (Win Rate)</span>
             <Trophy className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-foreground">
+          <p className="mt-2 text-2xl font-bold text-emerald-600">
             {data?.winRate ?? 0}%
           </p>
           <p className="mt-0.5 text-[11px] text-muted">
             {data?.wonDeals ?? 0} thắng / {(data?.wonDeals ?? 0) + (data?.lostDeals ?? 0)} cơ hội đã chốt
+          </p>
+        </div>
+
+        {/* Loss Rate */}
+        <div className="rounded-lg border border-border bg-white p-3.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted">Tỷ lệ Thua (Loss Rate)</span>
+            <XCircle className="h-4 w-4 text-muted" />
+          </div>
+          <p className="mt-2 text-2xl font-bold text-rose-600">
+            {data?.lossRate ?? 0}%
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted">
+            {data?.lostDeals ?? 0} thua / {(data?.wonDeals ?? 0) + (data?.lostDeals ?? 0)} cơ hội đã chốt
           </p>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
   allowEmpty?: boolean;
   emptyLabel?: string;
   disabled?: boolean;
+  multiple?: boolean;
 };
 
 export function OwnerLookup({
@@ -20,8 +22,22 @@ export function OwnerLookup({
   allowEmpty = true,
   emptyLabel = "Người phụ trách",
   disabled,
+  multiple = false,
 }: Props) {
   const owners = useOwners();
+
+  if (multiple) {
+    return (
+      <MultiSelectFilter
+        title={emptyLabel}
+        value={value}
+        onChange={onChange}
+        className={className}
+        disabled={disabled}
+        options={owners.map((o) => ({ value: o.id, label: o.name }))}
+      />
+    );
+  }
   return (
     <Select
       className={cn("w-auto min-w-[130px] max-w-[190px] shrink-0 text-xs", className)}

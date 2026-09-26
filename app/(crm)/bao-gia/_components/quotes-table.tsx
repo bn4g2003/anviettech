@@ -34,7 +34,8 @@ export function QuotesTable() {
   const filtered = useMemo(() => {
     let result = rows;
     if (list.filters.ownerId) {
-      result = result.filter((r) => r.owner.id === list.filters.ownerId);
+      const ids = list.filters.ownerId.split(",").filter(Boolean);
+      if (ids.length > 0) result = result.filter((r) => ids.includes(r.owner.id));
     }
     if (list.query.trim()) {
       const q = list.query.toLowerCase().trim();

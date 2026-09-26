@@ -4,7 +4,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
@@ -44,25 +44,21 @@ export function ProductsFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Danh mục"
             value={filters.category ?? ""}
-            onChange={(e) => setFilter("category", e.target.value)}
-          >
-            <option value="">Danh mục</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </Select>
-          <Select
+            onChange={(val) => setFilter("category", val)}
+            options={categories.map((c) => ({ value: c, label: c }))}
+          />
+          <MultiSelectFilter
+            title="Trạng thái"
             value={filters.status ?? ""}
-            onChange={(e) => setFilter("status", e.target.value)}
-          >
-            <option value="">Trạng thái</option>
-            <option value="active">Đang bán</option>
-            <option value="inactive">Ngưng</option>
-          </Select>
+            onChange={(val) => setFilter("status", val)}
+            options={[
+              { value: "active", label: "Đang bán" },
+              { value: "inactive", label: "Ngưng" },
+            ]}
+          />
         </>
       }
       actions={

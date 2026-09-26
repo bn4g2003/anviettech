@@ -36,12 +36,13 @@ export function StockLevelsTable() {
   const { levels, balances, warehouses, loading } = useInventory();
 
   const rows: StockRow[] = useMemo(() => {
-    const warehouseId = list.filters.warehouseId;
-    if (warehouseId) {
-      const warehouse = warehouses.find((w) => w.id === warehouseId);
-      const warehouseLabel = warehouse ? `${warehouse.code} — ${warehouse.name}` : "Kho đã chọn";
-      const whBalances = balances.filter((b) => b.warehouseId === warehouseId);
+    const warehouseIdFilter = list.filters.warehouseId;
+    const selectedWhIds = warehouseIdFilter ? warehouseIdFilter.split(",").filter(Boolean) : [];
+    if (selectedWhIds.length > 0) {
+      const whBalances = balances.filter((b) => selectedWhIds.includes(b.warehouseId));
       return whBalances.map((b) => {
+        const warehouse = warehouses.find((w) => w.id === b.warehouseId);
+        const warehouseLabel = warehouse ? `${warehouse.code} — ${warehouse.name}` : (b.warehouseName || "Kho đã chọn");
         const prod = levels.find((l) => l.productId === b.productId)?.product;
         const qty = Number(b.qty);
         return {
@@ -85,13 +86,18 @@ export function StockLevelsTable() {
 
   const filtered = useMemo(() => {
     const q = list.query.trim().toLowerCase();
+    const categories = list.filters.category ? list.filters.category.split(",").filter(Boolean) : [];
+    const stockStatuses = list.filters.stockStatus ? list.filters.stockStatus.split(",").filter(Boolean) : [];
     return rows.filter((row) => {
       const p = row.product;
       if (!p) return false;
-      if (list.filters.category && p.category !== list.filters.category) return false;
+      if (categories.length > 0 && !categories.includes(p.category)) return false;
       const isLow = p.minStock > 0 && row.qty < p.minStock;
-      if (list.filters.stockStatus === "low" && !isLow) return false;
-      if (list.filters.stockStatus === "ok" && isLow) return false;
+      if (stockStatuses.length > 0) {
+        const matchesLow = stockStatuses.includes("low") && isLow;
+        const matchesOk = stockStatuses.includes("ok") && !isLow;
+        if (!matchesLow && !matchesOk) return false;
+      }
       if (!q) return true;
       return (
         p.sku.toLowerCase().includes(q) ||

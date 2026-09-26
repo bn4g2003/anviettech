@@ -5,7 +5,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { apiFetch, toQuery } from "@/lib/api-client";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
@@ -71,15 +71,16 @@ export function StockMovesFilterBar() {
             rows={references.warehouses}
             onChange={(value) => setFilter("warehouseId", value)}
           />
-          <Select
+          <MultiSelectFilter
+            title="Trạng thái"
             value={filters.status ?? ""}
-            onChange={(e) => setFilter("status", e.target.value)}
-          >
-            <option value="">Trạng thái</option>
-            <option value="draft">Nháp</option>
-            <option value="posted">Đã ghi sổ</option>
-            <option value="cancelled">Đã hủy</option>
-          </Select>
+            onChange={(value) => setFilter("status", value)}
+            options={[
+              { value: "draft", label: "Nháp" },
+              { value: "posted", label: "Đã ghi sổ" },
+              { value: "cancelled", label: "Đã hủy" },
+            ]}
+          />
           <ReferenceFilter label="Nhà cung cấp" value={filters.supplierId ?? ""} rows={references.suppliers} onChange={(value) => setFilter("supplierId", value)} />
           <ReferenceFilter label="Khách hàng" value={filters.customerId ?? ""} rows={references.customers} onChange={(value) => setFilter("customerId", value)} />
           <ReferenceFilter label="Công trình" value={filters.projectId ?? ""} rows={references.projects} onChange={(value) => setFilter("projectId", value)} />
@@ -117,6 +118,26 @@ export function StockMovesFilterBar() {
   );
 }
 
-function ReferenceFilter({ label, value, rows, onChange }: { label: string; value: string; rows: Reference[]; onChange: (value: string) => void }) {
-  return <Select value={value} onChange={(event) => onChange(event.target.value)}><option value="">{label}</option>{rows.map((row) => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select>;
+function ReferenceFilter({
+  label,
+  value,
+  rows,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  rows: Reference[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <MultiSelectFilter
+      title={label}
+      value={value}
+      onChange={onChange}
+      options={rows.map((row) => ({
+        value: row.id,
+        label: `${row.code} — ${row.name}`,
+      }))}
+    />
+  );
 }

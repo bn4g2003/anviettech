@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { formatVnd } from "@/features/shared/utils/money";
 import { loadOwners } from "@/features/shared/api/owners";
 import { apiFetch, toQuery } from "@/lib/api-client";
@@ -278,44 +278,35 @@ export function FinanceReportsPanel() {
             />
           </label>
 
-          <Select
-            className="h-8 w-36 max-w-[150px] truncate text-xs"
+          <MultiSelectFilter
+            title="Khách hàng"
             value={filters.customerId}
-            onChange={(e) => setFilters((x) => ({ ...x, customerId: e.target.value }))}
-          >
-            <option value="">Khách hàng</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilters((x) => ({ ...x, customerId: val }))}
+            options={customers.map((c) => ({
+              value: c.id,
+              label: c.name,
+            }))}
+          />
 
-          <Select
-            className="h-8 w-32 text-xs"
+          <MultiSelectFilter
+            title="Nhân viên"
             value={filters.employeeId}
-            onChange={(e) => setFilters((x) => ({ ...x, employeeId: e.target.value }))}
-          >
-            <option value="">Nhân viên</option>
-            {employees.map((em) => (
-              <option key={em.id} value={em.id}>
-                {em.name}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilters((x) => ({ ...x, employeeId: val }))}
+            options={employees.map((em) => ({
+              value: em.id,
+              label: em.name,
+            }))}
+          />
 
-          <Select
-            className="h-8 w-32 text-xs"
+          <MultiSelectFilter
+            title="Công trình"
             value={filters.projectId}
-            onChange={(e) => setFilters((x) => ({ ...x, projectId: e.target.value }))}
-          >
-            <option value="">Công trình</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilters((x) => ({ ...x, projectId: val }))}
+            options={projects.map((p) => ({
+              value: p.id,
+              label: p.name,
+            }))}
+          />
         </div>
 
         <div className="flex items-center gap-2">

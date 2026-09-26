@@ -4,7 +4,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
@@ -47,24 +47,27 @@ export function CustomersFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Phân loại"
             value={filters.type ?? ""}
-            onChange={(e) => setFilter("type", e.target.value)}
-          >
-            <option value="">Loại</option>
-            <option value="company">Doanh nghiệp</option>
-            <option value="individual">Cá nhân</option>
-          </Select>
-          <Select
+            onChange={(val) => setFilter("type", val)}
+            options={[
+              { value: "company", label: "Doanh nghiệp" },
+              { value: "individual", label: "Cá nhân" },
+            ]}
+          />
+          <MultiSelectFilter
+            title="Trạng thái"
             value={filters.status ?? ""}
-            onChange={(e) => setFilter("status", e.target.value)}
-          >
-            <option value="">Trạng thái</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="lead">Lead</option>
-            <option value="inactive">Ngưng</option>
-          </Select>
+            onChange={(val) => setFilter("status", val)}
+            options={[
+              { value: "active", label: "Đang hoạt động" },
+              { value: "lead", label: "Lead" },
+              { value: "inactive", label: "Ngưng" },
+            ]}
+          />
           <OwnerLookup
+            multiple
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
           />

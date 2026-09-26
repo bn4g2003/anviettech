@@ -28,6 +28,13 @@ export function AnalyticsKpiRow() {
       tone: data.winRate >= 50 ? ("success" as const) : ("default" as const),
     },
     {
+      label: "Tỷ lệ thua",
+      value: `${data.lossRate}%`,
+      href: "/co-hoi",
+      hint: "Lost / closed",
+      tone: data.lossRate >= 50 ? ("danger" as const) : ("default" as const),
+    },
+    {
       label: "Công nợ",
       value: formatVnd(data.totalDebt),
       href: "/tai-chinh",
@@ -49,7 +56,7 @@ export function AnalyticsKpiRow() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 px-3 py-2 md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-2 px-3 py-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
       {cards.map((c) => (
         <KpiCard
           key={c.label}

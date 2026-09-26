@@ -99,6 +99,7 @@ export function useAnalytics() {
     revenueThisMonth: raw?.revenuePaid ?? 0,
     pipelineValue,
     winRate: closed === 0 ? 0 : Math.round((won / closed) * 100),
+    lossRate: closed === 0 ? 0 : Math.round((lost / closed) * 100),
     totalDebt: raw?.receivables ?? 0,
     lowStockCount: raw?.lowStock?.length ?? 0,
     openTasks: raw?.overdueTasks ?? 0,

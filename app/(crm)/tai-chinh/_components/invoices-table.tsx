@@ -27,10 +27,12 @@ export function InvoicesTable() {
   const sorted = useMemo(() => {
     let result = invoices;
     if (list.filters.customerId) {
-      result = result.filter((i) => i.customerId === list.filters.customerId);
+      const custIds = list.filters.customerId.split(",").filter(Boolean);
+      if (custIds.length > 0) result = result.filter((i) => custIds.includes(i.customerId));
     }
     if (list.filters.invoiceStatus) {
-      result = result.filter((i) => i.status === list.filters.invoiceStatus);
+      const statuses = list.filters.invoiceStatus.split(",").filter(Boolean);
+      if (statuses.length > 0) result = result.filter((i) => statuses.includes(i.status));
     }
     if (list.filters.fromDate || list.filters.toDate) {
       result = result.filter((i) =>

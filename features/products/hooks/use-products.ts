@@ -21,7 +21,8 @@ export function useProducts(filters?: { query?: string; status?: string; categor
       ]);
       const fullList = Array.isArray(rawList) ? rawList : [];
       setAllProducts(fullList);
-      const list = fullList.filter((p) => !filters?.category || p.category === filters.category);
+      const selectedCategories = filters?.category ? filters.category.split(",").filter(Boolean) : [];
+      const list = selectedCategories.length > 0 ? fullList.filter((p) => selectedCategories.includes(p.category)) : fullList;
       setRows(list);
       const map: Record<string, number> = {};
       for (const level of levels ?? []) map[level.productId] = level.qty;

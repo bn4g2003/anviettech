@@ -5,7 +5,7 @@ import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { CustomerLookup } from "@/components/lookups/customer-lookup";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { DEAL_STAGE_META, type DealStage } from "@/features/deals/types";
@@ -52,22 +52,22 @@ export function DealsFilterBar() {
             value={query}
             onChange={setQuery}
           />
-          <Select
+          <MultiSelectFilter
+            title="Giai đoạn"
             value={filters.stage ?? ""}
-            onChange={(e) => setFilter("stage", e.target.value)}
-          >
-            <option value="">Giai đoạn</option>
-            {STAGES.map((s) => (
-              <option key={s} value={s}>
-                {DEAL_STAGE_META[s].label}
-              </option>
-            ))}
-          </Select>
+            onChange={(val) => setFilter("stage", val)}
+            options={STAGES.map((s) => ({
+              value: s,
+              label: DEAL_STAGE_META[s].label,
+            }))}
+          />
           <OwnerLookup
+            multiple
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
           />
           <CustomerLookup
+            multiple
             value={filters.customerId}
             onChange={(v) => setFilter("customerId", v)}
             emptyLabel="Khách hàng"

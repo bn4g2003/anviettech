@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
 import { FilterBar } from "@/components/datagrid/filter-bar";
+import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 import { Button } from "@/components/ui/button";
@@ -116,9 +117,11 @@ export default function UsersPage() {
   // Filtering
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const statuses = statusFilter ? statusFilter.split(",").filter(Boolean) : [];
+    const roles = roleFilter ? roleFilter.split(",").filter(Boolean) : [];
     return users.filter((u) => {
-      if (statusFilter && u.status !== statusFilter) return false;
-      if (roleFilter && !u.roleIds.includes(roleFilter)) return false;
+      if (statuses.length > 0 && !statuses.includes(u.status)) return false;
+      if (roles.length > 0 && !u.roleIds.some((rid) => roles.includes(rid))) return false;
       if (!q) return true;
       return (
         u.fullName.toLowerCase().includes(q) ||
@@ -421,33 +424,30 @@ export default function UsersPage() {
                 setPage(1);
               }}
             />
-            <Select
-              className="w-44"
+            <MultiSelectFilter
+              title="Vai trò"
               value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
+              onChange={(val) => {
+                setRoleFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Vai trò</option>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
-            <Select
-              className="w-36"
+              options={roles.map((r) => ({
+                value: r.id,
+                label: r.name,
+              }))}
+            />
+            <MultiSelectFilter
+              title="Trạng thái"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Trạng thái</option>
-              <option value="active">Hoạt động</option>
-              <option value="inactive">Đã khóa</option>
-            </Select>
+              options={[
+                { value: "active", label: "Hoạt động" },
+                { value: "inactive", label: "Đã khóa" },
+              ]}
+            />
           </>
         }
         actions={

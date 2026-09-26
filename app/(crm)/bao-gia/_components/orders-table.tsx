@@ -31,10 +31,12 @@ export function OrdersTable() {
   const filtered = useMemo(() => {
     let result = rows;
     if (list.filters.customerId) {
-      result = result.filter((r) => r.customerId === list.filters.customerId);
+      const ids = list.filters.customerId.split(",").filter(Boolean);
+      if (ids.length > 0) result = result.filter((r) => ids.includes(r.customerId));
     }
     if (list.filters.ownerId) {
-      result = result.filter((r) => r.owner.id === list.filters.ownerId);
+      const ids = list.filters.ownerId.split(",").filter(Boolean);
+      if (ids.length > 0) result = result.filter((r) => ids.includes(r.owner.id));
     }
     if (list.filters.fromDate || list.filters.toDate) {
       result = result.filter((r) =>

@@ -2,19 +2,20 @@ import { z } from "zod";
 
 const dbUuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "ID không hợp lệ");
 const optionalDbUuid = dbUuid.optional().nullable().or(z.literal("")).transform((v) => (v ? v : undefined));
+const optionalMultiDbUuid = z.string().trim().max(1000).optional().nullable().or(z.literal("")).transform((v) => (v ? v : undefined));
 
 export const pageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(1000).default(25),
   search: z.string().trim().max(120).optional(),
-  status: z.string().trim().max(40).optional(),
-  ownerId: optionalDbUuid,
-  customerId: optionalDbUuid,
-  dealId: optionalDbUuid,
+  status: z.string().trim().max(255).optional(),
+  ownerId: optionalMultiDbUuid,
+  customerId: optionalMultiDbUuid,
+  dealId: optionalMultiDbUuid,
   sort: z.string().trim().max(40).optional(),
   direction: z.enum(["asc", "desc"]).optional(),
-  type: z.string().trim().max(40).optional(),
-  stage: z.string().trim().max(40).optional(),
+  type: z.string().trim().max(255).optional(),
+  stage: z.string().trim().max(255).optional(),
   due: z.enum(["overdue", "today", "upcoming"]).optional(),
   scope: z.enum(["my"]).optional(),
 });
@@ -294,7 +295,7 @@ export const revenueEntryPaymentSchema = z.object({
 
 export const financeReportFilterSchema = z.object({
   from: z.string().date().optional(), to: z.string().date().optional(),
-  customerId: optionalDbUuid, employeeId: optionalDbUuid, projectId: optionalDbUuid,
+  customerId: optionalMultiDbUuid, employeeId: optionalMultiDbUuid, projectId: optionalMultiDbUuid,
 }).refine((value) => !value.from || !value.to || value.from <= value.to, { message: "Khoảng thời gian không hợp lệ", path: ["to"] });
 
 export const documentSchema = z.object({
