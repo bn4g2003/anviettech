@@ -822,8 +822,10 @@ export async function getCampaign(id: string) {
   const result = await query<{
     id: string; code: string; name: string; channel: string; status: string;
     budget: string; spent: string; startDate: string | null; endDate: string | null; ownerId: string | null;
+    content: string | null; landingPageUrl: string | null;
   }>(
-    `SELECT id, code, name, channel, status, budget, spent, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId"
+    `SELECT id, code, name, channel, status, budget, spent, content, landing_page_url AS "landingPageUrl",
+      start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId"
      FROM campaigns WHERE id=$1 AND deleted_at IS NULL`,
     [id],
   );
@@ -831,24 +833,41 @@ export async function getCampaign(id: string) {
   return result.rows[0];
 }
 
-export async function createCampaign(input: { name: string; channel: string; budget?: number; startDate?: string; endDate?: string; ownerId?: string; status?: string }, actorId: string) {
+export async function createCampaign(input: {
+  name: string; channel: string; budget?: number; startDate?: string; endDate?: string; ownerId?: string; status?: string;
+  content?: string | null; landingPageUrl?: string | null;
+}, actorId: string) {
   const result = await query(
-    `INSERT INTO campaigns(code,name,channel,status,budget,start_date,end_date,owner_id,created_by,updated_by)
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
-     RETURNING id, code, name, channel, status, budget, spent, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId"`,
-    [code("KM"), input.name, input.channel, input.status ?? "draft", input.budget ?? 0, input.startDate ?? null, input.endDate ?? null, input.ownerId ?? actorId, actorId],
+    `INSERT INTO campaigns(code,name,channel,status,budget,start_date,end_date,owner_id,content,landing_page_url,created_by,updated_by)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)
+     RETURNING id, code, name, channel, status, budget, spent, content, landing_page_url AS "landingPageUrl",
+       start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId"`,
+    [
+      code("KM"), input.name, input.channel, input.status ?? "draft", input.budget ?? 0,
+      input.startDate ?? null, input.endDate ?? null, input.ownerId ?? actorId,
+      input.content ?? null, input.landingPageUrl ?? null, actorId,
+    ],
   );
   return result.rows[0];
 }
 
-export async function updateCampaign(id: string, input: Partial<{ name: string; channel: string; budget: number; spent: number; startDate: string; endDate: string; status: string; ownerId: string }>, actorId: string) {
+export async function updateCampaign(id: string, input: Partial<{
+  name: string; channel: string; budget: number; spent: number; startDate: string; endDate: string; status: string; ownerId: string;
+  content: string | null; landingPageUrl: string | null;
+}>, actorId: string) {
   const result = await query(
     `UPDATE campaigns SET name=COALESCE($1,name), channel=COALESCE($2,channel), budget=COALESCE($3,budget), spent=COALESCE($4,spent),
      start_date=COALESCE($5::date,start_date), end_date=COALESCE($6::date,end_date), status=COALESCE($7,status), owner_id=COALESCE($8,owner_id),
-     updated_at=now(), updated_by=$9
-     WHERE id=$10 AND deleted_at IS NULL
-     RETURNING id, code, name, channel, status, budget, spent, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId"`,
-    [input.name ?? null, input.channel ?? null, input.budget ?? null, input.spent ?? null, input.startDate ?? null, input.endDate ?? null, input.status ?? null, input.ownerId ?? null, actorId, id],
+     content=COALESCE($9,content), landing_page_url=COALESCE($10,landing_page_url),
+     updated_at=now(), updated_by=$11
+     WHERE id=$12 AND deleted_at IS NULL
+     RETURNING id, code, name, channel, status, budget, spent, content, landing_page_url AS "landingPageUrl",
+       start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId"`,
+    [
+      input.name ?? null, input.channel ?? null, input.budget ?? null, input.spent ?? null,
+      input.startDate ?? null, input.endDate ?? null, input.status ?? null, input.ownerId ?? null,
+      input.content ?? null, input.landingPageUrl ?? null, actorId, id,
+    ],
   );
   if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy chiến dịch");
   return result.rows[0];
@@ -866,6 +885,194 @@ export async function getCampaignStats(id: string) {
     [id],
   );
   return { ...campaign, leadsCount: Number(stats.rows[0].leads), convertedCount: Number(stats.rows[0].converted), revenue: Number(stats.rows[0].revenue) };
+}
+
+export async function getMarketingAnalyticsOverview(params?: { campaignId?: string; source?: string }) {
+  const conditions: string[] = ["c.deleted_at IS NULL"];
+  const values: unknown[] = [];
+
+  if (params?.campaignId) {
+    values.push(params.campaignId);
+    conditions.push(`c.campaign_id = $${values.length}`);
+  } else if (params?.source && params.source !== "all_marketing" && params.source !== "all") {
+    values.push(params.source);
+    conditions.push(`c.source = $${values.length}`);
+  } else {
+    conditions.push(`(c.campaign_id IS NOT NULL OR c.source ILIKE ANY(ARRAY['%marketing%', '%quảng cáo%', '%facebook%', '%google%', '%website%', '%ads%', '%online%', '%zalo%', '%tiktok%']))`);
+  }
+
+  const whereClause = conditions.join(" AND ");
+
+  // 1. Marketing Customers with deals aggregate
+  const custRes = await query<{
+    id: string; code: string; name: string; phone: string | null; email: string | null;
+    source: string | null; campaignId: string | null; campaignName: string | null; ownerName: string | null;
+    dealsCount: number; wonDealsCount: number; lostDealsCount: number;
+    totalDealValue: string; wonDealValue: string; createdAt: string;
+  }>(
+    `SELECT
+      c.id, c.code, c.name, c.phone, c.email, c.source,
+      c.campaign_id AS "campaignId",
+      camp.name AS "campaignName",
+      u.full_name AS "ownerName",
+      COUNT(d.id)::int AS "dealsCount",
+      COUNT(CASE WHEN d.stage = 'won' THEN 1 END)::int AS "wonDealsCount",
+      COUNT(CASE WHEN d.stage = 'lost' THEN 1 END)::int AS "lostDealsCount",
+      COALESCE(SUM(d.value), 0)::numeric AS "totalDealValue",
+      COALESCE(SUM(CASE WHEN d.stage = 'won' THEN d.value ELSE 0 END), 0)::numeric AS "wonDealValue",
+      c.created_at AS "createdAt"
+    FROM customers c
+    LEFT JOIN campaigns camp ON camp.id = c.campaign_id
+    LEFT JOIN users u ON u.id = c.owner_id
+    LEFT JOIN deals d ON d.customer_id = c.id AND d.deleted_at IS NULL
+    WHERE ${whereClause}
+    GROUP BY c.id, c.code, c.name, c.phone, c.email, c.source, c.campaign_id, camp.name, u.full_name, c.created_at
+    ORDER BY c.created_at DESC`,
+    values,
+  );
+
+  // 2. Leads count
+  const leadConditions: string[] = ["deleted_at IS NULL"];
+  const leadValues: unknown[] = [];
+  if (params?.campaignId) {
+    leadValues.push(params.campaignId);
+    leadConditions.push(`campaign_id = $${leadValues.length}`);
+  } else if (params?.source && params.source !== "all_marketing" && params.source !== "all") {
+    leadValues.push(params.source);
+    leadConditions.push(`source = $${leadValues.length}`);
+  } else {
+    leadConditions.push(`(campaign_id IS NOT NULL OR source ILIKE ANY(ARRAY['%marketing%', '%quảng cáo%', '%facebook%', '%google%', '%website%', '%ads%', '%online%', '%zalo%', '%tiktok%']))`);
+  }
+
+  const leadsRes = await query<{ total: string; converted: string }>(
+    `SELECT
+      COUNT(*)::text AS total,
+      COUNT(CASE WHEN status = 'converted' THEN 1 END)::text AS converted
+     FROM leads
+     WHERE ${leadConditions.join(" AND ")}`,
+    leadValues,
+  );
+
+  const totalLeads = Number(leadsRes.rows[0]?.total || 0);
+  const convertedLeads = Number(leadsRes.rows[0]?.converted || 0);
+
+  // 3. Deals aggregate by stage
+  const dealsRes = await query<{ stage: string; count: string; value: string }>(
+    `SELECT
+      d.stage,
+      COUNT(d.id)::text AS count,
+      COALESCE(SUM(d.value), 0)::text AS value
+    FROM deals d
+    JOIN customers c ON d.customer_id = c.id
+    WHERE d.deleted_at IS NULL AND ${whereClause}
+    GROUP BY d.stage`,
+    values,
+  );
+
+  let totalDeals = 0;
+  let wonDeals = 0;
+  let wonValue = 0;
+  let lostDeals = 0;
+  let lostValue = 0;
+  let openDeals = 0;
+  let openValue = 0;
+  let proposalDeals = 0;
+  let proposalValue = 0;
+
+  for (const row of dealsRes.rows) {
+    const c = Number(row.count);
+    const v = Number(row.value);
+    totalDeals += c;
+    if (row.stage === "won") {
+      wonDeals += c;
+      wonValue += v;
+    } else if (row.stage === "lost") {
+      lostDeals += c;
+      lostValue += v;
+    } else {
+      openDeals += c;
+      openValue += v;
+      if (row.stage === "proposal" || row.stage === "negotiation") {
+        proposalDeals += c;
+        proposalValue += v;
+      }
+    }
+  }
+
+  const closedDeals = wonDeals + lostDeals;
+  const winRate = closedDeals > 0 ? Math.round((wonDeals / closedDeals) * 100) : 0;
+  const lossRate = closedDeals > 0 ? Math.round((lostDeals / closedDeals) * 100) : 0;
+
+  const funnel = [
+    {
+      id: "leads",
+      label: "1. Tiềm năng Marketing (Leads)",
+      count: totalLeads,
+      value: 0,
+      secondary: `${totalLeads} tiềm năng ghi nhận`,
+    },
+    {
+      id: "customers",
+      label: "2. Chuyển đổi thành Khách hàng",
+      count: custRes.rows.length,
+      value: 0,
+      secondary: `${custRes.rows.length} KH từ Marketing`,
+    },
+    {
+      id: "deals",
+      label: "3. Cơ hội bán hàng (Deals)",
+      count: totalDeals,
+      value: openValue + wonValue + lostValue,
+      secondary: `${totalDeals} cơ hội được tạo`,
+    },
+    {
+      id: "negotiation",
+      label: "4. Báo giá & Đàm phán",
+      count: proposalDeals,
+      value: proposalValue,
+      secondary: `${proposalDeals} đang đàm phán`,
+    },
+    {
+      id: "won",
+      label: "5. Chốt Thắng (Won Deals)",
+      count: wonDeals,
+      value: wonValue,
+      secondary: `${wonDeals} đơn chốt thành công`,
+    },
+  ];
+
+  const customers = custRes.rows.map((r) => ({
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    phone: r.phone,
+    email: r.email,
+    source: r.source,
+    campaignId: r.campaignId,
+    campaignName: r.campaignName,
+    ownerName: r.ownerName,
+    dealsCount: Number(r.dealsCount),
+    wonDealsCount: Number(r.wonDealsCount),
+    lostDealsCount: Number(r.lostDealsCount),
+    totalDealValue: Number(r.totalDealValue),
+    wonDealValue: Number(r.wonDealValue),
+    createdAt: r.createdAt,
+  }));
+
+  return {
+    totalCustomers: customers.length,
+    totalLeads,
+    convertedLeads,
+    totalDeals,
+    wonDeals,
+    lostDeals,
+    openDeals,
+    winRate,
+    lossRate,
+    totalRevenue: wonValue,
+    funnel,
+    customers,
+  };
 }
 
 // —— Inventory ——

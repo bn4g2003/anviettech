@@ -50,3 +50,28 @@ export function useMarketing(filters?: { query?: string; status?: string; channe
     },
   };
 }
+
+export function useMarketingAnalytics(params?: { campaignId?: string; source?: string }) {
+  const [data, setData] = useState<import("@/features/marketing/types").MarketingAnalyticsOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await marketingService.getAnalytics(params);
+      setData(res);
+    } catch (err) {
+      console.error("Error loading marketing analytics:", err);
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [params?.campaignId, params?.source]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return { data, loading, reload };
+}
+

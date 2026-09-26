@@ -6,7 +6,7 @@ import { useMarketing } from "@/features/marketing/hooks/use-marketing";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatDate } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
-import { UserPlus } from "lucide-react";
+import { ExternalLink, UserPlus } from "lucide-react";
 import { useState } from "react";
 import {
   CAMPAIGN_CHANNEL_LABELS,
@@ -129,6 +129,28 @@ export function CampaignDetailDrawer() {
           </div>
           <p className="text-[11px] text-muted">Đã dùng {spendPct}% ngân sách</p>
         </div>
+
+        {campaign.landingPageUrl ? (
+          <div className="mb-4 rounded border border-border bg-muted-bg/30 p-3 text-xs space-y-1">
+            <p className="text-muted font-medium">Trang chạy quảng cáo (Landing Page):</p>
+            <a
+              href={campaign.landingPageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-primary hover:underline font-mono break-all font-medium"
+            >
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              <span>{campaign.landingPageUrl}</span>
+            </a>
+          </div>
+        ) : null}
+
+        {campaign.content ? (
+          <div className="mb-4 rounded border border-border bg-muted-bg/30 p-3 text-xs space-y-1">
+            <p className="text-muted font-medium">Nội dung chiến dịch:</p>
+            <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed font-normal">{campaign.content}</p>
+          </div>
+        ) : null}
 
         <Button
           variant="outline"

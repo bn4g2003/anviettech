@@ -22,6 +22,7 @@ import {
   revenueEntrySchema,
   revenueReductionSchema,
   financeReportFilterSchema,
+  campaignSchema,
 } from "./validation";
 
 describe("CRM validation", () => {
@@ -234,5 +235,28 @@ describe("CRM validation", () => {
   it("validates a warehouse and rejects an empty code", () => {
     expect(warehouseSchema.safeParse({ code: "KHO-HN", name: "Kho Hà Nội", isDefault: true }).success).toBe(true);
     expect(warehouseSchema.safeParse({ code: "", name: "Kho Hà Nội" }).success).toBe(false);
+  });
+
+  it("validates campaignSchema with content and landingPageUrl", () => {
+    const valid = campaignSchema.safeParse({
+      name: "Chiến dịch Camera AI",
+      channel: "ads",
+      budget: 10000000,
+      content: "Chương trình ưu đãi giảm 20% đầu ghi",
+      landingPageUrl: "https://anviet.vn/khuyen-mai-camera",
+    });
+    expect(valid.success).toBe(true);
+    if (valid.success) {
+      expect(valid.data.content).toBe("Chương trình ưu đãi giảm 20% đầu ghi");
+      expect(valid.data.landingPageUrl).toBe("https://anviet.vn/khuyen-mai-camera");
+    }
+
+    const validEmpty = campaignSchema.safeParse({
+      name: "Chiến dịch Email",
+      channel: "email",
+      content: null,
+      landingPageUrl: null,
+    });
+    expect(validEmpty.success).toBe(true);
   });
 });

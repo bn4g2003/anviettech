@@ -10,7 +10,7 @@ import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatDate, isDateInRange } from "@/features/shared/utils/date";
 import { formatVnd } from "@/features/shared/utils/money";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
-import { Megaphone } from "lucide-react";
+import { ExternalLink, Megaphone } from "lucide-react";
 import { useMemo } from "react";
 import {
   CAMPAIGN_CHANNEL_LABELS,
@@ -93,6 +93,26 @@ export function CampaignsTable() {
       cell: (r) => (
         <span className="text-muted text-xs whitespace-nowrap">{CAMPAIGN_CHANNEL_LABELS[r.channel]}</span>
       ),
+    },
+    {
+      id: "landingPageUrl",
+      header: "Link quảng cáo",
+      cell: (r) =>
+        r.landingPageUrl ? (
+          <a
+            href={r.landingPageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-primary hover:underline text-xs whitespace-nowrap"
+            onClick={(e) => e.stopPropagation()}
+            title={r.landingPageUrl}
+          >
+            <ExternalLink className="h-3 w-3" />
+            <span>Mở link</span>
+          </a>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
     {
       id: "status",

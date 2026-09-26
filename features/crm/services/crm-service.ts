@@ -71,8 +71,8 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   campaigns: {
     module: "campaigns",
     table: "campaigns",
-    select: `id, code, name, channel, status, budget, spent, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
-    search: ["name", "code"],
+    select: `id, code, name, channel, status, budget, spent, content, landing_page_url AS "landingPageUrl", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    search: ["name", "code", "content"],
     sort: ["name", "code", "created_at", "updated_at"],
   },
   quotes: {

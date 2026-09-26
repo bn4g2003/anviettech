@@ -1,11 +1,12 @@
 import { apiFetch, toQuery } from "@/lib/api-client";
-import type { Campaign, CampaignInput } from "@/features/marketing/types";
+import type { Campaign, CampaignInput, MarketingAnalyticsOverview } from "@/features/marketing/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type ApiCampaign = {
   id: string; code: string; name: string; channel: string; status: string;
   budget: number | string; spent: number | string; startDate?: string | null; endDate?: string | null;
-  ownerId?: string | null; createdAt?: string; updatedAt?: string;
+  ownerId?: string | null; content?: string | null; landingPageUrl?: string | null;
+  createdAt?: string; updatedAt?: string;
 };
 
 async function mapCampaign(row: ApiCampaign, leadsCount = 0): Promise<Campaign> {
@@ -22,6 +23,8 @@ async function mapCampaign(row: ApiCampaign, leadsCount = 0): Promise<Campaign> 
     owner: ownerByIdSync(row.ownerId ?? "", owners),
     startDate: row.startDate ?? "",
     endDate: row.endDate ?? "",
+    content: row.content ?? "",
+    landingPageUrl: row.landingPageUrl ?? "",
     createdAt: row.createdAt ?? new Date().toISOString(),
     updatedAt: row.updatedAt ?? new Date().toISOString(),
   };
@@ -41,6 +44,12 @@ export const marketingService = {
       }),
     );
   },
+  async getAnalytics(params?: { campaignId?: string; source?: string }): Promise<MarketingAnalyticsOverview> {
+    const result = await apiFetch<MarketingAnalyticsOverview>(
+      `/api/v1/campaigns/analytics${toQuery(params ?? {})}`,
+    );
+    return result.data;
+  },
   async create(input: CampaignInput) {
     const result = await apiFetch<ApiCampaign>("/api/v1/campaigns", {
       method: "POST",
@@ -52,6 +61,8 @@ export const marketingService = {
         endDate: input.endDate || undefined,
         ownerId: input.owner?.id?.trim() ? input.owner.id.trim() : undefined,
         status: input.status,
+        content: input.content || undefined,
+        landingPageUrl: input.landingPageUrl || undefined,
       }),
     });
     return mapCampaign(result.data, 0);
@@ -68,6 +79,8 @@ export const marketingService = {
         endDate: patch.endDate,
         status: patch.status,
         ownerId: patch.owner?.id?.trim() ? patch.owner.id.trim() : undefined,
+        content: patch.content,
+        landingPageUrl: patch.landingPageUrl,
       }),
     });
     return mapCampaign(result.data);

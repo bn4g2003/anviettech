@@ -331,6 +331,14 @@ export function PermissionMatrixTable({
     onSetPermissions(ids);
   };
 
+  const applyPresetMarketing = () => {
+    const mktModules = ["campaigns", "leads", "customers", "documents"];
+    const ids = permissions
+      .filter((p) => mktModules.includes(p.module) && (p.scope === "all" || p.action !== "view"))
+      .map((p) => p.id);
+    onSetPermissions(ids);
+  };
+
   const clearAllPermissions = () => {
     onSetPermissions([]);
   };
@@ -389,6 +397,15 @@ export function PermissionMatrixTable({
               className="h-7 text-xs bg-white border-border text-foreground hover:bg-neutral-100"
             >
               Quản lý Kho
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={applyPresetMarketing}
+              className="h-7 text-xs bg-white border-border text-foreground hover:bg-neutral-100"
+            >
+              Marketing
             </Button>
             <Button
               type="button"

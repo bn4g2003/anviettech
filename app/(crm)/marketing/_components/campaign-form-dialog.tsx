@@ -35,6 +35,8 @@ const empty = {
   ownerId: "",
   startDate: toDateInput(nowIso()),
   endDate: toDateInput(daysFromNow(30)),
+  landingPageUrl: "",
+  content: "",
 };
 
 export function CampaignFormDialog() {
@@ -59,6 +61,8 @@ export function CampaignFormDialog() {
         ownerId: editing.owner.id,
         startDate: toDateInput(editing.startDate),
         endDate: toDateInput(editing.endDate),
+        landingPageUrl: editing.landingPageUrl || "",
+        content: editing.content || "",
       });
     } else if (list.createOpen) {
       setForm({ ...empty, ownerId: user?.id ?? "" });
@@ -85,6 +89,8 @@ export function CampaignFormDialog() {
       owner: ownerById(form.ownerId || user?.id || ""),
       startDate: fromDateInput(form.startDate),
       endDate: fromDateInput(form.endDate),
+      landingPageUrl: form.landingPageUrl.trim() || undefined,
+      content: form.content.trim() || undefined,
     };
     if (editing) {
       update(editing.id, payload);
@@ -215,6 +221,25 @@ export function CampaignFormDialog() {
             type="date"
             value={form.endDate}
             onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+          />
+        </label>
+        <label className="col-span-2 space-y-1 text-xs">
+          <span className="text-muted">Link trang chạy quảng cáo (Landing page / Website)</span>
+          <Input
+            type="url"
+            placeholder="https://anviet.vn/khuyen-mai-camera"
+            value={form.landingPageUrl}
+            onChange={(e) => setForm((f) => ({ ...f, landingPageUrl: e.target.value }))}
+          />
+        </label>
+        <label className="col-span-2 space-y-1 text-xs">
+          <span className="text-muted">Nội dung chiến dịch</span>
+          <textarea
+            rows={3}
+            placeholder="Nội dung, thông điệp, chương trình ưu đãi của chiến dịch quảng cáo..."
+            value={form.content}
+            onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+            className="w-full rounded-md border border-border bg-white px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-foreground focus:outline-none"
           />
         </label>
       </div>

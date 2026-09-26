@@ -213,6 +213,8 @@ export const campaignSchema = z.object({
   endDate: z.string().optional(),
   ownerId: optionalDbUuid,
   status: z.enum(["draft", "running", "paused", "completed"]).optional(),
+  content: z.string().optional().nullable(),
+  landingPageUrl: z.string().optional().nullable(),
 });
 
 export const stockMoveSchema = z.object({

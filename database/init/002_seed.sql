@@ -38,7 +38,7 @@ WHERE module IN ('products','analytics') AND action = 'view' AND scope = 'all';
 -- Marketing
 INSERT INTO role_permissions(role_id, permission_id)
 SELECT '00000000-0000-0000-0000-000000000005', id FROM permissions
-WHERE module IN ('campaigns','leads','customers','analytics','documents') AND scope = 'all';
+WHERE module IN ('campaigns','leads','customers','documents') AND scope = 'all';
 
 -- Kho
 INSERT INTO role_permissions(role_id, permission_id)

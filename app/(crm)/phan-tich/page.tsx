@@ -9,9 +9,14 @@ import { AnalyticsFunnel } from "./_components/analytics-funnel";
 import { AnalyticsWinLossWidget } from "./_components/analytics-win-loss-widget";
 import { AnalyticsTopCustomers } from "./_components/analytics-top-customers";
 import { AnalyticsReplenishmentForecast } from "./_components/analytics-replenishment-forecast";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Loader2 } from "lucide-react";
 
 export default function AnalyticsPage() {
+  const router = useRouter();
+  const { user, canView, loading: userLoading } = useCurrentUser();
   const {
     year,
     setYear,
@@ -22,6 +27,20 @@ export default function AnalyticsPage() {
     expenseBreakdown,
     availableYears,
   } = useAnalytics();
+
+  useEffect(() => {
+    if (!userLoading && user && !canView("analytics")) {
+      router.replace("/marketing");
+    }
+  }, [user, userLoading, canView, router]);
+
+  if (!userLoading && user && !canView("analytics")) {
+    return (
+      <div className="flex h-64 items-center justify-center text-xs text-muted">
+        Đang chuyển hướng về trang Marketing...
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">

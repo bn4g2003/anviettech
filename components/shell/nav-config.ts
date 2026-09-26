@@ -108,8 +108,8 @@ export function getRoleQuickViews(user?: CurrentUser | null): PublicView[] {
   if (isMarketing) {
     return [
       { href: "/marketing", label: "Chiến dịch đang chạy" },
+      { href: "/marketing?tab=analytics", label: "Hiệu quả Marketing" },
       { href: "/tiem-nang", label: "Tiềm năng mới" },
-      { href: "/phan-tich", label: "Hiệu quả chiến dịch" },
     ];
   }
 
