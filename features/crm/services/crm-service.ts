@@ -65,7 +65,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
     module: "tasks",
     table: "tasks",
     select: `id, title, type, status, due_at AS "dueAt", owner_id AS "ownerId", customer_id AS "customerId", (SELECT name FROM customers WHERE id = tasks.customer_id) AS "customerName", lead_id AS "leadId", deal_id AS "dealId", notes, completed_at AS "completedAt", completed_by AS "completedBy", created_at AS "createdAt", updated_at AS "updatedAt"`,
-    search: ["title"],
+    search: ["title", "notes"],
     sort: ["title", "due_at", "created_at", "updated_at"],
   },
   campaigns: {
@@ -107,7 +107,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
     module: "finance",
     table: "payments",
     select: `id, code, invoice_id AS "invoiceId", customer_id AS "customerId", (SELECT name FROM customers WHERE id = payments.customer_id) AS "customerName", amount, method, paid_at AS "paidAt", owner_id AS "ownerId", note, created_at AS "createdAt", updated_at AS "updatedAt"`,
-    search: ["code"],
+    search: ["code", "note"],
     sort: ["code", "amount", "paid_at", "created_at"],
   },
   contacts: {
@@ -129,7 +129,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
     module: "inventory",
     table: "warehouses",
     select: `id, code, name, address, is_default AS "isDefault", created_at AS "createdAt", updated_at AS "updatedAt"`,
-    search: ["name", "code"],
+    search: ["name", "code", "address"],
     sort: ["name", "code", "created_at"],
     ownerColumn: null,
   },
@@ -137,7 +137,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
     module: "suppliers",
     table: "suppliers",
     select: `id, code, name, contact_name AS "contactName", phone, email, address, status, notes, owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
-    search: ["name", "code", "contact_name", "phone", "email"],
+    search: ["name", "code", "contact_name", "phone", "email", "address", "notes"],
     sort: ["name", "code", "created_at", "updated_at"],
   },
   projects: {
@@ -246,7 +246,18 @@ export async function listResource(name: ResourceName, options: ListOptions) {
     values.push(`%${options.search}%`);
     const searchConditions = config.search.map((field) => `${field} ILIKE $${values.length}`);
     if (["invoices", "payments", "deals", "orders", "contracts", "quotes", "revenue_entries"].includes(name)) {
-      searchConditions.push(`EXISTS (SELECT 1 FROM customers c WHERE c.id = ${config.table}.customer_id AND (c.name ILIKE $${values.length} OR c.phone ILIKE $${values.length}))`);
+      searchConditions.push(`EXISTS (SELECT 1 FROM customers c WHERE c.id = ${config.table}.customer_id AND (c.name ILIKE $${values.length} OR c.code ILIKE $${values.length} OR c.phone ILIKE $${values.length}))`);
+    }
+    if (name === "stock_moves") {
+      searchConditions.push(`EXISTS (SELECT 1 FROM suppliers s WHERE s.id = stock_moves.supplier_id AND (s.name ILIKE $${values.length} OR s.code ILIKE $${values.length}))`);
+      searchConditions.push(`EXISTS (SELECT 1 FROM customers c WHERE c.id = stock_moves.customer_id AND (c.name ILIKE $${values.length} OR c.code ILIKE $${values.length}))`);
+      searchConditions.push(`EXISTS (SELECT 1 FROM projects p WHERE p.id = stock_moves.project_id AND (p.name ILIKE $${values.length} OR p.code ILIKE $${values.length}))`);
+    }
+    if (name === "serial_numbers") {
+      searchConditions.push(`EXISTS (SELECT 1 FROM products pr WHERE pr.id = serial_numbers.product_id AND (pr.name ILIKE $${values.length} OR pr.sku ILIKE $${values.length}))`);
+    }
+    if (name === "inventory_counts") {
+      searchConditions.push(`EXISTS (SELECT 1 FROM warehouses wh WHERE wh.id = inventory_counts.warehouse_id AND (wh.name ILIKE $${values.length} OR wh.code ILIKE $${values.length}))`);
     }
     where.push(`(${searchConditions.join(" OR ")})`);
   }

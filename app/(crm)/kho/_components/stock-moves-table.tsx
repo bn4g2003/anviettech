@@ -59,7 +59,46 @@ export function filterStockMoves(
       if (!isDateInRange(move.createdAt, filters.fromDate, filters.toDate)) return false;
     }
     if (!term) return true;
-    return move.code.toLowerCase().includes(term) || move.lines.some((line) => line.productName.toLowerCase().includes(term));
+    const matchCode = move.code.toLowerCase().includes(term);
+    const matchLine = move.lines.some((line) => line.productName.toLowerCase().includes(term));
+    const matchSupplier = Boolean(
+      move.supplier &&
+        ((move.supplier.name && move.supplier.name.toLowerCase().includes(term)) ||
+          (move.supplier.code && move.supplier.code.toLowerCase().includes(term))),
+    );
+    const matchCustomer = Boolean(
+      move.customer &&
+        ((move.customer.name && move.customer.name.toLowerCase().includes(term)) ||
+          (move.customer.code && move.customer.code.toLowerCase().includes(term))),
+    );
+    const matchProject = Boolean(
+      move.project &&
+        ((move.project.name && move.project.name.toLowerCase().includes(term)) ||
+          (move.project.code && move.project.code.toLowerCase().includes(term))),
+    );
+    const matchWarehouse = Boolean(
+      (move.warehouseFrom && move.warehouseFrom.toLowerCase().includes(term)) ||
+        (move.warehouseTo && move.warehouseTo.toLowerCase().includes(term)),
+    );
+    const matchOrder = Boolean(move.orderId && move.orderId.toLowerCase().includes(term));
+    const matchReason = Boolean(
+      move.reason &&
+        ((REASON_LABEL[move.reason] && REASON_LABEL[move.reason].toLowerCase().includes(term)) ||
+          move.reason.toLowerCase().includes(term)),
+    );
+    const matchNote = Boolean(move.note && move.note.toLowerCase().includes(term));
+
+    return (
+      matchCode ||
+      matchLine ||
+      matchSupplier ||
+      matchCustomer ||
+      matchProject ||
+      matchWarehouse ||
+      matchOrder ||
+      matchReason ||
+      matchNote
+    );
   });
 }
 

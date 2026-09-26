@@ -21,6 +21,20 @@ describe("filterSerials", () => {
     expect(filterSerials(rows, products, "biến", "warranty").map((row) => row.id)).toEqual(["1"]);
     expect(filterSerials(rows, products, "biến", "damaged")).toEqual([]);
   });
+
+  it("searches by product SKU and warehouse name", () => {
+    const rowsWithWarehouse = [
+      { id: "1", serial: "BH-001", productId: "p1", status: "warranty", warehouseId: "wh-1" },
+      { id: "2", serial: "HU-001", productId: "p2", status: "damaged", warehouseId: "wh-2" },
+    ];
+    const warehouses = [
+      { id: "wh-1", name: "Kho Linh Kiện", code: "KLK" },
+      { id: "wh-2", name: "Kho Thiết Bị", code: "KTB" },
+    ];
+    expect(filterSerials(rowsWithWarehouse, products, "SP-1", "", warehouses).map((r) => r.id)).toEqual(["1"]);
+    expect(filterSerials(rowsWithWarehouse, products, "Linh Kiện", "", warehouses).map((r) => r.id)).toEqual(["1"]);
+    expect(filterSerials(rowsWithWarehouse, products, "KTB", "", warehouses).map((r) => r.id)).toEqual(["2"]);
+  });
 });
 
 describe("countDifference", () => {

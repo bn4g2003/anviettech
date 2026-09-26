@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -151,13 +152,22 @@ export function RevenueEntriesPanel() {
       if (!q) return true;
       const custName = (row.customerName || findName(customers, row.customerId)).toLowerCase();
       const prodName = findName(products, row.productId).toLowerCase();
+      const prod = products.find((p) => p.id === row.productId);
+      const proj = projects.find((p) => p.id === row.projectId);
+      const emp = owners.find((o) => o.id === row.employeeId);
+      const bType = TYPES[row.businessType]?.toLowerCase() ?? "";
       return (
         row.code.toLowerCase().includes(q) ||
         custName.includes(q) ||
-        prodName.includes(q)
+        prodName.includes(q) ||
+        (prod?.sku && prod.sku.toLowerCase().includes(q)) ||
+        (proj?.name && proj.name.toLowerCase().includes(q)) ||
+        (proj?.code && proj.code.toLowerCase().includes(q)) ||
+        (emp?.name && emp.name.toLowerCase().includes(q)) ||
+        bType.includes(q)
       );
     });
-  }, [rows, filters, query, customers, products]);
+  }, [rows, filters, query, customers, products, projects, owners]);
 
   const summary = useMemo(
     () =>
@@ -427,12 +437,12 @@ export function RevenueEntriesPanel() {
       <FilterBar
         filters={
           <>
-            <Input
-              className="w-48"
-              placeholder="Tìm mã, khách, hàng..."
+            <SearchInput
+              className="w-64"
+              placeholder="Tìm mã PS, khách hàng, hàng hóa, NV..."
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
+              onChange={(val) => {
+                setQuery(val);
                 setPage(1);
               }}
             />

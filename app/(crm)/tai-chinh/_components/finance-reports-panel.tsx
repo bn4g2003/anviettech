@@ -16,6 +16,7 @@ import { Pagination } from "@/components/datagrid/pagination";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { formatVnd } from "@/features/shared/utils/money";
 import { loadOwners } from "@/features/shared/api/owners";
@@ -152,9 +153,11 @@ export function FinanceReportsPanel() {
     if (!report?.customers) return [];
     const term = searchQuery.trim().toLowerCase();
     return report.customers.filter((c) => {
-      const name = c.customerName ?? customers.find((item) => item.id === c.customerId)?.name ?? "";
+      const cust = customers.find((item) => item.id === c.customerId);
+      const name = c.customerName ?? cust?.name ?? "";
+      const code = (cust as { code?: string })?.code ?? "";
       if (!term) return true;
-      return name.toLowerCase().includes(term);
+      return name.toLowerCase().includes(term) || code.toLowerCase().includes(term);
     });
   }, [report?.customers, searchQuery, customers]);
 
@@ -245,19 +248,15 @@ export function FinanceReportsPanel() {
       {/* Sleek Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-white px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-            <Input
-              type="search"
-              placeholder="Tìm khách hàng..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-              className="h-8 w-44 pl-8 text-xs"
-            />
-          </div>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tên khách hàng, mã..."
+            value={searchQuery}
+            onChange={(val) => {
+              setSearchQuery(val);
+              setPage(1);
+            }}
+          />
 
           <label className="flex items-center gap-1.5 text-xs text-muted">
             <span>Từ:</span>

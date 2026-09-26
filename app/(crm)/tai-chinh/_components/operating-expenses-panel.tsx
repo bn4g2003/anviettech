@@ -5,6 +5,7 @@ import { ReceiptText, RefreshCw, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
@@ -216,12 +217,12 @@ export function OperatingExpensesPanel() {
       <FilterBar
         filters={
           <>
-            <Input
-              className="w-48"
-              placeholder="Tìm mã, ghi chú..."
+            <SearchInput
+              className="w-64"
+              placeholder="Tìm mã CP, nhóm chi phí, ghi chú..."
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
+              onChange={(val) => {
+                setQuery(val);
                 setPage(1);
               }}
             />

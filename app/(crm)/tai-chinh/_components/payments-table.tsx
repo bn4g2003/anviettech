@@ -41,11 +41,18 @@ export function PaymentsTable() {
       }
       if (!q) return true;
       const inv = getInvoice(p.invoiceId);
-      const custName = p.customerName || getCustomer(p.customerId)?.name || "";
+      const c = getCustomer(p.customerId);
+      const custName = p.customerName || c?.name || "";
+      const custCode = c?.code || "";
+      const custPhone = c?.phone || "";
+      const note = p.note || "";
       return (
         p.code.toLowerCase().includes(q) ||
         (inv?.code.toLowerCase().includes(q) ?? false) ||
-        custName.toLowerCase().includes(q)
+        custName.toLowerCase().includes(q) ||
+        custCode.toLowerCase().includes(q) ||
+        custPhone.includes(q) ||
+        note.toLowerCase().includes(q)
       );
     });
   }, [payments, list.query, list.filters.method, list.filters.customerId, list.filters.fromDate, list.filters.toDate, getInvoice, getCustomer]);

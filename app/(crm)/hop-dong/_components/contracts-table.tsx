@@ -39,7 +39,9 @@ export function ContractsTable() {
         return (
           r.code.toLowerCase().includes(q) ||
           (c?.name && c.name.toLowerCase().includes(q)) ||
-          (c?.phone && c.phone.includes(q))
+          (c?.code && c.code.toLowerCase().includes(q)) ||
+          (c?.phone && c.phone.includes(q)) ||
+          (r.terms && r.terms.toLowerCase().includes(q))
         );
       });
     }

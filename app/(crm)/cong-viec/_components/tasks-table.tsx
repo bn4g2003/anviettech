@@ -37,8 +37,21 @@ export function TasksTable() {
         isDateInRange(r.dueAt || r.createdAt, list.filters.fromDate, list.filters.toDate),
       );
     }
+    if (list.query.trim()) {
+      const q = list.query.toLowerCase().trim();
+      result = result.filter((r) => {
+        const c = r.customerId ? getCustomer(r.customerId) : undefined;
+        return (
+          r.title.toLowerCase().includes(q) ||
+          (r.notes && r.notes.toLowerCase().includes(q)) ||
+          (c?.name && c.name.toLowerCase().includes(q)) ||
+          (c?.code && c.code.toLowerCase().includes(q)) ||
+          (c?.phone && c.phone.includes(q))
+        );
+      });
+    }
     return result;
-  }, [rows, list.filters.fromDate, list.filters.toDate]);
+  }, [rows, list.filters.fromDate, list.filters.toDate, list.query, getCustomer]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

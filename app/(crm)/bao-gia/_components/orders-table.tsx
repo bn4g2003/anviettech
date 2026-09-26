@@ -41,8 +41,20 @@ export function OrdersTable() {
         isDateInRange(r.createdAt, list.filters.fromDate, list.filters.toDate),
       );
     }
+    if (list.query.trim()) {
+      const q = list.query.toLowerCase().trim();
+      result = result.filter((r) => {
+        const c = getCustomer(r.customerId);
+        return (
+          r.code.toLowerCase().includes(q) ||
+          (c?.name && c.name.toLowerCase().includes(q)) ||
+          (c?.code && c.code.toLowerCase().includes(q)) ||
+          (c?.phone && c.phone.includes(q))
+        );
+      });
+    }
     return result;
-  }, [rows, list.filters.customerId, list.filters.ownerId, list.filters.fromDate, list.filters.toDate]);
+  }, [rows, list.filters.customerId, list.filters.ownerId, list.filters.fromDate, list.filters.toDate, list.query, getCustomer]);
 
   const sorted = useMemo(() => {
     if (!list.sortKey) return filtered;

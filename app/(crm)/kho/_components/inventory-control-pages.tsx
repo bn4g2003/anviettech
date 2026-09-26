@@ -29,17 +29,21 @@ export function countDifference(expectedQty: number | string, countedQty: number
   return Number(countedQty) - Number(expectedQty);
 }
 
-export function filterSerials<T extends Pick<Serial, "serial" | "productId" | "status">>(
+export function filterSerials<T extends Pick<Serial, "serial" | "productId" | "status"> & { warehouseId?: string | null; note?: string | null }>(
   rows: T[],
-  products: Pick<Product, "id" | "name">[],
+  products: (Pick<Product, "id" | "name"> & { sku?: string })[],
   query: string,
   status: string,
+  warehouses: (Pick<Warehouse, "id" | "name"> & { code?: string })[] = [],
 ) {
   const term = query.trim().toLocaleLowerCase("vi");
   return rows.filter((row) => {
     if (status && row.status !== status) return false;
     if (!term) return true;
-    return [row.serial, products.find((product) => product.id === row.productId)?.name]
+    const prod = products.find((product) => product.id === row.productId);
+    const wh = warehouses.find((w) => w.id === row.warehouseId);
+    return [row.serial, prod?.name, prod?.sku, wh?.name, wh?.code, row.note]
+      .filter(Boolean)
       .some((value) => value?.toLocaleLowerCase("vi").includes(term));
   });
 }
@@ -63,6 +67,8 @@ async function loadReferenceData() {
 
 import { DataGrid, type DataGridColumn } from "@/components/datagrid/data-grid";
 import { FilterBar } from "@/components/datagrid/filter-bar";
+import { SearchInput } from "@/components/datagrid/search-input";
+import { DateRangeFilter } from "@/components/datagrid/date-range-filter";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -152,12 +158,12 @@ export function SerialNumbersPage() {
   }, [reload]);
 
   const visibleRows = useMemo(() => {
-    let list = filterSerials(rows, products, query, statusFilter);
+    let list = filterSerials(rows, products, query, statusFilter, warehouses);
     if (warehouseFilter) {
       list = list.filter((r) => r.warehouseId === warehouseFilter);
     }
     return list;
-  }, [products, query, rows, statusFilter, warehouseFilter]);
+  }, [products, query, rows, statusFilter, warehouseFilter, warehouses]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return visibleRows;
@@ -330,14 +336,14 @@ export function SerialNumbersPage() {
       <FilterBar
         filters={
           <>
-            <Input
-              className="w-60"
+            <SearchInput
+              className="w-64"
               value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
+              onChange={(val) => {
+                setQuery(val);
                 setPage(1);
               }}
-              placeholder="Tìm serial hoặc sản phẩm..."
+              placeholder="Tìm serial, SKU, sản phẩm, kho..."
             />
             <Select
               className="w-40"
@@ -499,6 +505,8 @@ export function InventoryCountsPage() {
   const [query, setQuery] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -543,15 +551,20 @@ export function InventoryCountsPage() {
     return rows.filter((row) => {
       if (warehouseFilter && row.warehouseId !== warehouseFilter) return false;
       if (statusFilter && row.status !== statusFilter) return false;
+      if (fromDate && row.countedAt < fromDate) return false;
+      if (toDate && row.countedAt > toDate) return false;
       if (!q) return true;
-      const whName = warehouses.find((w) => w.id === row.warehouseId)?.name?.toLowerCase() ?? "";
+      const wh = warehouses.find((w) => w.id === row.warehouseId);
+      const whName = wh?.name?.toLowerCase() ?? "";
+      const whCode = wh?.code?.toLowerCase() ?? "";
       return (
         row.code.toLowerCase().includes(q) ||
         whName.includes(q) ||
+        whCode.includes(q) ||
         (row.note && row.note.toLowerCase().includes(q))
       );
     });
-  }, [rows, query, warehouseFilter, statusFilter, warehouses]);
+  }, [rows, query, warehouseFilter, statusFilter, fromDate, toDate, warehouses]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
@@ -770,14 +783,14 @@ export function InventoryCountsPage() {
       <FilterBar
         filters={
           <>
-            <Input
-              className="w-56"
+            <SearchInput
+              className="w-60"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
+              onChange={(val) => {
+                setQuery(val);
                 setPage(1);
               }}
-              placeholder="Tìm mã phiếu, ghi chú..."
+              placeholder="Tìm mã phiếu, kho, ghi chú..."
             />
             <Select
               className="w-44"
@@ -809,6 +822,15 @@ export function InventoryCountsPage() {
                 </option>
               ))}
             </Select>
+            <DateRangeFilter
+              fromDate={fromDate}
+              toDate={toDate}
+              onChange={(from, to) => {
+                setFromDate(from);
+                setToDate(to);
+                setPage(1);
+              }}
+            />
           </>
         }
         actions={

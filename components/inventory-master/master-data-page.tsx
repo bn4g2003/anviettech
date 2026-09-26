@@ -11,6 +11,7 @@ import { AppHeader } from "@/components/shell/app-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -143,8 +144,14 @@ export function InventoryMasterDataPage({ kind }: { kind: Kind }) {
       if (!term) return true;
       const project = row as Project;
       const supplier = row as Supplier;
-      const customer = customers.find((item) => item.id === project.customerId)?.name ?? "";
-      return [row.code, row.name, supplier.contactName, supplier.phone, supplier.email, customer]
+      const warehouse = row as Warehouse;
+      const customer = customers.find((item) => item.id === project.customerId);
+      const fields = isSupplier
+        ? [row.code, row.name, supplier.contactName, supplier.phone, supplier.email, supplier.address, supplier.notes]
+        : isProject
+        ? [row.code, row.name, customer?.name, customer?.code, project.address, project.notes]
+        : [row.code, row.name, warehouse.address];
+      return fields
         .filter(Boolean)
         .some((value) => String(value).toLocaleLowerCase("vi").includes(term));
     });
@@ -452,14 +459,20 @@ export function InventoryMasterDataPage({ kind }: { kind: Kind }) {
       <FilterBar
         filters={
           <>
-            <Input
-              className="w-56"
+            <SearchInput
+              className="w-64"
               value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
+              onChange={(val) => {
+                setQuery(val);
                 setPage(1);
               }}
-              placeholder={`Tìm kiếm ${noun}...`}
+              placeholder={
+                isSupplier
+                  ? "Tìm mã, tên NCC, SĐT, email, địa chỉ..."
+                  : isProject
+                  ? "Tìm mã, tên công trình, khách hàng, địa chỉ..."
+                  : "Tìm mã kho, tên kho, địa chỉ..."
+              }
             />
             {isSupplier ? (
               <Select

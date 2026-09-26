@@ -37,6 +37,26 @@ export function InvoicesTable() {
         isDateInRange(i.dueDate || i.createdAt, list.filters.fromDate, list.filters.toDate),
       );
     }
+    const q = list.query.trim().toLowerCase();
+    if (q) {
+      result = result.filter((i) => {
+        const c = getCustomer(i.customerId);
+        const custName = (i.customerName || c?.name || "").toLowerCase();
+        const custCode = (c?.code || "").toLowerCase();
+        const custPhone = c?.phone || "";
+        const invCode = i.code.toLowerCase();
+        const orderId = (i.orderId || "").toLowerCase();
+        const contractId = (i.contractId || "").toLowerCase();
+        return (
+          invCode.includes(q) ||
+          custName.includes(q) ||
+          custCode.includes(q) ||
+          custPhone.includes(q) ||
+          orderId.includes(q) ||
+          contractId.includes(q)
+        );
+      });
+    }
     if (!list.sortKey) return result;
     const dir = list.sortDir === "asc" ? 1 : -1;
     return [...result].sort((a, b) => {
@@ -61,7 +81,7 @@ export function InvoicesTable() {
       const bv = String((b as Record<string, unknown>)[list.sortKey] ?? "");
       return av.localeCompare(bv, "vi") * dir;
     });
-  }, [invoices, list.sortKey, list.sortDir, list.filters.customerId, list.filters.invoiceStatus, list.filters.fromDate, list.filters.toDate, getCustomer]);
+  }, [invoices, list.query, list.sortKey, list.sortDir, list.filters.customerId, list.filters.invoiceStatus, list.filters.fromDate, list.filters.toDate, getCustomer]);
 
   const pageRows = list.paginate(sorted);
 

@@ -52,8 +52,8 @@ export function StockMovesFilterBar() {
       filters={
         <>
           <SearchInput
-            className="w-60"
-            placeholder="Tìm mã phiếu..."
+            className="w-64"
+            placeholder="Tìm mã phiếu, hàng hóa, đối tác, kho..."
             value={query}
             onChange={setQuery}
           />

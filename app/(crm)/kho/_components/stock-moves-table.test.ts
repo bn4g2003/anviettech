@@ -26,6 +26,20 @@ describe("filterStockMoves", () => {
       ),
     ).toEqual(["out"]);
   });
+
+  it("searches across move code, supplier, customer, project, and warehouse", () => {
+    const detailedMoves = [
+      { id: "1", code: "PN-2026-01", type: "in", status: "posted", supplier: { name: "Công ty Dahua" }, lines: [{ productName: "Camera IP 2MP" }], createdAt: "2026-09-10T10:00:00Z" },
+      { id: "2", code: "PX-2026-02", type: "out", status: "posted", customer: { name: "Anh Nam Vincom" }, warehouseFrom: "Kho Tổng Hà Nội", lines: [], createdAt: "2026-09-12T10:00:00Z" },
+      { id: "3", code: "PX-2026-03", type: "out", status: "draft", project: { name: "Biệt thự Ecopark" }, lines: [], createdAt: "2026-09-14T10:00:00Z" },
+    ] as never[];
+
+    expect(filterStockMoves(detailedMoves, "in", {}, "Dahua").map((m) => m.id)).toEqual(["1"]);
+    expect(filterStockMoves(detailedMoves, "in", {}, "Camera").map((m) => m.id)).toEqual(["1"]);
+    expect(filterStockMoves(detailedMoves, "out", {}, "Vincom").map((m) => m.id)).toEqual(["2"]);
+    expect(filterStockMoves(detailedMoves, "out", {}, "Hà Nội").map((m) => m.id)).toEqual(["2"]);
+    expect(filterStockMoves(detailedMoves, "out", {}, "Ecopark").map((m) => m.id)).toEqual(["3"]);
+  });
 });
 
 describe("businessContextLabel", () => {

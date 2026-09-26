@@ -8,6 +8,7 @@ import { Pagination } from "@/components/datagrid/pagination";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api-client";
@@ -214,19 +215,15 @@ export function InventoryReportsPage() {
             ))}
           </Select>
 
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-            <Input
-              type="search"
-              placeholder="Tìm kiếm dòng..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-              className="h-8 w-44 pl-8 text-xs"
-            />
-          </div>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm kiếm dòng báo cáo..."
+            value={searchQuery}
+            onChange={(val) => {
+              setSearchQuery(val);
+              setPage(1);
+            }}
+          />
 
           <label className="flex items-center gap-1.5 text-xs text-muted">
             <span>Từ:</span>
