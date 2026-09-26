@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useProducts } from "@/features/products/hooks/use-products";
@@ -38,6 +38,12 @@ export function StockLevelsFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tên sản phẩm, SKU..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.category ?? ""}
             onChange={(e) => setFilter("category", e.target.value)}
@@ -57,12 +63,6 @@ export function StockLevelsFilterBar() {
             <option value="low">Sắp hết</option>
             <option value="ok">Đủ tồn</option>
           </Select>
-          <Input
-            className="w-44"
-            placeholder="SKU / tên..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={

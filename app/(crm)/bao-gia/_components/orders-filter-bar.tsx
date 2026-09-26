@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { CustomerLookup } from "@/components/lookups/customer-lookup";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
@@ -35,6 +35,12 @@ export function OrdersFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm mã đơn hàng, khách hàng..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.status ?? ""}
             onChange={(e) => setFilter("status", e.target.value)}
@@ -53,12 +59,6 @@ export function OrdersFilterBar() {
           <OwnerLookup
             value={filters.ownerId}
             onChange={(v) => setFilter("ownerId", v)}
-          />
-          <Input
-            className="w-40"
-            placeholder="Mã đơn hàng..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
           />
         </>
       }

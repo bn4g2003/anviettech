@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -38,6 +38,12 @@ export function ProductsFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tên sản phẩm, SKU..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.category ?? ""}
             onChange={(e) => setFilter("category", e.target.value)}
@@ -57,12 +63,6 @@ export function ProductsFilterBar() {
             <option value="active">Đang bán</option>
             <option value="inactive">Ngưng</option>
           </Select>
-          <Input
-            className="w-44"
-            placeholder="Tên / SKU..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={

@@ -103,7 +103,17 @@ export function DebtsTable() {
       header: "Mã KH",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground/90">{r.customerCode}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/khach-hang/${r.customerId}`);
+          }}
+        >
+          {r.customerCode}
+        </span>
+      ),
     },
     {
       id: "customer",
@@ -111,7 +121,8 @@ export function DebtsTable() {
       sortable: true,
       cell: (r) => (
         <span
-          className="font-medium text-foreground hover:underline cursor-pointer"
+          className="font-medium text-foreground text-xs truncate max-w-[200px] block whitespace-nowrap hover:underline cursor-pointer"
+          title={r.customerName}
           onClick={(e) => {
             e.stopPropagation();
             router.push(`/khach-hang/${r.customerId}`);
@@ -125,18 +136,18 @@ export function DebtsTable() {
       id: "phone",
       header: "Số điện thoại",
       width: "w-36",
-      cell: (r) => <span className="text-muted">{r.phone}</span>,
+      cell: (r) => <span className="font-mono text-xs whitespace-nowrap">{r.phone}</span>,
     },
     {
       id: "owner",
       header: "Phụ trách",
       sortable: true,
       cell: (r) => (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
-            {r.ownerName.slice(0, 1)}
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+            {r.ownerName.slice(0, 1).toUpperCase()}
           </span>
-          <span>{r.ownerName}</span>
+          <span className="text-xs">{r.ownerName}</span>
         </span>
       ),
     },
@@ -145,7 +156,7 @@ export function DebtsTable() {
       header: "Số HĐ nợ",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="whitespace-nowrap">{r.invoiceCount} hóa đơn</span>,
+      cell: (r) => <span className="whitespace-nowrap text-xs">{r.invoiceCount} hóa đơn</span>,
     },
     {
       id: "debt",
@@ -153,7 +164,7 @@ export function DebtsTable() {
       width: "w-40",
       sortable: true,
       cell: (r) => (
-        <span className="font-semibold text-danger whitespace-nowrap">{formatVnd(r.debt)}</span>
+        <span className="font-mono text-xs font-semibold text-danger whitespace-nowrap">{formatVnd(r.debt)}</span>
       ),
     },
     {

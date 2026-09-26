@@ -69,25 +69,45 @@ export function OrdersTable() {
     {
       id: "code",
       header: "Mã",
-      width: "w-24",
+      width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.code}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.code}
+        </span>
+      ),
     },
     {
       id: "customer",
       header: "Khách hàng",
       cell: (r) => {
         const c = getCustomer(r.customerId);
-        return <span className="font-medium">{c?.name ?? "—"}</span>;
+        const name = c?.name ?? "—";
+        return (
+          <span className="font-medium text-foreground text-xs truncate max-w-[200px] block whitespace-nowrap" title={name}>
+            {name}
+          </span>
+        );
       },
     },
     {
       id: "quoteId",
       header: "Báo giá",
       cell: (r) => {
-        if (!r.quoteId) return <span className="text-muted">—</span>;
+        if (!r.quoteId) return <span className="text-muted whitespace-nowrap">—</span>;
         const q = quotes.find((x) => x.id === r.quoteId);
-        return <span className="text-muted">{q?.code ?? r.quoteId}</span>;
+        const text = q?.code ?? r.quoteId;
+        return (
+          <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap" title={text}>
+            {text}
+          </span>
+        );
       },
     },
     {
@@ -98,7 +118,7 @@ export function OrdersTable() {
     {
       id: "total",
       header: "Tổng tiền",
-      cell: (r) => <span className="font-medium tabular-nums">{formatVnd(r.total)}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.total)}</span>,
     },
     {
       id: "owner",
@@ -106,11 +126,11 @@ export function OrdersTable() {
       cell: (r) => {
         const ownerName = r.owner?.name || "—";
         return (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-              {ownerName.slice(0, 1)}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
             </span>
-            {ownerName}
+            <span className="text-xs">{ownerName}</span>
           </span>
         );
       },

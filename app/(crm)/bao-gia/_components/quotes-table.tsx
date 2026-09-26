@@ -66,25 +66,45 @@ export function QuotesTable() {
     {
       id: "code",
       header: "Mã",
-      width: "w-24",
+      width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.code}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/bao-gia/${r.id}`);
+          }}
+        >
+          {r.code}
+        </span>
+      ),
     },
     {
       id: "customer",
       header: "Khách hàng",
       cell: (r) => {
         const c = getCustomer(r.customerId);
-        return <span className="font-medium">{c?.name ?? "—"}</span>;
+        const name = c?.name ?? "—";
+        return (
+          <span className="font-medium text-foreground text-xs truncate max-w-[200px] block whitespace-nowrap" title={name}>
+            {name}
+          </span>
+        );
       },
     },
     {
       id: "deal",
       header: "Cơ hội",
       cell: (r) => {
-        if (!r.dealId) return <span className="text-muted">—</span>;
+        if (!r.dealId) return <span className="text-muted whitespace-nowrap">—</span>;
         const d = deals.find((x) => x.id === r.dealId);
-        return <span className="text-muted">{d?.code ?? r.dealId}</span>;
+        const text = d?.code ?? r.dealId;
+        return (
+          <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap" title={text}>
+            {text}
+          </span>
+        );
       },
     },
     {
@@ -95,13 +115,13 @@ export function QuotesTable() {
     {
       id: "total",
       header: "Tổng tiền",
-      cell: (r) => <span className="font-medium tabular-nums">{formatVnd(r.total)}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.total)}</span>,
     },
     {
       id: "validUntil",
       header: "Hiệu lực đến",
       sortable: true,
-      cell: (r) => <span className="text-muted">{formatDate(r.validUntil)}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{formatDate(r.validUntil)}</span>,
     },
     {
       id: "owner",
@@ -109,11 +129,11 @@ export function QuotesTable() {
       cell: (r) => {
         const ownerName = r.owner?.name || "—";
         return (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-              {ownerName.slice(0, 1)}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
             </span>
-            {ownerName}
+            <span className="text-xs">{ownerName}</span>
           </span>
         );
       },

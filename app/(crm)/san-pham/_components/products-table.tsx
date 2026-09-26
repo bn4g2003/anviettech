@@ -46,50 +46,71 @@ export function ProductsTable() {
       header: "SKU",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.sku}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.sku}
+        </span>
+      ),
     },
     {
       id: "name",
       header: "Tên",
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.name}</span>,
+      cell: (r) => (
+        <span
+          className="font-semibold text-foreground text-xs truncate max-w-[240px] block whitespace-nowrap hover:underline cursor-pointer"
+          title={r.name}
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.name}
+        </span>
+      ),
     },
     {
       id: "category",
       header: "Danh mục",
       sortable: true,
-      cell: (r) => <span className="text-muted">{r.category}</span>,
+      cell: (r) => <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap">{r.category}</span>,
     },
     {
       id: "itemType",
       header: "Loại",
-      cell: (r) => <span className="text-muted">{r.itemType === "service" ? "Dịch vụ" : "Hàng hóa"}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{r.itemType === "service" ? "Dịch vụ" : "Hàng hóa"}</span>,
     },
     {
       id: "unit",
       header: "Đơn vị",
-      cell: (r) => r.unit,
+      cell: (r) => <span className="text-xs whitespace-nowrap">{r.unit}</span>,
     },
     {
       id: "price",
       header: "Đơn giá",
       sortable: true,
-      cell: (r) => <span className="font-medium">{formatVnd(r.unitPrice)}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.unitPrice)}</span>,
     },
     {
       id: "vat",
       header: "VAT",
-      cell: (r) => `${r.vatPercent}%`,
+      cell: (r) => <span className="text-xs whitespace-nowrap">{r.vatPercent}%</span>,
     },
     {
       id: "stock",
       header: "Tồn kho",
       cell: (r) => {
-        if (r.itemType === "service") return <span className="text-muted">—</span>;
+        if (r.itemType === "service") return <span className="text-muted whitespace-nowrap">—</span>;
         const qty = getStock(r.id);
         const low = qty <= r.minStock;
         return (
-          <span className={low ? "font-medium text-danger" : undefined}>{qty}</span>
+          <span className={`font-mono text-xs whitespace-nowrap ${low ? "font-semibold text-danger" : "font-medium"}`}>{qty}</span>
         );
       },
     },

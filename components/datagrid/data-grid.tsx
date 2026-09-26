@@ -122,7 +122,7 @@ export function DataGrid<T extends { id: string }>({
                   <td
                     key={col.id}
                     className={cn(
-                      "px-2 py-1.5 align-middle",
+                      "px-2 py-1.5 align-middle whitespace-nowrap",
                       col.width,
                       col.sticky === "right" &&
                         "sticky right-0 z-10 border-l border-border bg-white group-hover:bg-neutral-50 shadow-[-4px_0_8px_rgba(0,0,0,0.04)]",

@@ -84,7 +84,17 @@ export function StockMovesTable({ moveType }: Props) {
       header: "Mã",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.code}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.code}
+        </span>
+      ),
     },
     {
       id: "status",
@@ -94,34 +104,44 @@ export function StockMovesTable({ moveType }: Props) {
     {
       id: "reason",
       header: "Nghiệp vụ",
-      cell: (r) => <span className="text-muted">{REASON_LABEL[r.reason] ?? "—"}</span>,
+      cell: (r) => <span className="text-muted text-xs truncate max-w-[130px] block whitespace-nowrap">{REASON_LABEL[r.reason] ?? "—"}</span>,
     },
     {
       id: "warehouse",
       header: "Kho",
-      cell: (r) => <span className="text-muted">{warehouseLabel(r)}</span>,
+      cell: (r) => <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap">{warehouseLabel(r)}</span>,
     },
     {
       id: "businessContext",
       header: "Liên quan",
-      cell: (r) => <span className="text-muted">{businessContextLabel(r)}</span>,
+      cell: (r) => <span className="text-muted text-xs truncate max-w-[160px] block whitespace-nowrap">{businessContextLabel(r)}</span>,
     },
     {
       id: "orderId",
       header: "Đơn hàng",
       cell: (r) => (
-        <span className="font-mono text-xs text-muted">{r.orderId ?? "—"}</span>
+        <span className="font-mono text-xs text-muted whitespace-nowrap">{r.orderId ?? "—"}</span>
       ),
     },
     {
       id: "lines",
       header: "Dòng hàng",
-      cell: (r) => <span className="text-muted">{linesSummary(r)}</span>,
+      cell: (r) => <span className="text-muted text-xs truncate max-w-[180px] block whitespace-nowrap">{linesSummary(r)}</span>,
     },
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => r.owner?.name ?? "—",
+      cell: (r) => {
+        const ownerName = r.owner?.name || "—";
+        return (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
+            </span>
+            <span className="text-xs">{ownerName}</span>
+          </span>
+        );
+      },
     },
     {
       id: "actions",

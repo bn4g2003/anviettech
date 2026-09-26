@@ -63,22 +63,41 @@ export function DealsTable() {
     {
       id: "code",
       header: "Mã",
-      width: "w-24",
+      width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.code}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/co-hoi/${r.id}`);
+          }}
+        >
+          {r.code}
+        </span>
+      ),
     },
     {
       id: "title",
       header: "Tiêu đề",
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.title}</span>,
+      cell: (r) => (
+        <span className="font-semibold text-foreground truncate max-w-[220px] block whitespace-nowrap" title={r.title}>
+          {r.title}
+        </span>
+      ),
     },
     {
       id: "customer",
       header: "Khách hàng",
       cell: (r) => {
         const c = getCustomer(r.customerId);
-        return <span>{c?.name ?? r.customerId}</span>;
+        const name = c?.name ?? r.customerId;
+        return (
+          <span className="text-foreground text-xs truncate max-w-[180px] block whitespace-nowrap" title={name}>
+            {name}
+          </span>
+        );
       },
     },
     {
@@ -91,15 +110,14 @@ export function DealsTable() {
             ? parseClosedReason(r.closedReason)
             : null;
         return (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             <StatusDot color={meta.color} label={meta.label} />
             {parsedReason ? (
               <span
-                className="text-[10px] font-medium truncate max-w-[150px] text-muted"
+                className="text-[10px] font-medium truncate max-w-[130px] text-muted"
                 title={r.closedReason}
               >
-                [{r.stage === "won" ? "Thắng" : "Thua"}] {parsedReason.category}
-                {parsedReason.competitor ? ` (${parsedReason.competitor})` : ""}
+                ({parsedReason.category})
               </span>
             ) : null}
           </div>
@@ -110,12 +128,12 @@ export function DealsTable() {
       id: "value",
       header: "Giá trị",
       sortable: true,
-      cell: (r) => <span className="font-medium">{formatVnd(r.value)}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.value)}</span>,
     },
     {
       id: "probability",
       header: "Xác suất",
-      cell: (r) => <span className="text-muted">{r.probability ?? 0}%</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{r.probability ?? 0}%</span>,
     },
     {
       id: "owner",
@@ -123,11 +141,11 @@ export function DealsTable() {
       cell: (r) => {
         const ownerName = r.owner?.name || "—";
         return (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-              {ownerName.slice(0, 1)}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
             </span>
-            {ownerName}
+            <span className="text-xs">{ownerName}</span>
           </span>
         );
       },
@@ -136,14 +154,14 @@ export function DealsTable() {
       id: "expectedCloseDate",
       header: "Dự kiến chốt",
       cell: (r) => (
-        <span className="text-muted">{formatDate(r.expectedCloseDate)}</span>
+        <span className="text-muted text-xs whitespace-nowrap">{formatDate(r.expectedCloseDate)}</span>
       ),
     },
     {
       id: "updatedAt",
       header: "Cập nhật",
       sortable: true,
-      cell: (r) => <span className="text-muted">{relativeTime(r.updatedAt)}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{relativeTime(r.updatedAt)}</span>,
     },
     {
       id: "actions",

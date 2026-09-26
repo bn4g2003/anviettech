@@ -20,7 +20,7 @@ import { SearchInput } from "@/components/datagrid/search-input";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Pagination } from "@/components/datagrid/pagination";
 import { StatusDot } from "@/components/ui/status-dot";
-import { CheckCircle2, XCircle, UserCheck, RefreshCw, Target } from "lucide-react";
+import { CheckCircle2, XCircle, UserCheck, RefreshCw, Target, Filter, ArrowUpDown } from "lucide-react";
 import { relativeTime } from "@/features/shared/utils/date";
 
 type Lead = {
@@ -47,8 +47,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 const COLUMN_DEFS = [
   { id: "code", label: "Mã" },
-  { id: "name", label: "Liên hệ" },
-  { id: "companyName", label: "Công ty" },
+  { id: "name", label: "Người liên hệ" },
+  { id: "companyName", label: "Công ty / Tổ chức" },
+  { id: "phone", label: "Số điện thoại" },
+  { id: "email", label: "Email" },
   { id: "source", label: "Nguồn" },
   { id: "owner", label: "Phụ trách" },
   { id: "status", label: "Trạng thái" },
@@ -257,16 +259,20 @@ export default function TiemNangPage() {
       header: "Mã",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground/90">{r.code}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-primary whitespace-nowrap">{r.code}</span>,
     },
     {
       id: "name",
-      header: "Liên hệ",
+      header: "Người liên hệ",
       sortable: true,
       cell: (r) => (
-        <div>
-          <div className="font-medium text-foreground">{r.name}</div>
-          <div className="text-xs text-muted">{r.email || r.phone || "—"}</div>
+        <div className="flex items-center gap-2 min-w-[140px] whitespace-nowrap">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium text-foreground">
+            {r.name.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="font-semibold text-foreground truncate max-w-[160px]" title={r.name}>
+            {r.name}
+          </span>
         </div>
       ),
     },
@@ -274,18 +280,36 @@ export default function TiemNangPage() {
       id: "companyName",
       header: "Công ty / Tổ chức",
       sortable: true,
-      cell: (r) => <span className="text-foreground/90">{r.companyName || "—"}</span>,
+      cell: (r) => (
+        <span className="text-foreground text-xs truncate max-w-[180px] block whitespace-nowrap" title={r.companyName || ""}>
+          {r.companyName || "—"}
+        </span>
+      ),
+    },
+    {
+      id: "phone",
+      header: "Số điện thoại",
+      cell: (r) => <span className="font-mono text-xs whitespace-nowrap">{r.phone || "—"}</span>,
+    },
+    {
+      id: "email",
+      header: "Email",
+      cell: (r) => (
+        <span className="text-muted text-xs truncate max-w-[160px] block whitespace-nowrap" title={r.email || ""}>
+          {r.email || "—"}
+        </span>
+      ),
     },
     {
       id: "source",
       header: "Nguồn",
       cell: (r) =>
         r.source ? (
-          <span className="inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-muted">
+          <span className="inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-muted whitespace-nowrap">
             {r.source}
           </span>
         ) : (
-          <span className="text-muted">—</span>
+          <span className="text-muted whitespace-nowrap">—</span>
         ),
     },
     {
@@ -294,11 +318,11 @@ export default function TiemNangPage() {
       cell: (r) => {
         const ownerName = ownerByIdSync(r.ownerId ?? "", owners).name;
         return (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
-              {ownerName.slice(0, 1)}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
             </span>
-            <span>{ownerName}</span>
+            <span className="text-xs">{ownerName}</span>
           </span>
         );
       },
@@ -315,7 +339,7 @@ export default function TiemNangPage() {
       id: "createdAt",
       header: "Ngày tạo",
       sortable: true,
-      cell: (r) => <span className="text-xs text-muted">{relativeTime(r.createdAt)}</span>,
+      cell: (r) => <span className="text-xs text-muted whitespace-nowrap">{relativeTime(r.createdAt)}</span>,
     },
     {
       id: "actions",
@@ -324,10 +348,10 @@ export default function TiemNangPage() {
       width: "w-36",
       cell: (r) => {
         if (r.status === "converted") {
-          return <span className="text-xs italic text-muted">Đã chuyển đổi</span>;
+          return <span className="text-xs italic text-muted whitespace-nowrap">Đã chuyển đổi</span>;
         }
         if (r.status === "lost") {
-          return <span className="text-xs italic text-muted">Không phù hợp</span>;
+          return <span className="text-xs italic text-muted whitespace-nowrap">Không phù hợp</span>;
         }
         return (
           <div className="flex items-center gap-1">
@@ -399,7 +423,6 @@ export default function TiemNangPage() {
               }}
             />
             <Select
-              className="w-40"
               value={status}
               onChange={(e) => {
                 setStatus(e.target.value);
@@ -414,7 +437,6 @@ export default function TiemNangPage() {
               ))}
             </Select>
             <Select
-              className="w-36"
               value={sourceFilter}
               onChange={(e) => {
                 setSourceFilter(e.target.value);
@@ -429,7 +451,6 @@ export default function TiemNangPage() {
               ))}
             </Select>
             <OwnerLookup
-              className="w-44"
               value={ownerFilter}
               onChange={(v) => {
                 setOwnerFilter(v);
@@ -448,6 +469,14 @@ export default function TiemNangPage() {
               disabled={loading}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button variant="outline" size="sm">
+              <Filter className="h-3.5 w-3.5" />
+              Lọc
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => toggleSort("name")}>
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              Sắp xếp
             </Button>
             <ColumnToggle
               columns={COLUMN_DEFS}

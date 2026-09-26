@@ -38,7 +38,7 @@ export function ContractsFilterBar() {
       filters={
         <>
           <SearchInput
-            className="w-56"
+            className="w-60"
             placeholder="Tìm mã hợp đồng, khách hàng..."
             value={query}
             onChange={setQuery}

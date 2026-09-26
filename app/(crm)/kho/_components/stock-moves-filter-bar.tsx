@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -50,6 +50,12 @@ export function StockMovesFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm mã phiếu..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.status ?? ""}
             onChange={(e) => setFilter("status", e.target.value)}
@@ -66,12 +72,6 @@ export function StockMovesFilterBar() {
           <ReferenceFilter label="Nhà cung cấp" value={filters.supplierId ?? ""} rows={references.suppliers} onChange={(value) => setFilter("supplierId", value)} />
           <ReferenceFilter label="Khách hàng" value={filters.customerId ?? ""} rows={references.customers} onChange={(value) => setFilter("customerId", value)} />
           <ReferenceFilter label="Công trình" value={filters.projectId ?? ""} rows={references.projects} onChange={(value) => setFilter("projectId", value)} />
-          <Input
-            className="w-44"
-            placeholder="Mã phiếu..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={

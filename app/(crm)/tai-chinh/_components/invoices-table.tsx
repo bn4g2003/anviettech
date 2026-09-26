@@ -64,12 +64,16 @@ export function InvoicesTable() {
     {
       id: "code",
       header: "Mã",
-      width: "w-40 min-w-[150px]",
+      width: "w-36 min-w-[130px]",
       sortable: true,
       cell: (r) => (
         <span
-          className="font-mono text-xs font-medium leading-tight line-clamp-2 break-all"
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap truncate max-w-[140px] inline-block"
           title={r.code}
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
         >
           {r.code}
         </span>
@@ -83,7 +87,7 @@ export function InvoicesTable() {
       cell: (r) => {
         const name = r.customerName || getCustomer(r.customerId)?.name || "—";
         return (
-          <span className="block max-w-[210px] truncate text-sm" title={name}>
+          <span className="font-medium text-foreground text-xs truncate max-w-[200px] block whitespace-nowrap" title={name}>
             {name}
           </span>
         );
@@ -94,14 +98,14 @@ export function InvoicesTable() {
       header: "Số tiền",
       width: "w-32",
       sortable: true,
-      cell: (r) => <span className="font-medium whitespace-nowrap">{formatVnd(r.amount)}</span>,
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.amount)}</span>,
     },
     {
       id: "paidAmount",
       header: "Đã TT",
       width: "w-32",
       sortable: true,
-      cell: (r) => <span className="text-muted whitespace-nowrap">{formatVnd(r.paidAmount)}</span>,
+      cell: (r) => <span className="font-mono text-xs text-muted whitespace-nowrap">{formatVnd(r.paidAmount)}</span>,
     },
     {
       id: "status",
@@ -112,12 +116,22 @@ export function InvoicesTable() {
       id: "dueDate",
       header: "Hạn TT",
       sortable: true,
-      cell: (r) => <span className="text-muted">{formatDate(r.dueDate)}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{formatDate(r.dueDate)}</span>,
     },
     {
       id: "owner",
       header: "Phụ trách",
-      cell: (r) => r.owner.name,
+      cell: (r) => {
+        const ownerName = r.owner?.name || "—";
+        return (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
+            </span>
+            <span className="text-xs">{ownerName}</span>
+          </span>
+        );
+      },
     },
     {
       id: "actions",

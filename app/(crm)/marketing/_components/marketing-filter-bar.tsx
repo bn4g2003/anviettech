@@ -3,7 +3,7 @@
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { ArrowUpDown, Filter, RefreshCw } from "lucide-react";
@@ -41,6 +41,12 @@ export function MarketingFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tên, mã chiến dịch..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.status ?? ""}
             onChange={(e) => setFilter("status", e.target.value)}
@@ -63,12 +69,6 @@ export function MarketingFilterBar() {
               </option>
             ))}
           </Select>
-          <Input
-            className="w-48"
-            placeholder="Tên / mã chiến dịch..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={

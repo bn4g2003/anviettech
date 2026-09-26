@@ -47,12 +47,23 @@ export function TasksTable() {
       id: "title",
       header: "Tiêu đề",
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.title}</span>,
+      cell: (r) => (
+        <span
+          className="font-semibold text-foreground text-xs truncate max-w-[220px] block whitespace-nowrap hover:underline cursor-pointer"
+          title={r.title}
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.title}
+        </span>
+      ),
     },
     {
       id: "type",
       header: "Loại",
-      cell: (r) => TASK_TYPE_LABEL[r.type] ?? r.type,
+      cell: (r) => <span className="whitespace-nowrap text-xs">{TASK_TYPE_LABEL[r.type] ?? r.type}</span>,
     },
     {
       id: "status",
@@ -64,7 +75,7 @@ export function TasksTable() {
       header: "Hạn",
       sortable: true,
       cell: (r) => (
-        <span className="text-muted" title={relativeTime(r.dueAt)}>
+        <span className="text-muted text-xs whitespace-nowrap" title={relativeTime(r.dueAt)}>
           {formatDateTime(r.dueAt)}
         </span>
       ),
@@ -75,11 +86,11 @@ export function TasksTable() {
       cell: (r) => {
         const ownerName = r.owner?.name || "—";
         return (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-              {ownerName.slice(0, 1)}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
             </span>
-            {ownerName}
+            <span className="text-xs">{ownerName}</span>
           </span>
         );
       },
@@ -87,22 +98,26 @@ export function TasksTable() {
     {
       id: "customer",
       header: "Khách hàng",
-      cell: (r) =>
-        r.customerId ? (
-          <span className="text-muted">{getCustomer(r.customerId)?.name ?? "—"}</span>
-        ) : (
-          <span className="text-muted">—</span>
-        ),
+      cell: (r) => {
+        const name = r.customerId ? getCustomer(r.customerId)?.name ?? "—" : "—";
+        return (
+          <span className="text-foreground text-xs truncate max-w-[160px] block whitespace-nowrap" title={name}>
+            {name}
+          </span>
+        );
+      },
     },
     {
       id: "deal",
       header: "Cơ hội",
-      cell: (r) =>
-        r.dealId ? (
-          <span className="text-muted">{getDeal(r.dealId)?.title ?? "—"}</span>
-        ) : (
-          <span className="text-muted">—</span>
-        ),
+      cell: (r) => {
+        const title = r.dealId ? getDeal(r.dealId)?.title ?? "—" : "—";
+        return (
+          <span className="text-muted text-xs truncate max-w-[160px] block whitespace-nowrap" title={title}>
+            {title}
+          </span>
+        );
+      },
     },
     {
       id: "actions",

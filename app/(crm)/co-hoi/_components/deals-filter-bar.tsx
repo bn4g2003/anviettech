@@ -46,7 +46,7 @@ export function DealsFilterBar() {
       filters={
         <>
           <SearchInput
-            className="w-56"
+            className="w-60"
             placeholder="Tìm tiêu đề, mã, khách hàng..."
             value={query}
             onChange={setQuery}

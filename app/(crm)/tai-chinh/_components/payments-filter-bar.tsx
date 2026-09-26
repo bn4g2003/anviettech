@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -37,8 +37,13 @@ export function PaymentsFilterBar({ onRefresh }: { onRefresh?: () => void }) {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm mã TT, mã HĐ, tên KH..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
-            className="w-36 max-w-[150px] truncate text-xs"
             value={filters.customerId ?? ""}
             onChange={(e) => setFilter("customerId", e.target.value)}
           >
@@ -50,7 +55,6 @@ export function PaymentsFilterBar({ onRefresh }: { onRefresh?: () => void }) {
             ))}
           </Select>
           <Select
-            className="w-32 text-xs"
             value={filters.method ?? ""}
             onChange={(e) => setFilter("method", e.target.value)}
           >
@@ -60,12 +64,6 @@ export function PaymentsFilterBar({ onRefresh }: { onRefresh?: () => void }) {
             <option value="card">Thẻ</option>
             <option value="other">Khác</option>
           </Select>
-          <Input
-            className="w-48 text-xs"
-            placeholder="Mã TT, mã HĐ, tên KH..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={

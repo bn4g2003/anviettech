@@ -79,44 +79,58 @@ export function StockLevelsTable() {
       header: "SKU",
       width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground/90">{r.product?.sku}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/san-pham?search=${r.product?.sku || ""}`);
+          }}
+        >
+          {r.product?.sku}
+        </span>
+      ),
     },
     {
       id: "name",
       header: "Sản phẩm",
       sortable: true,
-      cell: (r) => <span className="font-medium text-foreground">{r.product?.name}</span>,
+      cell: (r) => (
+        <span className="font-semibold text-foreground text-xs truncate max-w-[240px] block whitespace-nowrap" title={r.product?.name}>
+          {r.product?.name}
+        </span>
+      ),
     },
     {
       id: "category",
       header: "Danh mục",
-      cell: (r) => <span className="text-muted">{r.product?.category || "—"}</span>,
+      cell: (r) => <span className="text-muted text-xs truncate max-w-[140px] block whitespace-nowrap">{r.product?.category || "—"}</span>,
     },
     {
       id: "unit",
       header: "ĐVT",
       width: "w-20",
-      cell: (r) => <span className="text-muted">{r.product?.unit || "—"}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{r.product?.unit || "—"}</span>,
     },
     {
       id: "qty",
       header: "Tồn kho",
       width: "w-24",
       sortable: true,
-      cell: (r) => <span className="font-bold text-foreground">{r.qty}</span>,
+      cell: (r) => <span className="font-mono text-xs font-bold text-foreground whitespace-nowrap">{r.qty}</span>,
     },
     {
       id: "minStock",
       header: "Tối thiểu",
       width: "w-24",
-      cell: (r) => <span className="text-muted">{r.product?.minStock ?? 0}</span>,
+      cell: (r) => <span className="font-mono text-xs text-muted whitespace-nowrap">{r.product?.minStock ?? 0}</span>,
     },
     {
       id: "costPrice",
       header: "Giá vốn",
       width: "w-32",
       cell: (r) => (
-        <span className="text-muted whitespace-nowrap">
+        <span className="font-mono text-xs text-muted whitespace-nowrap">
           {formatVnd(r.product?.costPrice ?? 0)}
         </span>
       ),
@@ -127,7 +141,7 @@ export function StockLevelsTable() {
       width: "w-36",
       sortable: true,
       cell: (r) => (
-        <span className="font-semibold text-primary whitespace-nowrap">
+        <span className="font-mono text-xs font-semibold text-primary whitespace-nowrap">
           {formatVnd((r.product?.costPrice ?? 0) * r.qty)}
         </span>
       ),

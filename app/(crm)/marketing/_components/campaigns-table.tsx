@@ -46,21 +46,42 @@ export function CampaignsTable() {
     {
       id: "code",
       header: "Mã",
-      width: "w-24",
+      width: "w-28",
       sortable: true,
-      cell: (r) => <span className="font-mono text-xs">{r.code}</span>,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs font-semibold text-primary hover:underline cursor-pointer whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.code}
+        </span>
+      ),
     },
     {
       id: "name",
       header: "Tên chiến dịch",
       sortable: true,
-      cell: (r) => <span className="font-medium">{r.name}</span>,
+      cell: (r) => (
+        <span
+          className="font-semibold text-foreground text-xs truncate max-w-[220px] block whitespace-nowrap hover:underline cursor-pointer"
+          title={r.name}
+          onClick={(e) => {
+            e.stopPropagation();
+            list.setViewId(r.id);
+          }}
+        >
+          {r.name}
+        </span>
+      ),
     },
     {
       id: "channel",
       header: "Kênh",
       cell: (r) => (
-        <span className="text-muted">{CAMPAIGN_CHANNEL_LABELS[r.channel]}</span>
+        <span className="text-muted text-xs whitespace-nowrap">{CAMPAIGN_CHANNEL_LABELS[r.channel]}</span>
       ),
     },
     {
@@ -72,14 +93,14 @@ export function CampaignsTable() {
       id: "budget",
       header: "Ngân sách",
       sortable: true,
-      cell: (r) => formatVnd(r.budget),
+      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.budget)}</span>,
     },
     {
       id: "spent",
       header: "Đã chi",
       sortable: true,
       cell: (r) => (
-        <span className={r.spent > r.budget ? "font-medium text-danger" : undefined}>
+        <span className={`font-mono text-xs whitespace-nowrap ${r.spent > r.budget ? "font-semibold text-danger" : "text-muted"}`}>
           {formatVnd(r.spent)}
         </span>
       ),
@@ -88,7 +109,7 @@ export function CampaignsTable() {
       id: "leadsCount",
       header: "Leads",
       sortable: true,
-      cell: (r) => <span className="tabular-nums">{r.leadsCount}</span>,
+      cell: (r) => <span className="font-mono text-xs tabular-nums whitespace-nowrap">{r.leadsCount}</span>,
     },
     {
       id: "owner",
@@ -96,11 +117,11 @@ export function CampaignsTable() {
       cell: (r) => {
         const ownerName = r.owner?.name || "—";
         return (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px]">
-              {ownerName.slice(0, 1)}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-bg text-[10px] font-medium">
+              {ownerName.slice(0, 1).toUpperCase()}
             </span>
-            {ownerName}
+            <span className="text-xs">{ownerName}</span>
           </span>
         );
       },
@@ -109,13 +130,13 @@ export function CampaignsTable() {
       id: "startDate",
       header: "Bắt đầu",
       sortable: true,
-      cell: (r) => <span className="text-muted">{formatDate(r.startDate)}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{formatDate(r.startDate)}</span>,
     },
     {
       id: "endDate",
       header: "Kết thúc",
       sortable: true,
-      cell: (r) => <span className="text-muted">{formatDate(r.endDate)}</span>,
+      cell: (r) => <span className="text-muted text-xs whitespace-nowrap">{formatDate(r.endDate)}</span>,
     },
     {
       id: "actions",

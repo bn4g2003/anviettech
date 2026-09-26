@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { OwnerLookup } from "@/components/lookups/owner-lookup";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -36,6 +36,12 @@ export function TasksFilterBar() {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tiêu đề công việc..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
             value={filters.status ?? ""}
             onChange={(e) => setFilter("status", e.target.value)}
@@ -70,12 +76,6 @@ export function TasksFilterBar() {
             <option value="overdue">Quá hạn</option>
             <option value="upcoming">Sắp tới</option>
           </Select>
-          <Input
-            className="w-44"
-            placeholder="Tìm tiêu đề..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={

@@ -37,7 +37,7 @@ export function QuotesFilterBar() {
       filters={
         <>
           <SearchInput
-            className="w-56"
+            className="w-60"
             placeholder="Tìm mã báo giá, khách hàng..."
             value={query}
             onChange={setQuery}

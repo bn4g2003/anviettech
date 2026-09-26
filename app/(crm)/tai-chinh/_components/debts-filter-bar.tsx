@@ -3,7 +3,7 @@
 import { FilterBar } from "@/components/datagrid/filter-bar";
 import { ColumnToggle } from "@/components/datagrid/column-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/datagrid/search-input";
 import { Select } from "@/components/ui/select";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
@@ -38,8 +38,13 @@ export function DebtsFilterBar({ onRefresh }: { onRefresh?: () => void }) {
     <FilterBar
       filters={
         <>
+          <SearchInput
+            className="w-60"
+            placeholder="Tìm tên khách hàng, SĐT, mã..."
+            value={query}
+            onChange={setQuery}
+          />
           <Select
-            className="w-36 max-w-[150px] truncate text-xs"
             value={filters.customerId ?? ""}
             onChange={(e) => setFilter("customerId", e.target.value)}
           >
@@ -50,12 +55,6 @@ export function DebtsFilterBar({ onRefresh }: { onRefresh?: () => void }) {
               </option>
             ))}
           </Select>
-          <Input
-            className="w-48 text-xs"
-            placeholder="Tên khách hàng, SĐT..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
         </>
       }
       actions={
