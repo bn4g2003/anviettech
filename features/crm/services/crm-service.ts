@@ -92,7 +92,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   contracts: {
     module: "contracts",
     table: "contracts",
-    select: `id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = contracts.customer_id) AS "customerName", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, customer_id AS "customerId", (SELECT name FROM customers WHERE id = contracts.customer_id) AS "customerName", quote_id AS "quoteId", deal_id AS "dealId", status, value, actual_value AS "actualValue", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code"],
     sort: ["code", "value", "created_at", "updated_at"],
   },

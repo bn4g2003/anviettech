@@ -260,7 +260,7 @@ export function CustomerWorkspace({ id }: { id: string }) {
                     <div key={c.id} className="flex justify-between rounded border border-border px-2.5 py-1.5 text-xs">
                       <span className="font-mono">{c.code}</span>
                       <span>
-                        {c.status} · {formatVnd(c.value)}
+                        {c.status} · {c.actualValue ? `${formatVnd(c.actualValue)} (TT)` : `${formatVnd(c.value)} (Tạm tính)`}
                       </span>
                     </div>
                   ))}

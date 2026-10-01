@@ -72,8 +72,16 @@ export function ContractDetailDrawer() {
           <ContractStatusBadge status={contract.status} />
         </div>
         <div>
-          <p className="text-xs text-muted">Giá trị</p>
-          <p className="font-medium">{formatVnd(contract.value)}</p>
+          <p className="text-xs text-muted">Giá trị tạm tính</p>
+          <p className="font-medium text-muted-foreground">{formatVnd(contract.value)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Giá trị thực tế</p>
+          <p className="font-semibold text-foreground">
+            {contract.actualValue !== undefined && contract.actualValue !== null && contract.actualValue > 0
+              ? formatVnd(contract.actualValue)
+              : "— (Chưa quyết toán)"}
+          </p>
         </div>
         <div>
           <p className="text-xs text-muted">Bắt đầu</p>

@@ -10,6 +10,7 @@ export type Contract = Timestamps & {
   dealId?: EntityId;
   status: ContractStatus;
   value: number;
+  actualValue?: number | null;
   startDate: string;
   endDate: string;
   owner: OwnerRef;
@@ -18,4 +19,6 @@ export type Contract = Timestamps & {
 
 export type ContractInput = Omit<Contract, "id" | "createdAt" | "updatedAt" | "code"> & {
   code?: string;
+  actualValue?: number | null;
 };
+

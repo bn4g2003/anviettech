@@ -181,6 +181,7 @@ export const contractSchema = z.object({
   dealId: optionalDbUuid,
   status: z.enum(["draft", "active", "completed", "cancelled"]).optional(),
   value: z.coerce.number().min(0),
+  actualValue: z.coerce.number().min(0).optional().nullable(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   ownerId: optionalDbUuid,

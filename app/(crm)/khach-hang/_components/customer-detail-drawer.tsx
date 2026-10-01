@@ -146,7 +146,7 @@ export function CustomerDetailDrawer() {
                 className="flex justify-between rounded border border-border px-2 py-1.5"
               >
                 <span>{c.code}</span>
-                <span>{formatVnd(c.value)}</span>
+                <span>{c.actualValue ? `${formatVnd(c.actualValue)} (TT)` : formatVnd(c.value)}</span>
               </li>
             ))}
           </ul>

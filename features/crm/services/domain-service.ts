@@ -135,7 +135,7 @@ export async function getCustomerWorkspace(id: string) {
     query(`SELECT id, code, title, stage, value, owner_id AS "ownerId" FROM deals WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY updated_at DESC`, [id]),
     query(`SELECT id, code, status, total, valid_until AS "validUntil" FROM quotes WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [id]),
     query(`SELECT id, code, status, total FROM orders WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [id]),
-    query(`SELECT id, code, status, value FROM contracts WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [id]),
+    query(`SELECT id, code, status, value, actual_value AS "actualValue" FROM contracts WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [id]),
     query(`SELECT id, code, status, amount, paid_amount AS "paidAmount", due_date AS "dueDate" FROM invoices WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [id]),
     query(`SELECT id, original_name AS "originalName", storage_key AS "storageKey", mime_type AS "mimeType", size_bytes AS "sizeBytes", created_at AS "createdAt" FROM documents WHERE entity_type='customer' AND entity_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, [id]),
     query(`SELECT id, actor_id AS "actorId", module, action, entity_type AS "entityType", entity_id AS "entityId", created_at AS "createdAt", after_data AS "afterData" FROM audit_logs WHERE (entity_type='customer' AND entity_id=$1) OR entity_id IN (SELECT id FROM deals WHERE customer_id=$1) ORDER BY created_at DESC LIMIT 50`, [id]),
@@ -565,7 +565,7 @@ export async function updateDraftOrder(id: string, input: { lines: { productId: 
 // —— Contracts ——
 export async function getContract(id: string) {
   const result = await query(
-    `SELECT id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"
+    `SELECT id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, actual_value AS "actualValue", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"
      FROM contracts WHERE id=$1 AND deleted_at IS NULL`, [id],
   );
   if (!result.rows[0]) throw new ApiError(404, "Không tìm thấy hợp đồng");
@@ -767,7 +767,7 @@ export async function softDeleteWarehouse(id: string, actorId: string) {
 }
 
 type ContractInput = {
-  customerId: string; quoteId?: string; dealId?: string; status?: string; value: number;
+  customerId: string; quoteId?: string; dealId?: string; status?: string; value: number; actualValue?: number | null;
   startDate?: string; endDate?: string; ownerId?: string; terms?: string;
 };
 
@@ -788,10 +788,10 @@ export async function createContract(input: ContractInput, actorId: string) {
   return transaction(async (client) => {
     if (input.quoteId) await assertContractQuote(client, input.quoteId, input.customerId);
     const result = await client.query(
-      `INSERT INTO contracts(code,customer_id,quote_id,deal_id,status,value,start_date,end_date,owner_id,terms,created_by,updated_by)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)
-       RETURNING id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
-      [code("HD"), input.customerId, input.quoteId ?? null, input.dealId ?? null, input.status ?? "draft", input.value, input.startDate || null, input.endDate || null, input.ownerId ?? actorId, input.terms || null, actorId],
+      `INSERT INTO contracts(code,customer_id,quote_id,deal_id,status,value,actual_value,start_date,end_date,owner_id,terms,created_by,updated_by)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
+       RETURNING id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, actual_value AS "actualValue", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [code("HD"), input.customerId, input.quoteId ?? null, input.dealId ?? null, input.status ?? "draft", input.value, input.actualValue ?? null, input.startDate || null, input.endDate || null, input.ownerId ?? actorId, input.terms || null, actorId],
     );
     await audit(client, actorId, "contracts", "create", "contract", result.rows[0].id, result.rows[0]);
     return result.rows[0];
@@ -806,12 +806,14 @@ export async function updateContract(id: string, input: Partial<ContractInput>, 
   if (input.quoteId && input.quoteId !== current.quoteId) {
     throw new ApiError(422, "Không thể đổi báo giá liên kết của hợp đồng");
   }
+  const hasActualValue = input.actualValue !== undefined;
+  const actualValue = hasActualValue ? (input.actualValue ?? null) : (current.actualValue ?? null);
   const result = await query(
-    `UPDATE contracts SET status=COALESCE($1,status), value=COALESCE($2,value), start_date=COALESCE($3,start_date),
-     end_date=COALESCE($4,end_date), owner_id=COALESCE($5,owner_id), terms=COALESCE($6,terms), updated_at=now(), updated_by=$7
-     WHERE id=$8 AND deleted_at IS NULL
-     RETURNING id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
-    [input.status ?? null, input.value ?? null, input.startDate || null, input.endDate || null, input.ownerId ?? null, input.terms || null, actorId, id],
+    `UPDATE contracts SET status=COALESCE($1,status), value=COALESCE($2,value), actual_value=$3, start_date=COALESCE($4,start_date),
+     end_date=COALESCE($5,end_date), owner_id=COALESCE($6,owner_id), terms=COALESCE($7,terms), updated_at=now(), updated_by=$8
+     WHERE id=$9 AND deleted_at IS NULL
+     RETURNING id, code, customer_id AS "customerId", quote_id AS "quoteId", deal_id AS "dealId", status, value, actual_value AS "actualValue", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", terms, created_at AS "createdAt", updated_at AS "updatedAt"`,
+    [input.status ?? null, input.value ?? null, actualValue, input.startDate || null, input.endDate || null, input.ownerId ?? null, input.terms || null, actorId, id],
   );
   await audit(query, actorId, "contracts", "update", "contract", id, result.rows[0], current);
   return result.rows[0];

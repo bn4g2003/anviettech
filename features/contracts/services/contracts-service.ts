@@ -4,7 +4,7 @@ import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
 type ApiContract = {
   id: string; code: string; customerId: string; quoteId?: string | null; dealId?: string | null;
-  status: string; value: number | string; startDate?: string | null; endDate?: string | null;
+  status: string; value: number | string; actualValue?: number | string | null; startDate?: string | null; endDate?: string | null;
   ownerId?: string | null; terms?: string | null; createdAt?: string; updatedAt?: string;
 };
 
@@ -18,6 +18,7 @@ async function mapContract(row: ApiContract): Promise<Contract> {
     dealId: row.dealId ?? undefined,
     status: row.status as Contract["status"],
     value: Number(row.value),
+    actualValue: row.actualValue !== undefined && row.actualValue !== null && row.actualValue !== "" ? Number(row.actualValue) : null,
     startDate: row.startDate ?? "",
     endDate: row.endDate ?? "",
     owner: ownerByIdSync(row.ownerId ?? "", owners),

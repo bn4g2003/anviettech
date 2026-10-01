@@ -118,8 +118,21 @@ export function ContractsTable() {
     },
     {
       id: "value",
-      header: "Giá trị",
-      cell: (r) => <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">{formatVnd(r.value)}</span>,
+      header: "Tạm tính (BG)",
+      sortable: true,
+      cell: (r) => <span className="font-mono text-xs text-muted font-medium whitespace-nowrap">{formatVnd(r.value)}</span>,
+    },
+    {
+      id: "actualValue",
+      header: "Giá trị thực tế",
+      sortable: true,
+      cell: (r) => (
+        <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">
+          {r.actualValue !== undefined && r.actualValue !== null && r.actualValue > 0
+            ? formatVnd(r.actualValue)
+            : "—"}
+        </span>
+      ),
     },
     {
       id: "startDate",

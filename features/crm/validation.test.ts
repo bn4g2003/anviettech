@@ -104,12 +104,14 @@ describe("CRM validation", () => {
       dealId: "",
       status: "draft",
       value: 1500000,
+      actualValue: 1450000,
       ownerId: "",
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.quoteId).toBeUndefined();
       expect(result.data.ownerId).toBeUndefined();
+      expect(result.data.actualValue).toBe(1450000);
     }
   });
 

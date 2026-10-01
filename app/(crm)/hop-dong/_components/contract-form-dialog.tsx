@@ -28,6 +28,7 @@ const empty = {
   quoteId: "",
   status: "draft" as ContractStatus,
   value: 0,
+  actualValue: "",
   startDate: toDateInput(new Date().toISOString()),
   endDate: toDateInput(daysFromNow(365)),
   terms: "",
@@ -59,6 +60,7 @@ export function ContractFormDialog() {
         quoteId: editing.quoteId ?? "",
         status: editing.status,
         value: editing.value,
+        actualValue: editing.actualValue !== undefined && editing.actualValue !== null ? String(editing.actualValue) : "",
         startDate: toDateInput(editing.startDate),
         endDate: toDateInput(editing.endDate),
         terms: editing.terms ?? "",
@@ -100,6 +102,7 @@ export function ContractFormDialog() {
       quoteId: form.quoteId || undefined,
       status: form.status,
       value: Number(form.value) || 0,
+      actualValue: form.actualValue !== "" && !isNaN(Number(form.actualValue)) ? Number(form.actualValue) : null,
       startDate: fromDateInput(form.startDate),
       endDate: fromDateInput(form.endDate),
       terms: form.terms || undefined,
@@ -166,13 +169,25 @@ export function ContractFormDialog() {
           </Select>
         </label>
         <label className="space-y-1 text-xs">
-          <span className="text-muted">Giá trị *</span>
+          <span className="text-muted">Giá trị tạm tính (từ BG) *</span>
           <Input
             type="number"
             min={0}
             value={form.value}
             onChange={(e) =>
               setForm((f) => ({ ...f, value: Number(e.target.value) || 0 }))
+            }
+          />
+        </label>
+        <label className="space-y-1 text-xs">
+          <span className="text-muted">Giá trị thực tế (quyết toán)</span>
+          <Input
+            type="number"
+            min={0}
+            placeholder="Chưa quyết toán"
+            value={form.actualValue}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, actualValue: e.target.value }))
             }
           />
         </label>

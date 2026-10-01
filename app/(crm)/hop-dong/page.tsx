@@ -13,6 +13,7 @@ const COLUMNS = [
   "quoteId",
   "status",
   "value",
+  "actualValue",
   "startDate",
   "endDate",
   "owner",

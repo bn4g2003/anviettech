@@ -720,7 +720,12 @@ export function DealWorkspace({ id }: { id: string }) {
                               Thời hạn: {formatDate(c.startDate)} – {formatDate(c.endDate)}
                             </p>
                           </div>
-                          <span className="font-medium tabular-nums">{formatVnd(c.value)}</span>
+                          <div className="text-right">
+                            <span className="font-medium tabular-nums">{formatVnd(c.value)}</span>
+                            {c.actualValue ? (
+                              <p className="text-[11px] text-emerald-600 font-medium">TT: {formatVnd(c.actualValue)}</p>
+                            ) : null}
+                          </div>
                         </div>
                       ))}
                       {relatedContracts.length === 0 ? (

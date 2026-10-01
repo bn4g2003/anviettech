@@ -336,7 +336,15 @@ export function RecordDetailPage({ kind, id }: { kind: RecordKind; id: string })
               </>
             ) : (
               <>
-                <Info label="Giá trị" value={formatVnd(record.value)} />
+                <Info label="Giá trị tạm tính" value={formatVnd(record.value)} />
+                <Info
+                  label="Giá trị thực tế"
+                  value={
+                    record.actualValue !== undefined && record.actualValue !== null && record.actualValue > 0
+                      ? formatVnd(record.actualValue)
+                      : "— (Chưa quyết toán)"
+                  }
+                />
                 <Info
                   label="Thời hạn"
                   value={`${formatDate(record.startDate)} – ${formatDate(record.endDate)}`}
