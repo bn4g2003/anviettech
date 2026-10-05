@@ -2,12 +2,14 @@
 
 import { Select } from "@/components/ui/select";
 import { useProducts } from "@/features/products/hooks/use-products";
+import type { ProductItemType } from "@/features/products/types";
 
 type Props = {
   value?: string;
   onChange: (productId: string) => void;
   className?: string;
   allowEmpty?: boolean;
+  itemType?: ProductItemType;
 };
 
 export function ProductLookup({
@@ -15,9 +17,10 @@ export function ProductLookup({
   onChange,
   className,
   allowEmpty = true,
+  itemType,
 }: Props) {
   const { all } = useProducts();
-  const active = all.filter((p) => p.status === "active");
+  const active = all.filter((p) => p.status === "active" && (!itemType || p.itemType === itemType));
   return (
     <Select
       className={className}

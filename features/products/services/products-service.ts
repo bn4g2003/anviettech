@@ -7,6 +7,8 @@ type ApiProduct = {
   itemType?: string; status: string; description?: string | null; createdAt?: string; updatedAt?: string;
 };
 
+const PRODUCT_PAGE_SIZE = 1000;
+
 function mapProduct(row: ApiProduct): Product {
   return {
     id: row.id,
@@ -28,8 +30,17 @@ function mapProduct(row: ApiProduct): Product {
 
 export const productsService = {
   async list(params?: { search?: string; status?: string }) {
-    const result = await apiFetch<ApiProduct[]>(`/api/v1/products${toQuery({ ...params, pageSize: 100 })}`);
-    return (result.data ?? []).map(mapProduct);
+    const pathForPage = (page: number) =>
+      `/api/v1/products${toQuery({ ...params, page, pageSize: PRODUCT_PAGE_SIZE })}`;
+    const firstPage = await apiFetch<ApiProduct[]>(pathForPage(1));
+    const totalPages = Number(firstPage.meta?.totalPages ?? 1);
+    const remainingPages = Number.isInteger(totalPages) && totalPages > 1
+      ? await Promise.all(
+        Array.from({ length: totalPages - 1 }, (_, index) => apiFetch<ApiProduct[]>(pathForPage(index + 2))),
+      )
+      : [];
+
+    return [firstPage, ...remainingPages].flatMap((page) => (page.data ?? []).map(mapProduct));
   },
   async getById(id: string) {
     const list = await this.list();

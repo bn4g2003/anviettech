@@ -177,7 +177,7 @@ export function StockMoveFormDialog({ moveType }: Props) {
             <div key={index} className="flex items-end gap-2">
               <label className="min-w-0 flex-1 space-y-1 text-xs">
                 <span className="text-muted">Sản phẩm</span>
-                <ProductLookup className="w-full" value={line.productId} onChange={(productId) => setLine(index, { productId })} />
+                <ProductLookup className="w-full" itemType="goods" value={line.productId} onChange={(productId) => setLine(index, { productId })} />
               </label>
               <label className="w-24 space-y-1 text-xs">
                 <span className="text-muted">SL</span>
