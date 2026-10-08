@@ -1,4 +1,5 @@
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 import type { Activity, ActivityInput } from "@/features/activities/types";
 
@@ -25,8 +26,7 @@ async function mapActivity(row: ApiActivity): Promise<Activity> {
 
 export const activitiesService = {
   async list(params?: { dealId?: string }) {
-    const result = await apiFetch<ApiActivity[]>(`/api/v1/activities${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all((result.data ?? []).map(mapActivity));
+    return Promise.all((await fetchAllPages<ApiActivity>("/api/v1/activities", params)).map(mapActivity));
   },
   async create(input: ActivityInput) {
     const result = await apiFetch<ApiActivity>("/api/v1/activities", {

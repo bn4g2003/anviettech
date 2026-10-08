@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/datagrid/search-input";
 import { MultiSelectFilter } from "@/components/datagrid/multi-select-filter";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import { Filter, RefreshCw, ArrowUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -43,15 +43,15 @@ export function StockMovesFilterBar() {
 
   useEffect(() => {
     void Promise.all([
-      apiFetch<Reference[]>(`/api/v1/suppliers${toQuery({ pageSize: 100, status: "active" })}`),
-      apiFetch<Reference[]>(`/api/v1/customers${toQuery({ pageSize: 100, status: "active" })}`),
-      apiFetch<Reference[]>(`/api/v1/projects${toQuery({ pageSize: 100 })}`),
-      apiFetch<Reference[]>(`/api/v1/warehouses${toQuery({ pageSize: 50 })}`),
+      fetchAllPages<Reference>("/api/v1/suppliers", { status: "active" }),
+      fetchAllPages<Reference>("/api/v1/customers", { status: "active" }),
+      fetchAllPages<Reference>("/api/v1/projects"),
+      fetchAllPages<Reference>("/api/v1/warehouses"),
     ]).then(([suppliers, customers, projects, warehouses]) => setReferences({
-      suppliers: suppliers.data ?? [],
-      customers: customers.data ?? [],
-      projects: projects.data ?? [],
-      warehouses: warehouses.data ?? [],
+      suppliers,
+      customers,
+      projects,
+      warehouses,
     })).catch(() => setReferences({ suppliers: [], customers: [], projects: [], warehouses: [] }));
   }, []);
 

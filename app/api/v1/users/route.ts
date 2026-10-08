@@ -3,16 +3,18 @@ import { requireBusinessUser, requirePermission } from "@/features/auth/services
 import { createUser, listActiveUsers, listUsers } from "@/features/auth/services/users-service";
 import { userSchema } from "@/features/auth/validation";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireBusinessUser();
+    const { searchParams } = new URL(request.url);
+    const includeHidden = searchParams.get("includeHidden") === "true";
     const hasFullView = user.permissions.some(
       (p) => (p.module === "users" || p.module === "*") && p.action === "view"
     );
     if (hasFullView) {
-      return ok(await listUsers());
+      return ok(await listUsers(includeHidden));
     }
-    return ok(await listActiveUsers());
+    return ok(await listActiveUsers(includeHidden));
   } catch (error) {
     return errorResponse(error);
   }

@@ -1,4 +1,5 @@
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { Deal, DealInput, DealStage } from "@/features/deals/types";
 import { DEAL_STAGE_META } from "@/features/deals/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
@@ -32,8 +33,7 @@ async function mapDeal(row: ApiDeal): Promise<Deal> {
 
 export const dealsService = {
   async list(params?: { search?: string; status?: string; ownerId?: string; customerId?: string }) {
-    const result = await apiFetch<ApiDeal[]>(`/api/v1/deals${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all((result.data ?? []).map(mapDeal));
+    return Promise.all((await fetchAllPages<ApiDeal>("/api/v1/deals", params)).map(mapDeal));
   },
   async getById(id: string) {
     const result = await apiFetch<ApiDeal>(`/api/v1/deals/${id}`);

@@ -1,4 +1,5 @@
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { Task, TaskInput, TaskStatus, TaskType } from "@/features/tasks/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
@@ -36,8 +37,7 @@ export const tasksService = {
     due?: string;
     scope?: string;
   }) {
-    const result = await apiFetch<ApiTask[]>(`/api/v1/tasks${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all((result.data ?? []).map(mapTask));
+    return Promise.all((await fetchAllPages<ApiTask>("/api/v1/tasks", params)).map(mapTask));
   },
   async create(input: TaskInput) {
     const result = await apiFetch<ApiTask>("/api/v1/tasks", {

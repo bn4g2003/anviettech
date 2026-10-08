@@ -8,7 +8,8 @@ import { useProducts } from "@/features/products/hooks/use-products";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { formatVnd } from "@/features/shared/utils/money";
 import { AlertTriangle, Boxes, CircleDollarSign, PackageCheck, Tags } from "lucide-react";
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useEffect, useState } from "react";
@@ -105,7 +106,7 @@ type ProductSupplier = { id: string; supplierId: string; supplierCode: string; s
 function ProductSuppliers({ productId }: { productId: string }) {
   const [rows, setRows] = useState<ProductSupplier[]>([]); const [suppliers, setSuppliers] = useState<{ id: string; code: string; name: string }[]>([]);
   const [supplierId, setSupplierId] = useState(""); const [price, setPrice] = useState(""); const [saving, setSaving] = useState(false);
-  const reload = async () => { const [links, options] = await Promise.all([apiFetch<ProductSupplier[]>(`/api/v1/products/${productId}/suppliers`), apiFetch<{ id: string; code: string; name: string }[]>(`/api/v1/suppliers${toQuery({ pageSize: 100, status: "active" })}`)]); setRows(links.data ?? []); setSuppliers(options.data ?? []); };
+  const reload = async () => { const [links, options] = await Promise.all([apiFetch<ProductSupplier[]>(`/api/v1/products/${productId}/suppliers`), fetchAllPages<{ id: string; code: string; name: string }>("/api/v1/suppliers", { status: "active" })]); setRows(links.data ?? []); setSuppliers(options); };
   useEffect(() => { void reload().catch(() => { setRows([]); }); }, [productId]);
   async function add() { if (!supplierId) return; setSaving(true); try { await apiFetch(`/api/v1/products/${productId}/suppliers`, { method: "POST", body: JSON.stringify({ supplierId, purchasePrice: Number(price) || 0, isPreferred: rows.length === 0 }) }); setSupplierId(""); setPrice(""); await reload(); } finally { setSaving(false); } }
   return <section className="rounded-lg border border-border p-3"><p className="text-xs font-medium">Nhà cung cấp</p><div className="mt-2 space-y-1 text-xs">{rows.length ? rows.map((row) => <div className="flex justify-between gap-2" key={row.id}><span>{row.supplierCode} — {row.supplierName}{row.isPreferred ? " · Ưu tiên" : ""}</span><span>{formatVnd(Number(row.purchasePrice))}</span></div>) : <p className="text-muted">Chưa liên kết nhà cung cấp.</p>}</div><div className="mt-3 flex gap-2"><Select className="min-w-0 flex-1" value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">Thêm nhà cung cấp</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.code} — {supplier.name}</option>)}</Select><Input className="w-28" type="number" min="0" placeholder="Giá mua" value={price} onChange={(event) => setPrice(event.target.value)} /><Button variant="outline" disabled={saving || !supplierId} onClick={() => void add()}>{saving ? "..." : "Thêm"}</Button></div></section>;

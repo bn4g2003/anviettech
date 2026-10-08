@@ -1,4 +1,5 @@
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { Product, ProductInput } from "@/features/products/types";
 
 type ApiProduct = {
@@ -6,8 +7,6 @@ type ApiProduct = {
   unitPrice: number | string; costPrice?: number | string; vatPercent: number | string; minStock: number | string;
   itemType?: string; status: string; description?: string | null; createdAt?: string; updatedAt?: string;
 };
-
-const PRODUCT_PAGE_SIZE = 1000;
 
 function mapProduct(row: ApiProduct): Product {
   return {
@@ -30,17 +29,7 @@ function mapProduct(row: ApiProduct): Product {
 
 export const productsService = {
   async list(params?: { search?: string; status?: string }) {
-    const pathForPage = (page: number) =>
-      `/api/v1/products${toQuery({ ...params, page, pageSize: PRODUCT_PAGE_SIZE })}`;
-    const firstPage = await apiFetch<ApiProduct[]>(pathForPage(1));
-    const totalPages = Number(firstPage.meta?.totalPages ?? 1);
-    const remainingPages = Number.isInteger(totalPages) && totalPages > 1
-      ? await Promise.all(
-        Array.from({ length: totalPages - 1 }, (_, index) => apiFetch<ApiProduct[]>(pathForPage(index + 2))),
-      )
-      : [];
-
-    return [firstPage, ...remainingPages].flatMap((page) => (page.data ?? []).map(mapProduct));
+    return (await fetchAllPages<ApiProduct>("/api/v1/products", params)).map(mapProduct);
   },
   async getById(id: string) {
     const list = await this.list();

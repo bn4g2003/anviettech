@@ -549,11 +549,12 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
           if (!ct.phone && !ct.name) continue;
           await client.query(
             `INSERT INTO contacts (customer_id, full_name, phone, is_primary, notes, created_by, updated_by)
-             SELECT $1, $2, $3, $4, $5, $6, $6
+             SELECT $1::uuid, $2::varchar, $3::varchar, $4::boolean, $5::text, $6::uuid, $6::uuid
              WHERE NOT EXISTS (
-               SELECT 1 FROM contacts WHERE customer_id = $1 AND (phone = $3 OR full_name = $2)
+               SELECT 1 FROM contacts
+               WHERE customer_id = $1::uuid AND (($3::varchar IS NOT NULL AND phone = $3::varchar) OR full_name = $2::varchar)
              )`,
-            [u.id, ct.name || "Liên hệ", ct.phone || null, ct.isPrimary, ct.note || null, actorId],
+            [u.id, ct.name || "Liên hệ", ct.phone || null, !!ct.isPrimary, ct.note || null, actorId],
           );
         }
 

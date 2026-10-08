@@ -71,7 +71,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   campaigns: {
     module: "campaigns",
     table: "campaigns",
-    select: `id, code, name, channel, status, budget, spent, content, landing_page_url AS "landingPageUrl", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, name, channel, status, budget, spent, content, landing_page_url AS "landingPageUrl", start_date AS "startDate", end_date AS "endDate", owner_id AS "ownerId", (SELECT count(*)::int FROM leads WHERE campaign_id = campaigns.id AND deleted_at IS NULL) AS "leadsCount", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["name", "code", "content"],
     sort: ["name", "code", "created_at", "updated_at"],
   },
@@ -150,7 +150,7 @@ const RESOURCE_CONFIG: Record<string, ResourceConfig> = {
   stock_moves: {
     module: "inventory",
     table: "stock_moves",
-    select: `id, code, type, reason, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", supplier_id AS "supplierId", customer_id AS "customerId", project_id AS "projectId", owner_id AS "ownerId", note, posted_at AS "postedAt", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    select: `id, code, type, reason, status, order_id AS "orderId", warehouse_from_id AS "warehouseFromId", warehouse_to_id AS "warehouseToId", supplier_id AS "supplierId", customer_id AS "customerId", project_id AS "projectId", owner_id AS "ownerId", note, posted_at AS "postedAt", (SELECT code FROM suppliers WHERE id = stock_moves.supplier_id AND deleted_at IS NULL) AS "supplierCode", (SELECT name FROM suppliers WHERE id = stock_moves.supplier_id AND deleted_at IS NULL) AS "supplierName", (SELECT code FROM customers WHERE id = stock_moves.customer_id AND deleted_at IS NULL) AS "customerCode", (SELECT name FROM customers WHERE id = stock_moves.customer_id AND deleted_at IS NULL) AS "customerName", (SELECT code FROM projects WHERE id = stock_moves.project_id AND deleted_at IS NULL) AS "projectCode", (SELECT name FROM projects WHERE id = stock_moves.project_id AND deleted_at IS NULL) AS "projectName", (SELECT code FROM warehouses WHERE id = stock_moves.warehouse_from_id AND deleted_at IS NULL) AS "warehouseFromCode", (SELECT name FROM warehouses WHERE id = stock_moves.warehouse_from_id AND deleted_at IS NULL) AS "warehouseFromName", (SELECT code FROM warehouses WHERE id = stock_moves.warehouse_to_id AND deleted_at IS NULL) AS "warehouseToCode", (SELECT name FROM warehouses WHERE id = stock_moves.warehouse_to_id AND deleted_at IS NULL) AS "warehouseToName", created_at AS "createdAt", updated_at AS "updatedAt"`,
     search: ["code", "note"],
     sort: ["code", "created_at", "updated_at"],
   },
@@ -310,6 +310,31 @@ export async function listResource(name: ResourceName, options: ListOptions) {
     const linesByQuote = new Map<string, typeof lines.rows>();
     for (const line of lines.rows) linesByQuote.set(line.quoteId, [...(linesByQuote.get(line.quoteId) ?? []), line]);
     return { rows: rows.rows.map((row) => ({ ...row, lines: linesByQuote.get(String(row.id)) ?? [] })), meta: { page: options.page, pageSize: options.pageSize, total, totalPages: Math.ceil(total / options.pageSize) || 1 } };
+  }
+  if (name === "orders" && rows.rows.length) {
+    const orderIds = rows.rows.map((row) => String(row.id));
+    const lines = await query<{
+      id: string; orderId: string; productId: string; productName: string; qty: string; unitPrice: string; lineTotal: string;
+    }>(
+      `SELECT id, order_id AS "orderId", product_id AS "productId", product_name AS "productName", qty,
+              unit_price AS "unitPrice", line_total AS "lineTotal"
+       FROM order_lines WHERE order_id = ANY($1::uuid[])`,
+      [orderIds],
+    );
+    const linesByOrder = new Map<string, typeof lines.rows>();
+    for (const line of lines.rows) linesByOrder.set(line.orderId, [...(linesByOrder.get(line.orderId) ?? []), line]);
+    return { rows: rows.rows.map((row) => ({ ...row, lines: linesByOrder.get(String(row.id)) ?? [] })), meta: { page: options.page, pageSize: options.pageSize, total, totalPages: Math.ceil(total / options.pageSize) || 1 } };
+  }
+  if (name === "stock_moves" && rows.rows.length) {
+    const moveIds = rows.rows.map((row) => String(row.id));
+    const lines = await query<{ id: string; moveId: string; productId: string; productName: string; qty: string }>(
+      `SELECT id, stock_move_id AS "moveId", product_id AS "productId", product_name AS "productName", qty
+       FROM stock_move_lines WHERE stock_move_id = ANY($1::uuid[])`,
+      [moveIds],
+    );
+    const linesByMove = new Map<string, typeof lines.rows>();
+    for (const line of lines.rows) linesByMove.set(line.moveId, [...(linesByMove.get(line.moveId) ?? []), line]);
+    return { rows: rows.rows.map((row) => ({ ...row, lines: linesByMove.get(String(row.id)) ?? [] })), meta: { page: options.page, pageSize: options.pageSize, total, totalPages: Math.ceil(total / options.pageSize) || 1 } };
   }
   return { rows: rows.rows, meta: { page: options.page, pageSize: options.pageSize, total, totalPages: Math.ceil(total / options.pageSize) || 1 } };
 }

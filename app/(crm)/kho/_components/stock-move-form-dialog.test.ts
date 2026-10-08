@@ -5,7 +5,7 @@ describe("StockMoveFormDialog project reference", () => {
   it("loads projects without requiring the active status", () => {
     const source = readFileSync(new URL("./stock-move-form-dialog.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("`/api/v1/projects${toQuery({ pageSize: 100 })}`");
-    expect(source).not.toContain("`/api/v1/projects${toQuery({ pageSize: 100, status: \"active\" })}`");
+    expect(source).toContain('fetchAllPages<{ id: string; code: string; name: string }>("/api/v1/projects")');
+    expect(source).not.toContain('"/api/v1/projects", { status: "active" }');
   });
 });

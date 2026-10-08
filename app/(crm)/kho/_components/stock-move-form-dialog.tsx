@@ -9,7 +9,7 @@ import { useInventory } from "@/features/inventory/hooks/use-inventory";
 import type { StockMoveReason, StockMoveStatus, StockMoveType } from "@/features/inventory/types";
 import { useListPage } from "@/features/shared/hooks/use-list-page";
 import { useToast } from "@/components/ui/toast";
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -63,7 +63,11 @@ export function StockMoveFormDialog({ moveType }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    void Promise.all([apiFetch<{ id: string; code: string; name: string }[]>(`/api/v1/suppliers${toQuery({ pageSize: 100, status: "active" })}`).catch(() => ({ data: [] })), apiFetch<{ id: string; code: string; name: string }[]>(`/api/v1/customers${toQuery({ pageSize: 100, status: "active" })}`).catch(() => ({ data: [] })), apiFetch<{ id: string; code: string; name: string }[]>(`/api/v1/projects${toQuery({ pageSize: 100 })}`).catch(() => ({ data: [] }))]).then(([suppliers, customers, projects]) => setReferences({ suppliers: suppliers.data ?? [], customers: customers.data ?? [], projects: projects.data ?? [] }));
+    void Promise.all([
+      fetchAllPages<{ id: string; code: string; name: string }>("/api/v1/suppliers", { status: "active" }).catch(() => []),
+      fetchAllPages<{ id: string; code: string; name: string }>("/api/v1/customers", { status: "active" }).catch(() => []),
+      fetchAllPages<{ id: string; code: string; name: string }>("/api/v1/projects").catch(() => []),
+    ]).then(([suppliers, customers, projects]) => setReferences({ suppliers, customers, projects }));
   }, [open]);
 
   useEffect(() => {

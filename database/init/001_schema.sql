@@ -17,6 +17,7 @@ CREATE TABLE users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), full_name varchar(160) NOT NULL,
   email varchar(254) NOT NULL UNIQUE, password_hash text NOT NULL,
   status user_status NOT NULL DEFAULT 'active', must_change_password boolean NOT NULL DEFAULT true,
+  is_hidden boolean NOT NULL DEFAULT false,
   last_login_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );

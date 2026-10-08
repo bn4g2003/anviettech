@@ -4,7 +4,7 @@ import { ApiError } from "@/lib/api";
 
 const SUPER_ADMIN_ROLE_ID = "00000000-0000-0000-0000-000000000001";
 
-export async function listUsers() {
+export async function listUsers(includeHidden = false) {
   const result = await query<{
     id: string;
     fullName: string;
@@ -22,14 +22,14 @@ export async function listUsers() {
      FROM users u
      LEFT JOIN user_roles ur ON ur.user_id=u.id
      LEFT JOIN roles r ON r.id=ur.role_id
-     WHERE u.deleted_at IS NULL
+     WHERE u.deleted_at IS NULL ${includeHidden ? "" : "AND COALESCE(u.is_hidden, false) = false"}
      GROUP BY u.id
      ORDER BY u.created_at DESC`,
   );
   return result.rows;
 }
 
-export async function listActiveUsers() {
+export async function listActiveUsers(includeHidden = false) {
   const result = await query<{
     id: string;
     fullName: string;
@@ -42,7 +42,7 @@ export async function listActiveUsers() {
      FROM users u
      LEFT JOIN user_roles ur ON ur.user_id=u.id
      LEFT JOIN roles r ON r.id=ur.role_id
-     WHERE u.deleted_at IS NULL AND u.status = 'active'
+     WHERE u.deleted_at IS NULL AND u.status = 'active' ${includeHidden ? "" : "AND COALESCE(u.is_hidden, false) = false"}
      GROUP BY u.id
      ORDER BY u.full_name ASC`,
   );
@@ -89,6 +89,7 @@ async function countActiveSuperAdmins(excludeUserId?: string) {
     `SELECT count(DISTINCT u.id)::text n FROM users u
      JOIN user_roles ur ON ur.user_id=u.id
      WHERE ur.role_id=$1 AND u.status='active' AND u.deleted_at IS NULL
+       AND COALESCE(u.is_hidden, false) = false
        AND ($2::uuid IS NULL OR u.id <> $2)`,
     [SUPER_ADMIN_ROLE_ID, excludeUserId ?? null],
   );

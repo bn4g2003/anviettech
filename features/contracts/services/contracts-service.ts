@@ -1,4 +1,5 @@
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { Contract, ContractInput } from "@/features/contracts/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
@@ -30,8 +31,7 @@ async function mapContract(row: ApiContract): Promise<Contract> {
 
 export const contractsService = {
   async list(params?: { search?: string; status?: string; customerId?: string }) {
-    const result = await apiFetch<ApiContract[]>(`/api/v1/contracts${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all((result.data ?? []).map(mapContract));
+    return Promise.all((await fetchAllPages<ApiContract>("/api/v1/contracts", params)).map(mapContract));
   },
   async getById(id: string) {
     const result = await apiFetch<ApiContract>(`/api/v1/contracts/${id}`);

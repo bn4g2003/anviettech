@@ -1,4 +1,5 @@
 import { apiFetch, toQuery } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { StockLevel, StockMove, StockMoveInput, StockMoveReference } from "@/features/inventory/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
@@ -91,13 +92,7 @@ export const inventoryService = {
     }));
   },
   async listMoves() {
-    const result = await apiFetch<ApiMove[]>(`/api/v1/stock-moves${toQuery({ pageSize: 100 })}`);
-    return Promise.all(
-      (result.data ?? []).map(async (m) => {
-        const full = await apiFetch<ApiMove>(`/api/v1/stock-moves/${m.id}`);
-        return mapMove(full.data);
-      }),
-    );
+    return Promise.all((await fetchAllPages<ApiMove>("/api/v1/stock-moves")).map(mapMove));
   },
   async listWarehouses() {
     const result = await apiFetch<{ id: string; code: string; name: string; isDefault: boolean }[]>(

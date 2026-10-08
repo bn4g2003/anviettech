@@ -1,4 +1,5 @@
-import { apiFetch, toQuery } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { Order, OrderStatus } from "@/features/orders/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
@@ -10,15 +11,7 @@ type ApiOrder = {
 
 async function mapOrder(row: ApiOrder): Promise<Order> {
   const owners = await loadOwners();
-  let lines = row.lines;
-  if (!lines) {
-    try {
-      const full = await apiFetch<ApiOrder>(`/api/v1/orders/${row.id}`);
-      lines = full?.data?.lines ?? [];
-    } catch {
-      lines = [];
-    }
-  }
+  const lines = row.lines ?? [];
   return {
     id: row.id,
     code: row.code,
@@ -43,8 +36,7 @@ async function mapOrder(row: ApiOrder): Promise<Order> {
 
 export const ordersService = {
   async list(params?: { search?: string; status?: string; customerId?: string }) {
-    const result = await apiFetch<ApiOrder[]>(`/api/v1/orders${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all((result.data ?? []).map(mapOrder));
+    return Promise.all((await fetchAllPages<ApiOrder>("/api/v1/orders", params)).map(mapOrder));
   },
   async getById(id: string) {
     const result = await apiFetch<ApiOrder>(`/api/v1/orders/${id}`);

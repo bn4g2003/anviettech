@@ -1,4 +1,5 @@
 import { apiFetch, toQuery } from "@/lib/api-client";
+import { fetchAllPages } from "@/features/shared/api/paginated-list";
 import type { Campaign, CampaignInput, MarketingAnalyticsOverview } from "@/features/marketing/types";
 import { loadOwners, ownerByIdSync } from "@/features/shared/api/owners";
 
@@ -6,6 +7,7 @@ type ApiCampaign = {
   id: string; code: string; name: string; channel: string; status: string;
   budget: number | string; spent: number | string; startDate?: string | null; endDate?: string | null;
   ownerId?: string | null; content?: string | null; landingPageUrl?: string | null;
+  leadsCount?: number | string;
   createdAt?: string; updatedAt?: string;
 };
 
@@ -32,17 +34,9 @@ async function mapCampaign(row: ApiCampaign, leadsCount = 0): Promise<Campaign> 
 
 export const marketingService = {
   async list(params?: { search?: string; status?: string }) {
-    const result = await apiFetch<ApiCampaign[]>(`/api/v1/campaigns${toQuery({ ...params, pageSize: 100 })}`);
-    return Promise.all(
-      (result.data ?? []).map(async (c) => {
-        try {
-          const stats = await apiFetch<{ leadsCount: number }>(`/api/v1/campaigns/${c.id}/stats`);
-          return mapCampaign(c, stats.data.leadsCount);
-        } catch {
-          return mapCampaign(c, 0);
-        }
-      }),
-    );
+    return Promise.all((await fetchAllPages<ApiCampaign>("/api/v1/campaigns", params)).map(
+      (campaign) => mapCampaign(campaign, Number(campaign.leadsCount ?? 0)),
+    ));
   },
   async getAnalytics(params?: { campaignId?: string; source?: string }): Promise<MarketingAnalyticsOverview> {
     const result = await apiFetch<MarketingAnalyticsOverview>(
