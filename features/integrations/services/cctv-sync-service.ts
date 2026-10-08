@@ -549,10 +549,22 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
           if (!ct.phone && !ct.name) continue;
           await client.query(
             `INSERT INTO contacts (customer_id, full_name, phone, is_primary, notes, created_by, updated_by)
-             SELECT $1::uuid, $2::varchar, $3::varchar, $4::boolean, $5::text, $6::uuid, $6::uuid
+             SELECT
+               $1::uuid,
+               $2::varchar,
+               $3::varchar,
+               CASE
+                 WHEN EXISTS (
+                   SELECT 1 FROM contacts WHERE customer_id = $1::uuid AND is_primary AND deleted_at IS NULL
+                 ) THEN false
+                 ELSE $4::boolean
+               END,
+               $5::text,
+               $6::uuid,
+               $6::uuid
              WHERE NOT EXISTS (
                SELECT 1 FROM contacts
-               WHERE customer_id = $1::uuid AND (($3::varchar IS NOT NULL AND phone = $3::varchar) OR full_name = $2::varchar)
+               WHERE customer_id = $1::uuid AND (($3::varchar IS NOT NULL AND $3::varchar <> '' AND phone = $3::varchar) OR full_name = $2::varchar)
              )`,
             [u.id, ct.name || "Liên hệ", ct.phone || null, !!ct.isPrimary, ct.note || null, actorId],
           );
@@ -583,13 +595,17 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
         const newCustomerId = insertRes.rows[0].id;
         newCustomerMap.set(c.cctvId, newCustomerId);
 
-        // Lưu toàn bộ liên hệ
+        // Lưu toàn bộ liên hệ (đảm bảo chỉ có tối đa 1 liên hệ chính)
         if (c.contacts && c.contacts.length > 0) {
-          for (const ct of c.contacts) {
+          let hasPrimary = false;
+          for (let i = 0; i < c.contacts.length; i++) {
+            const ct = c.contacts[i];
+            const isPrimary = !hasPrimary && (Boolean(ct.isPrimary) || i === 0);
+            if (isPrimary) hasPrimary = true;
             await client.query(
               `INSERT INTO contacts (customer_id, full_name, phone, is_primary, notes, created_by, updated_by)
                VALUES ($1, $2, $3, $4, $5, $6, $6)`,
-              [newCustomerId, ct.name || c.name, ct.phone || null, ct.isPrimary, ct.note || null, actorId],
+              [newCustomerId, ct.name || c.name, ct.phone || null, isPrimary, ct.note || null, actorId],
             );
           }
         } else if (c.contactName || c.phone) {
