@@ -39,8 +39,8 @@ export function ProductDetailDrawer() {
   const stock = getStock(product.id);
   const status = STATUS_MAP[product.status];
   const trackedInInventory = product.itemType === "goods";
-  const lowStock = trackedInInventory && stock <= product.minStock;
-  const stockRatio = product.minStock > 0 ? Math.round((stock / product.minStock) * 100) : 100;
+  const lowStock = trackedInInventory && (stock <= 0 || (product.minStock > 0 && stock <= product.minStock));
+  const stockRatio = product.minStock > 0 ? Math.round((stock / product.minStock) * 100) : (stock <= 0 ? 0 : 100);
 
   return (
     <Drawer
@@ -85,8 +85,8 @@ export function ProductDetailDrawer() {
         </section>
 
         {trackedInInventory ? <section className="rounded-lg border border-border p-3">
-          <div className="mb-3 flex items-center justify-between"><div className="flex items-center gap-2 font-medium"><Boxes className="h-4 w-4 text-blue-600" />Tình trạng kho</div><StatusDot color={lowStock ? "red" : "green"} label={lowStock ? "Cần nhập thêm" : "Đủ hàng"} /></div>
-          <div className="flex items-end justify-between"><div><p className={lowStock ? "text-2xl font-semibold text-danger" : "text-2xl font-semibold"}>{stock} <span className="text-sm font-normal text-muted">{product.unit}</span></p><p className="mt-1 text-xs text-muted">Định mức tối thiểu: {product.minStock} {product.unit}</p></div><Badge tone={lowStock ? "danger" : "info"}>{lowStock ? <AlertTriangle className="mr-1 h-3 w-3" /> : null}{stockRatio}% định mức</Badge></div>
+          <div className="mb-3 flex items-center justify-between"><div className="flex items-center gap-2 font-medium"><Boxes className="h-4 w-4 text-blue-600" />Tình trạng kho</div><StatusDot color={lowStock ? "red" : "green"} label={stock <= 0 ? "Thiếu tồn" : (lowStock ? "Cần nhập thêm" : "Đủ hàng")} /></div>
+          <div className="flex items-end justify-between"><div><p className={lowStock ? "text-2xl font-semibold text-danger" : "text-2xl font-semibold"}>{stock} <span className="text-sm font-normal text-muted">{product.unit}</span></p><p className="mt-1 text-xs text-muted">Định mức tối thiểu: {product.minStock} {product.unit}</p></div><Badge tone={lowStock ? "danger" : "info"}>{lowStock ? <AlertTriangle className="mr-1 h-3 w-3" /> : null}{stock <= 0 ? "Thiếu tồn" : `${stockRatio}% định mức`}</Badge></div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted-bg"><div className={lowStock ? "h-full rounded-full bg-red-500" : "h-full rounded-full bg-blue-600"} style={{ width: `${Math.min(stockRatio, 100)}%` }} /></div>
         </section> : null}
 

@@ -52,4 +52,34 @@ describe("inventoryService.createMove", () => {
       }),
     }));
   });
+
+  it("identifies stock level 0 as low stock / belowMin by default even if minStock is 0", async () => {
+    apiFetch.mockResolvedValue({
+      data: [
+        {
+          warehouseId: "wh-1",
+          productId: "prod-zero",
+          sku: "CAM-01",
+          productName: "Camera 0 tồn",
+          minStock: 0,
+          qty: 0,
+          belowMin: true,
+        },
+        {
+          warehouseId: "wh-1",
+          productId: "prod-available",
+          sku: "CAM-02",
+          productName: "Camera có hàng",
+          minStock: 0,
+          qty: 10,
+          belowMin: false,
+        },
+      ],
+    });
+
+    const lowItems = await inventoryService.lowStock();
+    expect(lowItems).toHaveLength(1);
+    expect(lowItems[0].productId).toBe("prod-zero");
+    expect(lowItems[0].belowMin).toBe(true);
+  });
 });

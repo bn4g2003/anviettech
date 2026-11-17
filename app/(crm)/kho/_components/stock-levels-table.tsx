@@ -92,7 +92,7 @@ export function StockLevelsTable() {
       const p = row.product;
       if (!p) return false;
       if (categories.length > 0 && !categories.includes(p.category)) return false;
-      const isLow = p.minStock > 0 && row.qty < p.minStock;
+      const isLow = row.qty <= 0 || (p.minStock > 0 && row.qty < p.minStock);
       if (stockStatuses.length > 0) {
         const matchesLow = stockStatuses.includes("low") && isLow;
         const matchesOk = stockStatuses.includes("ok") && !isLow;
@@ -226,9 +226,9 @@ export function StockLevelsTable() {
       width: "w-28",
       cell: (r) => {
         const min = r.product?.minStock ?? 0;
-        const isLow = min > 0 && r.qty < min;
+        const isLow = r.qty <= 0 || (min > 0 && r.qty < min);
         return isLow ? (
-          <Badge tone="danger">Sắp hết</Badge>
+          <Badge tone="danger">{r.qty <= 0 ? "Thiếu tồn" : "Sắp hết"}</Badge>
         ) : (
           <Badge tone="success">Đủ tồn</Badge>
         );

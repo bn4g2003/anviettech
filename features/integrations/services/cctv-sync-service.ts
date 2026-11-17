@@ -530,6 +530,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
         if (u.notes) noteParts.push(u.notes);
         if (u.lat && u.lng) noteParts.push(`Tọa độ GPS: ${u.lat}, ${u.lng}`);
         const extraNote = noteParts.length > 0 ? noteParts.join("\n") : null;
+        const safePhone = u.phone ? u.phone.trim().slice(0, 32) : null;
 
         await client.query(
           `UPDATE customers
@@ -541,12 +542,14 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
              notes = CASE WHEN (notes IS NULL OR notes = '') THEN $4 ELSE notes END,
              updated_at = now()
            WHERE id = $5`,
-          [u.cctvId, u.phone || null, u.address || null, extraNote, u.id],
+          [u.cctvId, safePhone, u.address || null, extraNote, u.id],
         );
 
         // Bổ sung liên hệ chưa có
         for (const ct of u.contacts) {
           if (!ct.phone && !ct.name) continue;
+          const ctName = (ct.name || "Liên hệ").trim().slice(0, 255);
+          const ctPhone = ct.phone ? ct.phone.trim().slice(0, 32) : null;
           await client.query(
             `INSERT INTO contacts (customer_id, full_name, phone, is_primary, notes, created_by, updated_by)
              SELECT
@@ -566,7 +569,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
                SELECT 1 FROM contacts
                WHERE customer_id = $1::uuid AND (($3::varchar IS NOT NULL AND $3::varchar <> '' AND phone = $3::varchar) OR full_name = $2::varchar)
              )`,
-            [u.id, ct.name || "Liên hệ", ct.phone || null, !!ct.isPrimary, ct.note || null, actorId],
+            [u.id, ctName, ctPhone, !!ct.isPrimary, ct.note || null, actorId],
           );
         }
 
@@ -582,6 +585,8 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
         if (c.notes) noteParts.push(c.notes);
         if (c.lat && c.lng) noteParts.push(`Tọa độ GPS: ${c.lat}, ${c.lng}`);
         const finalNotes = noteParts.length > 0 ? noteParts.join("\n") : null;
+        const safeCustName = (c.name || "Khách hàng CCTV").trim().slice(0, 255);
+        const safeCustPhone = c.phone ? c.phone.trim().slice(0, 32) : null;
 
         const insertRes = await client.query<{ id: string }>(
           `INSERT INTO customers (
@@ -590,7 +595,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
            )
            VALUES ($1, $2, $3, $4, $5, $6, 'CCTV Sync', $7, now(), $8, $8, $8)
            RETURNING id`,
-          [newCode, c.name, c.type, c.phone || null, c.address || null, finalNotes, c.cctvId, actorId],
+          [newCode, safeCustName, c.type, safeCustPhone, c.address || null, finalNotes, c.cctvId, actorId],
         );
         const newCustomerId = insertRes.rows[0].id;
         newCustomerMap.set(c.cctvId, newCustomerId);
@@ -602,17 +607,20 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
             const ct = c.contacts[i];
             const isPrimary = !hasPrimary && (Boolean(ct.isPrimary) || i === 0);
             if (isPrimary) hasPrimary = true;
+            const ctName = (ct.name || safeCustName).trim().slice(0, 255);
+            const ctPhone = ct.phone ? ct.phone.trim().slice(0, 32) : null;
             await client.query(
               `INSERT INTO contacts (customer_id, full_name, phone, is_primary, notes, created_by, updated_by)
                VALUES ($1, $2, $3, $4, $5, $6, $6)`,
-              [newCustomerId, ct.name || c.name, ct.phone || null, isPrimary, ct.note || null, actorId],
+              [newCustomerId, ctName, ctPhone, isPrimary, ct.note || null, actorId],
             );
           }
         } else if (c.contactName || c.phone) {
+          const ctName = (c.contactName || safeCustName).trim().slice(0, 255);
           await client.query(
             `INSERT INTO contacts (customer_id, full_name, phone, is_primary, created_by, updated_by)
              VALUES ($1, $2, $3, true, $4, $4)`,
-            [newCustomerId, c.contactName || c.name, c.phone || null, actorId],
+            [newCustomerId, ctName, safeCustPhone, actorId],
           );
         }
 
@@ -637,7 +645,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
         if (!crmCustomerId) continue;
 
         // A. Đơn hàng (orders)
-        const orderCode = `DH-${wo.code}`;
+        const orderCode = `DH-${wo.code}`.slice(0, 40);
         const orderRes = await client.query<{ id: string }>(
           `INSERT INTO orders (
              code, customer_id, status, total, business_type, business_line,
@@ -662,14 +670,17 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
 
           if (wo.materials && wo.materials.length > 0) {
             for (const m of wo.materials) {
+              const matName = (m.name || "Linh kiện CCTV").trim().slice(0, 255);
               await client.query(
                 `INSERT INTO order_lines (
                    order_id, product_id, product_name, qty, unit_price, line_total, cost_price, business_type
                  ) VALUES ($1, $2, $3, $4, $5, $6, $5, $7)`,
-                [orderId, defaultProductId, m.name, m.quantity, m.unitPrice, m.lineTotal, wo.businessType],
+                [orderId, defaultProductId, matName, m.quantity, m.unitPrice, m.lineTotal, wo.businessType],
               );
             }
           } else {
+            const rawServiceName = `Dịch vụ ${wo.code}: ${wo.description || "Thi công kỹ thuật"}`.trim();
+            const serviceName = rawServiceName.length > 255 ? rawServiceName.slice(0, 252) + "..." : rawServiceName;
             await client.query(
               `INSERT INTO order_lines (
                  order_id, product_id, product_name, qty, unit_price, line_total, cost_price, business_type
@@ -677,7 +688,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
               [
                 orderId,
                 defaultProductId,
-                `Dịch vụ ${wo.code}: ${wo.description || "Thi công kỹ thuật"}`,
+                serviceName,
                 wo.subtotal,
                 wo.costAmount,
                 wo.businessType,
@@ -688,7 +699,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
         }
 
         // C. Hóa đơn (invoices)
-        const invoiceCode = `HD-${wo.code}`;
+        const invoiceCode = `HD-${wo.code}`.slice(0, 40);
         const dueDate = wo.debtDueDate || null;
 
         const invRes = await client.query<{ id: string }>(
@@ -725,7 +736,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
 
         // D. Phiếu thu / Thanh toán (payments)
         if (invoiceId && wo.paidAmount > 0) {
-          const paymentCode = `TT-${wo.code}`;
+          const paymentCode = `TT-${wo.code}`.slice(0, 40);
           const paymentMethod = wo.paymentMethod === "bank_transfer" ? "transfer" : "cash";
           const paidAt = wo.confirmedAt || wo.occurredAt;
           const paymentNote = wo.paymentNote || `Thanh toán phiếu CCTV ${wo.code}`;
@@ -782,7 +793,7 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
               crmCustomerId,
               defaultProductId,
               invoiceId || null,
-              wo.code,
+              wo.code.slice(0, 80),
               wo.businessType,
               wo.subtotal,
               wo.vatRate,
@@ -832,7 +843,11 @@ export async function commitCctvSync(previewData: SyncPreviewData, actorId: stri
         [errMsg, logId],
       );
     }
-    throw err;
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    const errMsg = err instanceof Error ? err.message : String(err);
+    throw new ApiError(500, `Lỗi khi lưu dữ liệu vào CRM: ${errMsg}`);
   } finally {
     isSyncInProgress = false;
   }

@@ -67,7 +67,7 @@ export function StockLevelsFilterBar() {
             value={filters.stockStatus ?? ""}
             onChange={(val) => setFilter("stockStatus", val)}
             options={[
-              { value: "low", label: "Sắp hết" },
+              { value: "low", label: "Thiếu tồn / Sắp hết" },
               { value: "ok", label: "Đủ tồn" },
             ]}
           />

@@ -1082,7 +1082,7 @@ export async function listBalances() {
   const result = await query(
     `SELECT b.warehouse_id AS "warehouseId", w.code AS "warehouseCode", w.name AS "warehouseName",
       b.product_id AS "productId", p.sku, p.name AS "productName", p.min_stock AS "minStock", b.qty,
-      (b.qty < p.min_stock) AS "belowMin"
+      (b.qty <= 0 OR b.qty < p.min_stock) AS "belowMin"
      FROM inventory_balances b
      JOIN warehouses w ON w.id=b.warehouse_id AND w.deleted_at IS NULL
      JOIN products p ON p.id=b.product_id AND p.deleted_at IS NULL
@@ -1466,7 +1466,7 @@ export async function getAnalyticsDashboard() {
     query<{ count: string }>(`SELECT count(*)::text count FROM tasks WHERE deleted_at IS NULL AND status='open' AND due_at < now()`),
     query<{ id: string; name: string; revenue: string }>(`SELECT c.id, c.name, COALESCE(sum(i.paid_amount),0)::text revenue FROM customers c LEFT JOIN invoices i ON i.customer_id=c.id AND i.deleted_at IS NULL WHERE c.deleted_at IS NULL GROUP BY c.id ORDER BY sum(i.paid_amount) DESC NULLS LAST LIMIT 10`),
     query<{ id: string; name: string; qty: string; revenue: string }>(`SELECT p.id, p.name, COALESCE(sum(ol.qty),0)::text qty, COALESCE(sum(ol.line_total),0)::text revenue FROM products p LEFT JOIN order_lines ol ON ol.product_id=p.id LEFT JOIN orders o ON o.id=ol.order_id AND o.status IN ('confirmed','fulfilled') AND o.deleted_at IS NULL WHERE p.deleted_at IS NULL GROUP BY p.id ORDER BY sum(ol.line_total) DESC NULLS LAST LIMIT 10`),
-    query<{ productId: string; name: string; sku: string; qty: string; minStock: string }>(`SELECT p.id AS "productId", p.name, p.sku, COALESCE(sum(b.qty),0)::text qty, p.min_stock::text AS "minStock" FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.deleted_at IS NULL GROUP BY p.id HAVING COALESCE(sum(b.qty),0) < p.min_stock ORDER BY p.name`),
+    query<{ productId: string; name: string; sku: string; qty: string; minStock: string }>(`SELECT p.id AS "productId", p.name, p.sku, COALESCE(sum(b.qty),0)::text qty, p.min_stock::text AS "minStock" FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.deleted_at IS NULL AND p.item_type = 'goods' GROUP BY p.id HAVING COALESCE(sum(b.qty),0) <= 0 OR COALESCE(sum(b.qty),0) < p.min_stock ORDER BY p.name`),
   ]);
   return {
     pipelineByStage: pipeline.rows.map((r) => ({ stage: r.stage, count: Number(r.count), value: Number(r.value) })),

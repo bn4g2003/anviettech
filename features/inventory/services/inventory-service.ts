@@ -81,7 +81,7 @@ export const inventoryService = {
       byProduct.set(row.productId, (byProduct.get(row.productId) ?? 0) + Number(row.qty));
       meta.set(row.productId, {
         minStock: Number(row.minStock),
-        belowMin: Boolean(row.belowMin),
+        belowMin: Boolean(row.belowMin) || Number(row.qty) <= 0,
         productName: row.productName,
       });
     }
@@ -132,6 +132,6 @@ export const inventoryService = {
   },
   async lowStock() {
     const levels = await this.listLevels();
-    return levels.filter((l) => l.belowMin);
+    return levels.filter((l) => l.belowMin || l.qty <= 0);
   },
 };

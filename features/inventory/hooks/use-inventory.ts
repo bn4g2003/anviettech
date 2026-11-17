@@ -30,7 +30,7 @@ export function useInventory() {
         byProduct.set(row.productId, (byProduct.get(row.productId) ?? 0) + Number(row.qty));
         meta.set(row.productId, {
           minStock: Number(row.minStock),
-          belowMin: Boolean(row.belowMin),
+          belowMin: Boolean(row.belowMin) || Number(row.qty) <= 0,
           productName: row.productName,
         });
       }
@@ -78,7 +78,7 @@ export function useInventory() {
         productId: p.id,
         qty: level ? level.qty : 0,
         minStock: p.minStock,
-        belowMin: (level ? level.qty : 0) < (p.minStock ?? 0),
+        belowMin: p.itemType === "service" ? false : ((level ? level.qty : 0) <= 0 || (level ? level.qty : 0) < (p.minStock ?? 0)),
         productName: p.name,
         product: p,
       };
@@ -106,7 +106,7 @@ export function useInventory() {
     reload,
     lowStock: stockLevels.filter((l) => {
       const p = products.find((x) => x.id === l.productId);
-      return p ? l.qty < p.minStock : false;
+      return p ? (p.itemType !== "service" && (l.qty <= 0 || (p.minStock > 0 && l.qty < p.minStock))) : l.qty <= 0;
     }),
     createMove: async (input: StockMoveInput) => {
       const row = await inventoryService.createMove(input);

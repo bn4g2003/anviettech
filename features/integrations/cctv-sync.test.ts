@@ -167,7 +167,7 @@ describe("CCTV Integration - Business Logic & Lean Mapping", () => {
   });
 });
 
-describe("CCTV Integration - Migration 012 & 013 Safety", () => {
+describe("CCTV Integration - Migration 012, 013 & 019 Safety", () => {
   it("migration 012 adds additive columns and permissions without deleting data", () => {
     const sql = readFileSync(new URL("../../database/migrations/012_cctv_integration_sync.sql", import.meta.url), "utf8");
 
@@ -190,6 +190,14 @@ describe("CCTV Integration - Migration 012 & 013 Safety", () => {
     expect(sql).toMatch(/ALTER TABLE orders ADD COLUMN IF NOT EXISTS cctv_work_order_id/i);
     expect(sql).toMatch(/ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cctv_work_order_id/i);
     expect(sql).toMatch(/ALTER TABLE payments ADD COLUMN IF NOT EXISTS cctv_work_order_id/i);
+  });
+
+  it("migration 019 widens order_lines.product_name to text to prevent length truncation errors", () => {
+    const sql = readFileSync(new URL("../../database/migrations/019_widen_order_lines_product_name.sql", import.meta.url), "utf8");
+
+    expect(sql).not.toMatch(/DROP\s+TABLE/i);
+    expect(sql).not.toMatch(/TRUNCATE/i);
+    expect(sql).toMatch(/ALTER TABLE order_lines ALTER COLUMN product_name TYPE text/i);
   });
 });
 
